@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Nijjara ERP - Demo Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --color-bg: #121212;
+        --color-bg-panel: #1e1e1e;
+        --color-border: rgba(255, 255, 255, 0.1);
+        --color-text-primary: #f0f0f0;
+        --color-text-secondary: #a0a0a0;
+        --color-accent: #d4af37;
+        --color-success: #2ecc71;
+        --color-danger: #e74c3c;
+        --font-family-arabic: "Cairo", sans-serif;
+      }
+      .module-card h2,
+      .nav-btn,
+      .nav-item,
+      .portal-header h1,
+      .portal-header p,
+      .workspace-title,
+      body,
+      button,
+      html,
+      input,
+      select,
+      table,
+      td,
+      textarea,
+      th {
+        font-family: var(--font-family-arabic) !important;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html,
+      body {
+        height: 100%;
+        background: var(--color-bg);
+        color: var(--color-text-primary);
+        overflow: hidden;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: translate(-50%, -50%) rotate(360deg);
+        }
+      }
+      .view {
+        position: fixed;
+        inset: 0;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.45s ease, visibility 0.45s;
+      }
+      .view.active {
+        opacity: 1;
+        visibility: visible;
+      }
+      #login-screen {
+        display: grid;
+        place-content: center;
+        background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Cg fill-rule="evenodd"%3E%3Cg fill="%232a2a2a" fill-opacity="0.2"%3E%3Cpath opacity=".5" d="M96 95h4v1h-4v-1zm-7 5h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM54 95h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM9 95h1v4h-1v-4zm-7 0h1v4H2v-4zM95 0h1v4h-1V0zM2 0h1v4H2V0z"/%3E%3Cpath d="M6 95h4v1H6v-1zM4 95h1v4H4v-4zM95 6h1v4h-1V6zM95 4h1v1h-1V4z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+      }
+      .login-container {
+        width: 400px;
+        max-width: 92vw;
+        padding: 3rem;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: rgba(30, 30, 30, 0.88);
+        backdrop-filter: blur(10px);
+        animation: fadeIn 0.6s ease;
+        position: relative;
+      }
+      .logo {
+        font-size: 2.4rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+      .logo span {
+        color: var(--color-accent);
+        font-weight: 600;
+      }
+      .form-group {
+        margin-bottom: 1.2rem;
+        text-align: right;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 0.4rem;
+        font-size: 0.95rem;
+        color: var(--color-text-secondary);
+      }
+      .form-group input {
+        width: 100%;
+        padding: 0.8rem 1rem;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        color: var(--color-text-primary);
+        font-size: 1rem;
+        outline: 0;
+        transition: border-color 0.25s, box-shadow 0.25s;
+      }
+      .form-group input:focus {
+        border-color: var(--color-accent);
+        box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+      }
+      .main-button {
+        width: 100%;
+        padding: 0.9rem 1.2rem;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 14px;
+        background: linear-gradient(
+          160deg,
+          rgba(212, 175, 55, 0.92),
+          rgba(164, 135, 34, 0.85)
+        );
+        color: #111;
+        font-weight: 700;
+        cursor: pointer;
+        position: relative;
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45),
+          inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      }
+      .main-button:hover {
+        transform: translateY(-3px);
+        border-color: rgba(255, 255, 255, 0.45);
+      }
+      .main-button:active {
+        transform: translateY(-1px);
+      }
+      .main-button .spinner {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #000;
+        border-top-color: transparent;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        animation: spin 0.8s linear infinite;
+      }
+      .main-button.loading .spinner {
+        display: block;
+      }
+      .main-button.loading span {
+        visibility: hidden;
+      }
+
+      .app-navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(18, 18, 18, 0.98);
+        border-bottom: 1px solid var(--color-border);
+        padding: 0 2rem;
+        z-index: 50;
+      }
+      .app-navbar.hidden {
+        display: none;
+      }
+      .app-navbar__left,
+      .app-navbar__right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .navbar-buttons {
+        display: inline-flex;
+        gap: 0.5rem;
+        margin-inline-start: 1rem;
+      }
+      .app-brand {
+        font-weight: 700;
+        color: var(--color-accent);
+      }
+      .nav-btn {
+        background: 0 0;
+        border: none;
+        color: var(--color-text-secondary);
+        padding: 0.4rem 0.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+      }
+      .nav-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--color-text-primary);
+      }
+      .nav-btn.active {
+        background: rgba(212, 175, 55, 0.18);
+        color: var(--color-accent);
+      }
+      .navbar-user {
+        color: var(--color-text-secondary);
+      }
+
+      #portal-view {
+        padding: 5.5rem 2rem 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .portal-header {
+        text-align: center;
+        margin-bottom: 2.2rem;
+      }
+      .module-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(180px, 1fr));
+        gap: 1.5rem;
+        max-width: 1100px;
+        width: 100%;
+      }
+      .module-card {
+        --card-primary: rgba(36, 36, 36, 0.92);
+        --card-secondary: rgba(17, 17, 17, 0.88);
+        --card-border: rgba(255, 255, 255, 0.1);
+        --card-glow: rgba(255, 255, 255, 0.12);
+        position: relative;
+        padding: 2rem 1.6rem;
+        border: 1px solid var(--card-border);
+        border-radius: 16px;
+        background: linear-gradient(
+          160deg,
+          var(--card-primary),
+          var(--card-secondary)
+        );
+        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.55),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+        text-align: center;
+      }
+      .module-card:hover {
+        transform: translateY(-8px);
+        border-color: var(--card-glow);
+      }
+      .module-card h2 {
+        font-size: 1.3rem;
+      }
+      .module-card[data-theme="projects"] {
+        --card-primary: rgba(40, 52, 82, 0.92);
+        --card-secondary: rgba(22, 30, 50, 0.88);
+        --card-border: rgba(90, 140, 255, 0.28);
+        --card-glow: rgba(90, 140, 255, 0.4);
+      }
+      .module-card[data-theme="finance"] {
+        --card-primary: rgba(55, 45, 26, 0.92);
+        --card-secondary: rgba(34, 28, 16, 0.88);
+        --card-border: rgba(210, 170, 80, 0.28);
+        --card-glow: rgba(210, 170, 80, 0.4);
+      }
+      .module-card[data-theme="hr"] {
+        --card-primary: rgba(36, 54, 48, 0.92);
+        --card-secondary: rgba(19, 33, 28, 0.88);
+        --card-border: rgba(102, 214, 168, 0.28);
+        --card-glow: rgba(102, 214, 168, 0.4);
+      }
+      .module-card[data-theme="users"] {
+        --card-primary: rgba(46, 33, 52, 0.92);
+        --card-secondary: rgba(27, 18, 32, 0.88);
+        --card-border: rgba(200, 110, 210, 0.28);
+        --card-glow: rgba(200, 110, 210, 0.4);
+      }
+
+      .workspace {
+        height: 100vh;
+        display: grid;
+        grid-template-columns: 1fr 280px;
+        grid-template-rows: auto 1fr;
+        grid-template-areas: "header header" "content nav";
+        gap: 1.25rem;
+        padding: 5.5rem 2rem 2rem;
+        transform: scale(1.04);
+        transition: transform 0.45s ease;
+      }
+      .view.active .workspace {
+        transform: scale(1);
+      }
+      .workspace-header {
+        grid-area: header;
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+      }
+      .workspace-title {
+        font-size: 1.6rem;
+      }
+      .workspace-content {
+        grid-area: content;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: rgba(18, 18, 18, 0.9);
+        padding: 1.25rem;
+        overflow: auto;
+      }
+      .workspace {
+        --theme-accent: var(--color-accent);
+        --theme-accent-16: rgba(212, 175, 55, 0.16);
+        --theme-accent-24: rgba(212, 175, 55, 0.24);
+      }
+      .workspace[data-theme="projects"] {
+        --theme-accent: #5a8cff;
+        --theme-accent-16: rgba(90, 140, 255, 0.16);
+        --theme-accent-24: rgba(90, 140, 255, 0.24);
+      }
+      .workspace[data-theme="finance"] {
+        --theme-accent: #d2aa50;
+        --theme-accent-16: rgba(210, 170, 80, 0.16);
+        --theme-accent-24: rgba(210, 170, 80, 0.24);
+      }
+      .workspace[data-theme="hr"] {
+        --theme-accent: #66d6a8;
+        --theme-accent-16: rgba(102, 214, 168, 0.16);
+        --theme-accent-24: rgba(102, 214, 168, 0.24);
+      }
+      .workspace[data-theme="users"] {
+        --theme-accent: #c86ed2;
+        --theme-accent-16: rgba(200, 110, 210, 0.16);
+        --theme-accent-24: rgba(200, 110, 210, 0.24);
+      }
+      .workspace-nav {
+        grid-area: nav;
+        border: 1px solid var(--theme-accent-24);
+        border-radius: 12px;
+        background: rgba(18, 18, 18, 0.9);
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .nav-item {
+        background: 0 0;
+        border: none;
+        color: var(--color-text-secondary);
+        text-align: right;
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s, border-color 0.2s;
+      }
+      .nav-item.active,
+      .nav-item:hover {
+        background: var(--theme-accent-16);
+        color: var(--theme-accent);
+      }
+
+      .overview-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+      }
+      .overview-card {
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: rgba(30, 30, 30, 0.9);
+        padding: 1rem;
+      }
+      .muted {
+        color: var(--color-text-secondary);
+        font-size: 0.95rem;
+      }
+      .table-wrapper {
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      td,
+      th {
+        padding: 0.65rem 0.9rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        text-align: right;
+      }
+      tbody tr:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .ghost-button {
+        background: 0 0;
+        border: 1px solid var(--color-border);
+        color: var(--color-text-secondary);
+        padding: 0.55rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .accent-button {
+        background: var(--color-accent);
+        color: #111;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 0.55rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+      }
+      .badge {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        border: 1px solid transparent;
+      }
+      .badge--ok {
+        background: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+        border-color: rgba(46, 204, 113, 0.3);
+      }
+      .badge--no {
+        background: rgba(231, 76, 60, 0.15);
+        color: #e74c3c;
+        border-color: rgba(231, 76, 60, 0.3);
+      }
+      .icon-row {
+        display: flex;
+        gap: 0.35rem;
+      }
+      .icon-btn {
+        width: 32px;
+        height: 32px;
+        display: inline-grid;
+        place-items: center;
+        border: 1px solid var(--color-border);
+        background: transparent;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .icon-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .icon-btn svg {
+        width: 16px;
+        height: 16px;
+        fill: none;
+        stroke: #cfcfcf;
+        stroke-width: 1.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      dialog .form-grid textarea {
+        width: 100%;
+        min-height: 110px;
+        resize: vertical;
+      }
+      dialog .form-grid .span-2 {
+        grid-column: 1 / span 2;
+      }
+
+      /* Toasts (under login button) */
+      .toast-container {
+        position: absolute;
+        top: 100%;
+        inset-inline-start: 50%;
+        transform: translateX(-50%);
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        z-index: 1000;
+      }
+      .toast {
+        min-width: 260px;
+        max-width: 360px;
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        background: rgba(30, 30, 30, 0.96);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+        color: var(--color-text-primary);
+        opacity: 0;
+        transform: translateY(12px);
+        animation: toast-in 0.25s ease forwards;
+      }
+      .toast.success {
+        border-color: rgba(46, 204, 113, 0.35);
+        background: rgba(46, 204, 113, 0.12);
+      }
+      .toast.error {
+        border-color: rgba(231, 76, 60, 0.35);
+        background: rgba(231, 76, 60, 0.12);
+      }
+      .toast.info {
+        border-color: rgba(212, 175, 55, 0.35);
+        background: rgba(212, 175, 55, 0.12);
+      }
+      .toast__title {
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+      }
+      .toast__msg {
+        font-size: 0.95rem;
+        color: var(--color-text-secondary);
+      }
+      .toast--hide {
+        animation: toast-out 0.3s ease forwards;
+      }
+      @keyframes toast-in {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes toast-out {
+        to {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+      }
+
+      .hidden {
+        display: none !important;
+      }
+      .row-actions {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+      .kpi-value {
+        font-size: 1.6rem;
+      }
+      .toolbar {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        margin: 0 0 1rem 0;
+      }
+      .toolbar input,
+      .toolbar select {
+        padding: 0.5rem 0.7rem;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.25);
+        color: var(--color-text-primary);
+      }
+      dialog[open] {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: #191919;
+        color: var(--color-text-primary);
+        padding: 1rem 1.2rem;
+        max-width: 640px;
+        width: 92vw;
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(2px);
+      }
+      dialog .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.8rem;
+      }
+      dialog .form-grid label {
+        font-size: 0.9rem;
+        color: var(--color-text-secondary);
+      }
+      dialog .form-grid input,
+      dialog .form-grid select,
+      dialog .form-grid textarea {
+        width: 100%;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid var(--color-border);
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.25);
+        color: var(--color-text-primary);
+      }
+      dialog .actions {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: flex-start;
+        margin-top: 1rem;
+      }
+
+      /* small visual for dyn tabs */
+      .dyn-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.8rem;
+      }
+      .dyn-tabs .nav-item {
+        padding: 0.4rem 0.6rem;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Login -->
+    <div id="login-screen" class="view active">
+      <div class="login-container">
+        <div class="logo">نجارة<span>ERP</span></div>
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="username">اسم المستخدم</label>
+            <input id="username" type="text" autocomplete="username" />
+          </div>
+          <div class="form-group">
+            <label for="password">كلمة المرور</label>
+            <input
+              id="password"
+              type="password"
+              autocomplete="current-password"
+            />
+          </div>
+          <button id="login-button" class="main-button" type="submit">
+            <span>تسجيل الدخول</span>
+            <div class="spinner"></div>
+          </button>
+        </form>
+        <div
+          id="toast-container"
+          class="toast-container"
+          aria-live="polite"
+          aria-atomic="true"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Top navbar -->
+    <nav id="app-navbar" class="app-navbar hidden">
+      <div class="app-navbar__left">
+        <span class="app-brand">Nijjara ERP</span>
+        <div id="navbar-buttons" class="navbar-buttons"></div>
+      </div>
+      <div class="app-navbar__right">
+        <span id="navbar-user-label" class="navbar-user"></span>
+        <button id="logout-button" class="nav-btn">تسجيل الخروج</button>
+      </div>
+    </nav>
+
+    <!-- Portal -->
+    <div id="portal-view" class="view">
+      <div class="portal-header">
+        <h1 id="portal-welcome-message"></h1>
+        <p class="muted">اختر الوحدة التي تريد العمل عليها</p>
+      </div>
+      <div class="module-grid">
+        <div
+          class="module-card"
+          data-workspace="projects-workspace"
+          data-theme="projects"
+        >
+          <h2>المشاريع</h2>
+        </div>
+        <div
+          class="module-card"
+          data-workspace="finance-workspace"
+          data-theme="finance"
+        >
+          <h2>المالية</h2>
+        </div>
+        <div class="module-card" data-workspace="hr-workspace" data-theme="hr">
+          <h2>الموارد البشرية</h2>
+        </div>
+        <div
+          class="module-card"
+          data-workspace="system-management-view"
+          data-theme="users"
+        >
+          <h2>إدارة المستخدمين</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Projects (no demo data) -->
+    <div id="projects-workspace" class="view">
+      <div class="workspace" data-theme="projects">
+        <header class="workspace-header">
+          <h2 class="workspace-title">المشاريع</h2>
+          <div>
+            <button class="ghost-button" data-go="portal-view">
+              العودة للبوابة
+            </button>
+          </div>
+        </header>
+        <section class="workspace-content">
+          <p class="muted">لا توجد بيانات معروضة هنا بعد.</p>
+        </section>
+        <aside class="workspace-nav">
+          <button class="nav-item active">نظرة عامة</button>
+          <button class="nav-item">المهام</button>
+          <button class="nav-item">الملفات</button>
+        </aside>
+      </div>
+    </div>
+
+    <!-- Finance (no demo data) -->
+    <div id="finance-workspace" class="view">
+      <div class="workspace" data-theme="finance">
+        <header class="workspace-header">
+          <h2 class="workspace-title">المالية</h2>
+          <div>
+            <button class="ghost-button" data-go="portal-view">
+              العودة للبوابة
+            </button>
+          </div>
+        </header>
+        <section class="workspace-content">
+          <p class="muted">لا توجد بيانات معروضة هنا بعد.</p>
+        </section>
+        <aside class="workspace-nav">
+          <button class="nav-item active">لوحة مالية</button>
+          <button class="nav-item">الإيرادات</button>
+          <button class="nav-item">المصروفات</button>
+        </aside>
+      </div>
+    </div>
+
+    <!-- HR (no demo data) -->
+    <div id="hr-workspace" class="view">
+      <div class="workspace" data-theme="hr">
+        <header class="workspace-header">
+          <h2 class="workspace-title">الموارد البشرية</h2>
+          <div>
+            <button class="ghost-button" data-go="portal-view">
+              العودة للبوابة
+            </button>
+          </div>
+        </header>
+        <section class="workspace-content">
+          <p class="muted">لا توجد بيانات معروضة هنا بعد.</p>
+        </section>
+        <aside class="workspace-nav">
+          <button class="nav-item active">نظرة عامة</button>
+          <button class="nav-item">الحضور</button>
+          <button class="nav-item">الإجازات</button>
+        </aside>
+      </div>
+    </div>
+
+    <!-- System Management -->
+    <div id="system-management-view" class="view">
+      <div class="workspace" data-theme="users">
+        <header class="workspace-header">
+          <h2 class="workspace-title">إدارة النظام</h2>
+          <div>
+            <button class="ghost-button" data-go="portal-view">
+              العودة للبوابة
+            </button>
+          </div>
+        </header>
+
+        <section class="workspace-content">
+          <!-- نظرة عامة: KPIs فقط -->
+          <div id="sys-overview-pane">
+            <div class="overview-cards">
+              <div class="overview-card">
+                <div class="muted">عدد المستخدمين</div>
+                <div id="kpi-users" class="kpi-value">—</div>
+              </div>
+              <div class="overview-card">
+                <div class="muted">المشاريع النشطة</div>
+                <div id="kpi-projects" class="kpi-value">—</div>
+              </div>
+              <div class="overview-card">
+                <div class="muted">تكاليف الشهر</div>
+                <div id="kpi-monthly-costs" class="kpi-value">—</div>
+              </div>
+              <div class="overview-card">
+                <div class="muted">إيراد الشهر</div>
+                <div id="kpi-monthly-revenue" class="kpi-value">—</div>
+              </div>
+            </div>
+            <p class="muted">
+              لوحة موجزة لقياسات النظام. يتم جلبها من ‎SYS_Profile_View‎ إن
+              وُجدت.
+            </p>
+          </div>
+
+          <!-- المستخدمون: جدول + بحث ذكي + إنشاء مستخدم -->
+          <div id="sys-users-pane" class="hidden">
+            <div class="toolbar">
+              <input
+                type="search"
+                id="users-search"
+                placeholder="بحث سريع..."
+              />
+              <select id="department-filter">
+                <option value="">كل الأقسام</option>
+              </select>
+              <select id="role-filter">
+                <option value="">كل الأدوار</option>
+              </select>
+              <select id="status-filter">
+                <option value="">كل الحالات</option>
+                <option value="true">نشط</option>
+                <option value="false">غير نشط</option>
+              </select>
+              <button id="btn-new-user" class="accent-button">
+                إنشاء مستخدم جديد
+              </button>
+            </div>
+            <div class="table-wrapper">
+              <table id="users-table">
+                <thead>
+                  <tr>
+                    <th>الاسم الكامل</th>
+                    <th>اسم المستخدم</th>
+                    <th>البريد الإلكتروني</th>
+                    <th>القسم</th>
+                    <th>الدور</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="users-tbody">
+                  <tr>
+                    <td colspan="7" class="muted">جاري التحميل…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <aside class="workspace-nav">
+          <button class="nav-item active" data-pane="sys-overview-pane">
+            نظرة عامة
+          </button>
+          <button class="nav-item" data-pane="sys-users-pane">
+            المستخدمون
+          </button>
+          <button class="nav-item" disabled>الأذونات</button>
+        </aside>
+      </div>
+    </div>
+
+    <!-- إنشاء مستخدم (ديناميكي إن توفرت الجداول؛ وإلا نموذج مبسّط) -->
+    <dialog id="dlg-new-user">
+      <h3 style="margin-bottom: 0.6rem">إنشاء مستخدم جديد</h3>
+      <form method="dialog" id="new-user-form">
+        <div id="new-user-fields" class="form-grid"></div>
+        <div class="actions">
+          <button type="submit" class="accent-button">حفظ</button>
+          <button type="button" id="btn-cancel-new" class="ghost-button">
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- إعادة تعيين كلمة المرور -->
+    <dialog id="dlg-reset-pass">
+      <h3 style="margin-bottom: 0.6rem">إعادة تعيين كلمة المرور</h3>
+      <form method="dialog" id="form-reset-pass">
+        <div class="form-grid">
+          <div class="span-2">
+            <label for="reset_pass">كلمة المرور الجديدة</label
+            ><input type="password" id="reset_pass" name="password" required />
+          </div>
+          <div class="span-2">
+            <label for="reset_confirm">تأكيد كلمة المرور</label
+            ><input
+              type="password"
+              id="reset_confirm"
+              name="confirm"
+              required
+            />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="accent-button">تحديث</button>
+          <button type="button" id="btn-cancel-reset" class="ghost-button">
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <script>
+      (function () {
+        const views = Array.from(document.querySelectorAll(".view"));
+        const navbar = document.getElementById("app-navbar");
+        const userLabel = document.getElementById("navbar-user-label");
+        const navButtonsContainer = document.getElementById("navbar-buttons");
+        const txtSearch = document.getElementById("users-search");
+        const selDept = document.getElementById("department-filter");
+        const selRole = document.getElementById("role-filter");
+        const selStatus = document.getElementById("status-filter");
+        const usersTbody = document.getElementById("users-tbody");
+        const NAV_VIEW_MAP = {
+          SYS: "system-management-view",
+          PRJ: "projects-workspace",
+          FIN: "finance-workspace",
+          HR: "hr-workspace",
+        };
+        let bootstrapData = null;
+
+        /* Toasts */
+        const toastContainer = document.getElementById("toast-container");
+        function showToast(message, type = "info", title) {
+          const t = document.createElement("div");
+          t.className = "toast " + type;
+          t.innerHTML =
+            '<div class="toast__title">' +
+            (title || (type === "success" ? "تم بنجاح" : "إشعار")) +
+            '</div><div class="toast__msg">' +
+            message +
+            "</div>";
+          toastContainer.appendChild(t);
+          const hide = () => {
+            t.classList.add("toast--hide");
+            setTimeout(() => t.remove(), 300);
+          };
+          t.addEventListener("click", hide);
+          setTimeout(hide, 3500);
+        }
+
+        /* Basic nav */
+        function updateUserContext(name) {
+          const safe = name || "User";
+          userLabel.textContent = "User: " + safe;
+          const welcome = document.getElementById("portal-welcome-message");
+          if (welcome) welcome.textContent = "Welcome, " + safe;
+        }
+        function switchView(id) {
+          views.forEach((v) => v.classList.toggle("active", v.id === id));
+          document.querySelectorAll(".app-navbar .nav-btn").forEach((b) => {
+            const target = b.getAttribute("data-target");
+            b.classList.toggle(
+              "active",
+              target === id ||
+                (id === "portal-view" && target === "portal-view")
+            );
+          });
+        }
+        function createNavButton(label, target) {
+          const btn = document.createElement("button");
+          btn.className = "nav-btn";
+          btn.dataset.target = target;
+          btn.textContent = label;
+          return btn;
+        }
+        function renderNav(navConfig = []) {
+          if (!navButtonsContainer) return;
+          navButtonsContainer.innerHTML = "";
+          navButtonsContainer.appendChild(
+            createNavButton("Portal", "portal-view")
+          );
+          ["PRJ", "FIN", "HR", "SYS"].forEach((key) => {
+            navButtonsContainer.appendChild(
+              createNavButton(
+                key === "PRJ"
+                  ? "Projects"
+                  : key === "FIN"
+                  ? "Finance"
+                  : key === "HR"
+                  ? "HR"
+                  : "System",
+                NAV_VIEW_MAP[key]
+              )
+            );
+          });
+          const activeView = document.querySelector(".view.active");
+          if (activeView) switchView(activeView.id);
+        }
+
+        /* Bootstrap (server) */
+        function applyBootstrap(data) {
+          bootstrapData = data || {};
+          renderNav(data?.nav || []);
+          const displayName =
+            data?.user?.Full_Name || data?.user?.Username || "User";
+          updateUserContext(displayName);
+          // Fill filter selects if server sent lists
+          if (data?.filters) {
+            fillSelect(selDept, data.filters.departments);
+            fillSelect(selRole, data.filters.roles);
+          } else {
+            // Try lazy fetch
+            if (window.google && google.script && google.script.run) {
+              google.script.run
+                .withSuccessHandler((f) => {
+                  fillSelect(selDept, f?.departments || []);
+                  fillSelect(selRole, f?.roles || []);
+                })
+                .getDeptAndRoleFilters();
+            }
+          }
+          fetchKPIs();
+          loadUsers(); // prefetch for smoother UX
+        }
+        function fillSelect(selectEl, arr) {
+          if (!selectEl) return;
+          const keepFirst = selectEl.querySelector("option");
+          selectEl.innerHTML = keepFirst ? keepFirst.outerHTML : "";
+          (arr || []).forEach((v) => {
+            const o = document.createElement("option");
+            o.value = v;
+            o.textContent = v;
+            selectEl.appendChild(o);
+          });
+        }
+        function bootstrapApp() {
+          if (!(window.google && google.script && google.script.run)) {
+            console.warn("Apps Script runtime not available.");
+            return;
+          }
+          google.script.run
+            .withFailureHandler((err) => console.error("Bootstrap failed", err))
+            .withSuccessHandler(applyBootstrap)
+            .getBootstrapData();
+        }
+
+        /* Login */
+        const loginForm = document.getElementById("login-form");
+        const loginBtn = document.getElementById("login-button");
+        const USERNAME = "mkhoraiby",
+          PASSWORD = "210388";
+        loginForm.addEventListener("submit", (e) => {
+          e.preventDefault();
+          loginBtn.classList.add("loading");
+          const u = (document.getElementById("username").value || "")
+            .trim()
+            .toLowerCase();
+          const p = (document.getElementById("password").value || "").trim();
+          setTimeout(() => {
+            loginBtn.classList.remove("loading");
+            if (u === USERNAME && p === PASSWORD) {
+              navbar.classList.remove("hidden");
+              const fallback =
+                bootstrapData?.user?.Full_Name ||
+                bootstrapData?.user?.Username ||
+                USERNAME;
+              updateUserContext(fallback);
+              renderNav(bootstrapData?.nav || []);
+              switchView("portal-view");
+              bootstrapApp();
+              showToast("تم تسجيل الدخول بنجاح.", "success", "تم الدخول");
+            } else {
+              showToast(
+                "بيانات الدخول غير صحيحة. حاول مرة أخرى.",
+                "error",
+                "خطأ"
+              );
+            }
+          }, 450);
+        });
+
+        /* Top nav clicks */
+        navbar.addEventListener("click", (e) => {
+          const btn = e.target.closest(".nav-btn[data-target]");
+          if (!btn) return;
+          e.preventDefault();
+          switchView(btn.dataset.target);
+        });
+
+        /* Card clicks */
+        document.querySelectorAll(".module-card").forEach((card) => {
+          card.addEventListener("click", () =>
+            switchView(card.getAttribute("data-workspace"))
+          );
+        });
+
+        /* Back-to-portal */
+        document.querySelectorAll('[data-go="portal-view"]').forEach((btn) => {
+          btn.addEventListener("click", () => switchView("portal-view"));
+        });
+
+        /* Logout */
+        document
+          .getElementById("logout-button")
+          .addEventListener("click", () => {
+            navbar.classList.add("hidden");
+            userLabel.textContent = "";
+            const welcome = document.getElementById("portal-welcome-message");
+            if (welcome) welcome.textContent = "";
+            bootstrapData = null;
+            renderNav();
+            switchView("login-screen");
+            showToast("You have been signed out.", "info", "Logged Out");
+          });
+
+        /* ---------- System Management: tabs inside workspace ---------- */
+        const sysView = document.getElementById("system-management-view");
+        const paneButtons = sysView.querySelectorAll(
+          ".workspace-nav .nav-item[data-pane]"
+        );
+        paneButtons.forEach((b) => {
+          b.addEventListener("click", () => {
+            paneButtons.forEach((x) => x.classList.remove("active"));
+            b.classList.add("active");
+            const target = b.dataset.pane;
+            sysView
+              .querySelectorAll("#sys-overview-pane, #sys-users-pane")
+              .forEach((p) => p.classList.toggle("hidden", p.id !== target));
+            if (target === "sys-users-pane") {
+              loadUsers();
+            }
+          });
+        });
+
+        /* ---------- KPIs ---------- */
+        function fetchKPIs() {
+          if (!(window.google && google.script && google.script.run)) return;
+          google.script.run
+            .withFailureHandler(() => {})
+            .withSuccessHandler((k) => {
+              if (!k) return;
+              const $ = (id) => document.getElementById(id);
+              $("kpi-users").textContent = k.userCount ?? "—";
+              $("kpi-projects").textContent = k.activeProjects ?? "—";
+              $("kpi-monthly-costs").textContent = k.monthlyCosts ?? "—";
+              $("kpi-monthly-revenue").textContent = k.monthlyRevenue ?? "—";
+            })
+            .getSystemKPIs();
+        }
+
+        function currentFilters() {
+          return {
+            search: (txtSearch.value || "").trim(),
+            department: selDept.value || "",
+            role: selRole.value || "",
+            status: selStatus.value || "",
+          };
+        }
+
+        let usersReqTimer = null;
+        function loadUsers() {
+          if (!(window.google && google.script && google.script.run)) {
+            usersTbody.innerHTML =
+              '<tr><td colspan="7" class="muted">غير متصل بالخادم.</td></tr>';
+            return;
+          }
+          usersTbody.innerHTML =
+            '<tr><td colspan="7" class="muted">جاري التحميل…</td></tr>';
+          // watchdog in case server throws silently
+          clearTimeout(usersReqTimer);
+          usersReqTimer = setTimeout(() => {
+            const stillLoading =
+              usersTbody.textContent.includes("جاري التحميل");
+            if (stillLoading)
+              usersTbody.innerHTML =
+                '<tr><td colspan="7" class="muted">تعذر التحميل.</td></tr>';
+          }, 8000);
+          google.script.run
+            .withFailureHandler((err) => {
+              clearTimeout(usersReqTimer);
+              usersTbody.innerHTML =
+                '<tr><td colspan="7" class="muted">تعذر التحميل.</td></tr>';
+              console.error(err);
+            })
+            .withSuccessHandler((list) => {
+              clearTimeout(usersReqTimer);
+              renderUsers(list);
+            })
+            .searchUsers(currentFilters());
+        }
+
+        // تفويض أحداث الجدول
+        document
+          .getElementById("users-table")
+          .addEventListener("click", (e) => {
+            const btn = e.target.closest("button[data-act]");
+            if (!btn) return;
+            const act = btn.dataset.act;
+            const userId = btn.dataset.id;
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("غير متصل بالخادم.", "error");
+              return;
+            }
+
+            if (act === "reset") {
+              resetUserId = userId;
+              formReset.reset();
+              dlgReset.showModal();
+            } else if (act === "toggle") {
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                  showToast("تعذر تغيير حالة الحساب.", "error");
+                })
+                .withSuccessHandler(() => {
+                  showToast("تم تحديث الحالة.", "success");
+                  loadUsers();
+                })
+                .toggleUserActive(userId);
+            } else if (act === "edit") {
+              showToast("نموذج التعديل قادم (placeholder).", "info");
+            } else if (act === "view") {
+              showToast("عرض الملف قادم (placeholder).", "info");
+            } else if (act === "audit") {
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                  showToast("تعذر عرض السجل.", "error");
+                })
+                .withSuccessHandler((list) => {
+                  alert(
+                    (list || [])
+                      .slice(0, 20)
+                      .map((a) => `${a.timestamp} • ${a.action}`)
+                      .join("\n") || "لا توجد سجلات."
+                  );
+                })
+                .getAuditLog();
+            }
+          });
+
+        ["input", "change"].forEach((evt) => {
+          txtSearch.addEventListener(evt, loadUsers);
+          selDept.addEventListener(evt, loadUsers);
+          selRole.addEventListener(evt, loadUsers);
+          selStatus.addEventListener(evt, loadUsers);
+        });
+
+        // Reset password dialog is already initialized above
+        document
+          .getElementById("btn-cancel-reset")
+          .addEventListener("click", () => dlgReset.close());
+        formReset.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const fd = new FormData(formReset);
+          const p = fd.get("password") || "",
+            c = fd.get("confirm") || "";
+          if (p !== c) {
+            showToast("التأكيد غير مطابق.", "error");
+            return;
+          }
+          if (!(window.google && google.script && google.script.run)) {
+            showToast("غير متصل بالخادم.", "error");
+            return;
+          }
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذّر إعادة كلمة المرور.", "error");
+            })
+            .withSuccessHandler(() => {
+              showToast("تم تحديث كلمة المرور (مشفّرة).", "success");
+              dlgReset.close();
+            })
+            .updateUserPassword(resetUserId, p);
+        });
+
+        function renderUsers(list) {
+          usersTbody.innerHTML = "";
+          if (!Array.isArray(list) || list.length === 0) {
+            usersTbody.innerHTML =
+              '<tr><td colspan="7" class="muted">لا توجد نتائج.</td></tr>';
+            return;
+          }
+          const norm = (u) => ({
+            id: u.User_Id || u.user_id || u.id,
+            fullName: u.Full_Name || u.fullName || u.name,
+            username: u.Username || u.username,
+            email: u.Email || u.email,
+            department: u.Department || u.department,
+            role: u.Role_Id || u.role || u.Role,
+            isActive:
+              u.IsActive === true ||
+              String(u.IsActive).toLowerCase() === "true" ||
+              u.isActive === true,
+          });
+          const frag = document.createDocumentFragment();
+          list.map(norm).forEach((u) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${u.fullName || ""}</td>
+              <td>${u.username || ""}</td>
+              <td>${u.email || ""}</td>
+              <td>${u.department || ""}</td>
+              <td>${u.role || ""}</td>
+              <td>${
+                u.isActive
+                  ? '<span class="badge badge--ok">نشط</span>'
+                  : '<span class="badge badge--no">غير نشط</span>'
+              }</td>
+              <td>
+                <div class="icon-row">
+                  <button class="icon-btn" data-act="edit"   data-id="${
+                    u.id
+                  }" title="تعديل" aria-label="تعديل">
+                    <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 4l2 2"/></svg>
+                  </button>
+                  <button class="icon-btn" data-act="reset"  data-id="${
+                    u.id
+                  }" title="إعادة كلمة المرور" aria-label="إعادة كلمة المرور">
+                    <svg viewBox="0 0 24 24"><path d="M12 11v6"/><path d="M9 14h6"/><path d="M6 11V8a6 6 0 1 1 12 0v3"/></svg>
+                  </button>
+                  <button class="icon-btn" data-act="toggle" data-id="${
+                    u.id
+                  }" title="${
+              u.isActive ? "تعطيل" : "تفعيل"
+            }" aria-label="تفعيل/تعطيل">
+                    <svg viewBox="0 0 24 24">${
+                      u.isActive
+                        ? '<path d="M18 6L6 18"/><path d="M6 6l12 12"/>'
+                        : '<path d="M5 12h14"/><path d="M12 5v14"/>'
+                    }</svg>
+                  </button>
+                  <button class="icon-btn" data-act="audit"  data-id="${
+                    u.id
+                  }" title="سجل التدقيق" aria-label="سجل التدقيق">
+                    <svg viewBox="0 0 24 24"><path d="M7 3h10v4H7z"/><path d="M5 7h14v14H5z"/><path d="M9 11h6M9 15h6"/></svg>
+                  </button>
+                </div>
+              </td>`;
+            frag.appendChild(tr);
+          });
+          usersTbody.appendChild(frag);
+        }
+
+        /* ---------- Create New User ---------- */
+        /* ---------- Runtime style overrides (visibility & RTL polish) ---------- */
+        (function addRuntimeStyles() {
+          const css = `
+            .workspace-nav .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
+            .workspace-nav .nav-item{border:1px solid var(--theme-accent-24)}
+            .dyn-tabs .nav-item.active{background:var(--theme-accent);color:#111}
+            dialog .form-grid{direction:rtl}
+            dialog .form-grid label{display:block;margin-bottom:.25rem}
+            dialog .form-grid .span-2{grid-column:1 / span 2}
+            .toast-container{position:fixed;top:16px;inset-inline-end:16px;inset-inline-start:auto;transform:none;margin-top:0;z-index:10000}
+          `;
+          const el = document.createElement("style");
+          el.textContent = css;
+          document.head.appendChild(el);
+        })();
+
+        /* ---------- Global Toast (usable anywhere) ---------- */
+        function ensureToastContainer() {
+          let c = document.getElementById("toast-container");
+          if (!c) {
+            c = document.createElement("div");
+            c.id = "toast-container";
+            c.className = "toast-container";
+            document.body.appendChild(c);
+          }
+          return c;
+        }
+        function showToast(message, type = "info", title) {
+          const toastContainer = ensureToastContainer();
+          const t = document.createElement("div");
+          t.className = "toast " + type;
+          t.innerHTML =
+            '<div class="toast__title">' +
+            (title || (type === "success" ? "تم بنجاح" : "إشعار")) +
+            '</div><div class="toast__msg">' +
+            message +
+            "</div>";
+          toastContainer.appendChild(t);
+          const hide = () => {
+            t.classList.add("toast--hide");
+            setTimeout(() => t.remove(), 300);
+          };
+          t.addEventListener("click", hide);
+          setTimeout(hide, 3500);
+        }
+
+        /* ---------- Create / Edit User ---------- */
+        const dlgNew = document.getElementById("dlg-new-user");
+        const fieldsHost = document.getElementById("new-user-fields");
+        let currentEditId = null; // null=create, value=edit mode
+
+        document
+          .getElementById("btn-new-user")
+          .addEventListener("click", () => {
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("غير متصل بالخادم.", "error");
+              return;
+            }
+            currentEditId = null; // creation mode
+            // Try dynamic form; if empty fallback to minimal static form
+            google.script.run
+              .withFailureHandler((err) => {
+                console.error(err);
+                buildMinimalUserForm();
+                dlgNew.showModal();
+              })
+              .withSuccessHandler((fields) => {
+                if (Array.isArray(fields) && fields.length) {
+                  renderDynamicUserForm(fields, null);
+                } else {
+                  buildMinimalUserForm();
+                }
+                dlgNew.showModal();
+              })
+              .getFormWithOptions("FORM_SYS_AddUser");
+          });
+
+        document
+          .getElementById("btn-cancel-new")
+          .addEventListener("click", () => dlgNew.close());
+
+        function renderDynamicUserForm(fields, initialData = null) {
+          const host = document.getElementById("new-user-fields");
+          host.innerHTML = "";
+          const tabBar = document.createElement("div");
+          tabBar.className = "dyn-tabs";
+          const pages = document.createElement("div");
+          pages.className = "dyn-pages";
+          host.appendChild(tabBar);
+          host.appendChild(pages);
+
+          const tabs = {};
+          fields.forEach((f) => {
+            const tab = f.tabId || f.tabName || "default";
+            const sec = f.section || "";
+            if (!tabs[tab])
+              tabs[tab] = { name: f.tabName || "عام", sections: {} };
+            if (!tabs[tab].sections[sec]) tabs[tab].sections[sec] = [];
+            tabs[tab].sections[sec].push(f);
+          });
+
+          function makePage(tabKey, tab) {
+            const page = document.createElement("div");
+            page.className = "form-grid hidden";
+            Object.keys(tab.sections).forEach((sec) => {
+              if (sec) {
+                const h = document.createElement("div");
+                h.className = "span-2 muted";
+                h.style.margin = ".4rem 0 .2rem";
+                h.textContent = sec;
+                page.appendChild(h);
+              }
+              tab.sections[sec].forEach((f, i) => {
+                const id = `nu_${(
+                  f.targetColumn ||
+                  f.fieldId ||
+                  tabKey + i
+                ).replace(/\s+/g, "_")}`;
+                const wrap = document.createElement("div");
+                const label = document.createElement("label");
+                label.textContent =
+                  f.label || f.targetColumn || f.fieldId || "حقل " + (i + 1);
+                label.setAttribute("for", id);
+                let el;
+                const t = String(f.type || "text").toLowerCase();
+                const isPassword =
+                  f.targetColumn === "Password_Hash" ||
+                  /password/i.test(f.fieldId || "");
+                if (currentEditId && isPassword) return; // لا نعرض كلمة المرور في وضع التعديل
+                if (t === "dropdown") {
+                  el = document.createElement("select");
+                  (f.options || []).forEach((opt) => {
+                    const o = document.createElement("option");
+                    o.value = opt.value;
+                    o.textContent = opt.label || opt.value;
+                    el.appendChild(o);
+                  });
+                } else if (t === "textarea") {
+                  el = document.createElement("textarea");
+                  el.rows = 4;
+                  wrap.classList.add("span-2");
+                } else if (t === "auto") {
+                  el = document.createElement("input");
+                  el.type = "text";
+                  el.readOnly = true;
+                  el.placeholder = "AutoGenerate";
+                } else {
+                  el = document.createElement("input");
+                  el.type = t === "email" ? "email" : "text";
+                }
+                el.name = f.targetColumn || f.fieldId || id;
+                el.id = id;
+                if (f.readOnly) el.readOnly = true;
+                if (f.required && !el.readOnly) el.required = true;
+                if (initialData) {
+                  const k = f.targetColumn || f.fieldId;
+                  if (k && initialData[k] != null) el.value = initialData[k];
+                  if (k === "User_Id") el.readOnly = true;
+                }
+                if (
+                  !initialData &&
+                  (f.targetColumn === "User_Id" ||
+                    /User_Id/i.test(f.fieldId || ""))
+                ) {
+                  if (window.google && google.script && google.script.run) {
+                    google.script.run
+                      .withSuccessHandler((nextId) => {
+                        el.value = nextId;
+                        el.readOnly = true;
+                      })
+                      .getNextUserId();
+                  }
+                }
+                if (
+                  /Notes|ملاحظات/i.test(f.fieldId || "") ||
+                  /Notes|ملاحظات/i.test(f.targetColumn || "")
+                ) {
+                  wrap.classList.add("span-2");
+                }
+                wrap.appendChild(label);
+                wrap.appendChild(el);
+                page.appendChild(wrap);
+              });
+            });
+            return page;
+          }
+
+          const tabKeys = Object.keys(tabs);
+          const pagesEls = tabKeys.map((k) => makePage(k, tabs[k]));
+          pagesEls.forEach((p) => pages.appendChild(p));
+          tabKeys.forEach((k, idx) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "nav-item" + (idx === 0 ? " active" : "");
+            b.textContent = tabs[k].name || "تبويب";
+            b.addEventListener("click", () => {
+              tabBar
+                .querySelectorAll(".nav-item")
+                .forEach((x) => x.classList.remove("active"));
+              b.classList.add("active");
+              pagesEls.forEach((p, i) =>
+                p.classList.toggle("hidden", i !== tabKeys.indexOf(k))
+              );
+            });
+            tabBar.appendChild(b);
+          });
+          if (pagesEls[0]) pagesEls[0].classList.remove("hidden");
+        }
+
+        function buildMinimalUserForm(initialData = null) {
+          fieldsHost.innerHTML = "";
+          const grid = document.createElement("div");
+          grid.className = "form-grid";
+          const isEdit = !!initialData;
+          grid.innerHTML = `
+            <div><label>رقم المستخدم</label><input id="nu_uid" name="User_Id" type="text" ${
+              isEdit ? "" : "readonly"
+            } placeholder="AutoGenerate" /></div>
+            <div><label>الاسم الكامل</label><input name="Full_Name" type="text" required /></div>
+            <div><label>اسم المستخدم</label><input name="Username" type="text" required /></div>
+            <div><label>البريد الإلكتروني</label><input name="Email" type="email" /></div>
+            <div><label>القسم</label><select id="nu_dept" name="Department"></select></div>
+            <div><label>الدور</label><select id="nu_role" name="Role_Id"></select></div>
+            <div class="span-2"><label>ملاحظات</label><textarea name="Notes" rows="3"></textarea></div>
+            <div><label>نشط؟</label><select name="IsActive"><option value="true">نعم</option><option value="false">لا</option></select></div>
+            ${
+              isEdit
+                ? ""
+                : '<div><label>كلمة المرور</label><input name="password" type="password" required /></div>'
+            }`;
+          fieldsHost.appendChild(grid);
+          // next id & filters
+          if (window.google && google.script && google.script.run) {
+            if (!isEdit) {
+              google.script.run
+                .withSuccessHandler((nextId) => {
+                  const el = document.getElementById("nu_uid");
+                  if (el) {
+                    el.value = nextId;
+                  }
+                })
+                .getNextUserId();
+            }
+            google.script.run
+              .withSuccessHandler((f) => {
+                const d = f?.departments || [];
+                const r = f?.roles || [];
+                const dSel = document.getElementById("nu_dept");
+                const rSel = document.getElementById("nu_role");
+                [d, r].forEach((arr, idx) => {
+                  const sel = idx === 0 ? dSel : rSel;
+                  sel.innerHTML =
+                    '<option value=""></option>' +
+                    (arr || [])
+                      .map((v) => `<option value="${v}">${v}</option>`)
+                      .join("");
+                });
+                if (initialData) {
+                  if (initialData.Department)
+                    dSel.value = initialData.Department;
+                  if (initialData.Role_Id) rSel.value = initialData.Role_Id;
+                }
+              })
+              .getDeptAndRoleFilters();
+          }
+          if (initialData) {
+            Object.keys(initialData).forEach((k) => {
+              const el = grid.querySelector(`[name="${k}"]`);
+              if (el) {
+                el.value = initialData[k];
+              }
+            });
+            const idEl = grid.querySelector("#nu_uid");
+            if (idEl) {
+              idEl.readOnly = true;
+            }
+          }
+        }
+
+        // تفويض أحداث الجدول (تعديل/إعادة كلمة المرور/تفعيل)
+        document
+          .getElementById("users-table")
+          .addEventListener("click", (e) => {
+            const btn = e.target.closest("button[data-act]");
+            if (!btn) return;
+            const act = btn.dataset.act;
+            const userId = btn.dataset.id;
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("غير متصل بالخادم.", "error");
+              return;
+            }
+
+            if (act === "reset") {
+              resetUserId = userId;
+              formReset.reset();
+              dlgReset.showModal();
+            } else if (act === "toggle") {
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                  showToast("تعذر تغيير حالة الحساب.", "error");
+                })
+                .withSuccessHandler(() => {
+                  showToast("تم تحديث الحالة.", "success");
+                  loadUsers();
+                })
+                .toggleUserActive(userId);
+            } else if (act === "edit") {
+              currentEditId = userId;
+              // Prefer dynamic structure, pre-fill. Fallback to minimal
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                })
+                .withSuccessHandler((userObj) => {
+                  if (!userObj) {
+                    showToast("تعذر جلب بيانات المستخدم.", "error");
+                    return;
+                  }
+                  google.script.run
+                    .withSuccessHandler((fields) => {
+                      if (Array.isArray(fields) && fields.length) {
+                        renderDynamicUserForm(fields, userObj);
+                      } else {
+                        buildMinimalUserForm(userObj);
+                      }
+                      dlgNew.showModal();
+                    })
+                    .getFormWithOptions("FORM_SYS_AddUser");
+                })
+                .getUserById(userId);
+            } else if (act === "view") {
+              showToast("عرض الملف قادم (placeholder).", "info");
+            } else if (act === "audit") {
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                  showToast("تعذر عرض السجل.", "error");
+                })
+                .withSuccessHandler((list) => {
+                  alert(
+                    (list || [])
+                      .slice(0, 20)
+                      .map((a) => `${a.timestamp} • ${a.action}`)
+                      .join("\n") || "لا توجد سجلات."
+                  );
+                })
+                .getAuditLog();
+            }
+          });
+
+        // استماع للفلاتر
+        ["input", "change"].forEach((evt) => {
+          txtSearch.addEventListener(evt, loadUsers);
+          selDept.addEventListener(evt, loadUsers);
+          selRole.addEventListener(evt, loadUsers);
+          selStatus.addEventListener(evt, loadUsers);
+        });
+
+        const dlgReset = document.getElementById("dlg-reset-pass");
+        const formReset = document.getElementById("form-reset-pass");
+        let resetUserId = null;
+        document
+          .getElementById("btn-cancel-reset")
+          .addEventListener("click", () => dlgReset.close());
+        formReset.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const fd = new FormData(formReset);
+          const p = fd.get("password") || "",
+            c = fd.get("confirm") || "";
+          if (p !== c) {
+            showToast("التأكيد غير مطابق.", "error");
+            return;
+          }
+          if (!(window.google && google.script && google.script.run)) {
+            showToast("غير متصل بالخادم.", "error");
+            return;
+          }
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذّر إعادة كلمة المرور.", "error");
+            })
+            .withSuccessHandler(() => {
+              showToast("تم تحديث كلمة المرور (مشفّرة).", "success");
+              dlgReset.close();
+            })
+            .updateUserPassword(resetUserId, p);
+        });
+
+        function renderUsers(list) {
+          usersTbody.innerHTML = "";
+          if (!Array.isArray(list) || list.length === 0) {
+            usersTbody.innerHTML =
+              '<tr><td colspan="7" class="muted">لا توجد نتائج.</td></tr>';
+            return;
+          }
+          const norm = (u) => ({
+            id: u.User_Id || u.user_id || u.id,
+            fullName: u.Full_Name || u.fullName || u.name,
+            username: u.Username || u.username,
+            email: u.Email || u.email,
+            department: u.Department || u.department,
+            role: u.Role_Id || u.role || u.Role,
+            isActive:
+              u.IsActive === true ||
+              String(u.IsActive).toLowerCase() === "true" ||
+              u.isActive === true,
+          });
+          const frag = document.createDocumentFragment();
+          list.map(norm).forEach((u) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${u.fullName || ""}</td>
+              <td>${u.username || ""}</td>
+              <td>${u.email || ""}</td>
+              <td>${u.department || ""}</td>
+              <td>${u.role || ""}</td>
+              <td>${
+                u.isActive
+                  ? '<span class="badge badge--ok">نشط</span>'
+                  : '<span class="badge badge--no">غير نشط</span>'
+              }</td>
+              <td>
+                <div class="icon-row">
+                  <button class="icon-btn" data-act="edit"   data-id="${
+                    u.id
+                  }" title="تعديل" aria-label="تعديل">
+                    <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 4l2 2"/></svg>
+                  </button>
+                  <button class="icon-btn" data-act="reset"  data-id="${
+                    u.id
+                  }" title="إعادة كلمة المرور" aria-label="إعادة كلمة المرور">
+                    <svg viewBox="0 0 24 24"><path d="M12 11v6"/><path d="M9 14h6"/><path d="M6 11V8a6 6 0 1 1 12 0v3"/></svg>
+                  </button>
+                  <button class="icon-btn" data-act="toggle" data-id="${
+                    u.id
+                  }" title="${
+              u.isActive ? "تعطيل" : "تفعيل"
+            }" aria-label="تفعيل/تعطيل">
+                    <svg viewBox="0 0 24 24">${
+                      u.isActive
+                        ? '<path d="M18 6L6 18"/><path d="M6 6l12 12"/>'
+                        : '<path d="M5 12h14"/><path d="M12 5v14"/>'
+                    }</svg>
+                  </button>
+                  <button class="icon-btn" data-act="audit"  data-id="${
+                    u.id
+                  }" title="سجل التدقيق" aria-label="سجل التدقيق">
+                    <svg viewBox="0 0 24 24"><path d="M7 3h10v4H7z"/><path d="M5 7h14v14H5z"/><path d="M9 11h6M9 15h6"/></svg>
+                  </button>
+                </div>
+              </td>`;
+            frag.appendChild(tr);
+          });
+          usersTbody.appendChild(frag);
+        }
+
+        // إرسال النموذج (يخدم الإنشاء والتعديل)
+        document
+          .getElementById("new-user-form")
+          .addEventListener("submit", (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const payload = {};
+            for (const [k, v] of fd.entries()) {
+              if (k === "IsActive") {
+                payload[k] =
+                  v === "true" || v === "Yes" || v === "نشط" || v === "Active";
+              } else if (k === "password") {
+                payload.password = v;
+              } else {
+                payload[k] = v;
+              }
+            }
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("غير متصل بالخادم.", "error");
+              return;
+            }
+            if (currentEditId) {
+              payload.User_Id = payload.User_Id || currentEditId;
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                  showToast("تعذّر تحديث المستخدم.", "error");
+                })
+                .withSuccessHandler(() => {
+                  showToast("تم تحديث بيانات المستخدم.", "success");
+                  dlgNew.close();
+                  e.target.reset();
+                  loadUsers();
+                })
+                .updateUser(payload);
+            } else {
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                  showToast("تعذّر إنشاء المستخدم.", "error");
+                })
+                .withSuccessHandler(() => {
+                  showToast("تم إنشاء المستخدم بنجاح.", "success");
+                  dlgNew.close();
+                  e.target.reset();
+                  loadUsers();
+                })
+                .createUser(payload);
+            }
+          });
+
+        /* Welcome label shows Full_Name (Username) when available */
+        function updateUserContext(nameOrObj) {
+          let display = "User";
+          let uname = "";
+          if (typeof nameOrObj === "object" && nameOrObj) {
+            display = nameOrObj.Full_Name || nameOrObj.Username || "User";
+            uname = nameOrObj.Username ? ` (${nameOrObj.Username})` : "";
+          } else if (typeof nameOrObj === "string") {
+            display = nameOrObj;
+          }
+          userLabel.textContent = `User: ${display}${uname}`;
+          const welcome = document.getElementById("portal-welcome-message");
+          if (welcome) welcome.textContent = `Welcome, ${display}${uname}`;
+        }
+
+        // On login, immediately show typed username; server bootstrap will refine with Full_Name
+        loginForm.addEventListener("submit", (e) => {
+          const uVal = (document.getElementById("username").value || "").trim();
+          setTimeout(() => {
+            updateUserContext({ Username: uVal });
+          }, 500);
+        });
+
+        /* Init */
+        renderNav();
+        bootstrapApp();
+      })();
+    </script>
+  </body>
+</html>
