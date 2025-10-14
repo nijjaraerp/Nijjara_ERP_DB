@@ -12,9 +12,12 @@ const CONFIG = {
     AUDIT: "SYS_Audit_Log",
     SETTINGS: "SYS_Settings",
     DOCUMENTS: "SYS_Documents",
+    SESSIONS: "SYS_Sessions",
+    AUDIT_REPORT: "SYS_Audit_Report",
     DROPDOWNS: "SYS_Dropdowns",
     DYNAMIC_FORMS: "SYS_Dynamic_Forms",
     PROFILE_VIEW: "SYS_Profile_View",
+    USER_PROPERTIES: "SYS_User_Properties",
 
     // Projects
     PRJ_MAIN: "PRJ_Main",
@@ -73,44 +76,124 @@ function getBootstrapData() {
 }
 
 function getSystemKPIs() {
+  const defaults = {
+    totalUsers: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
+    roleCount: 0,
+    permissionCount: 0,
+    pendingPasswordResets: 0,
+  };
+
   const sheet = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.PROFILE_VIEW
   );
-  if (!sheet)
-    return {
-      userCount: 0,
-      activeProjects: 0,
-      monthlyCosts: 0,
-      monthlyRevenue: 0,
-    };
 
-  const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) {
-    return {
-      userCount: 0,
-      activeProjects: 0,
-      monthlyCosts: 0,
-      monthlyRevenue: 0,
-    };
+  if (sheet) {
+    const data = sheet.getDataRange().getValues();
+    if (data && data.length > 1) {
+      const headers = data[0];
+      const values = data[1];
+      const read = (key) => {
+        const index = headers.indexOf(key);
+        if (index === -1) return null;
+        const value = values[index];
+        return value == null || value === "" ? null : value;
+      };
+
+      const candidate = {
+        totalUsers: read("TotalUsers"),
+        activeUsers: read("ActiveUsers"),
+        inactiveUsers: read("InactiveUsers"),
+        roleCount: read("RoleCount"),
+        permissionCount: read("PermissionCount"),
+        pendingPasswordResets: read("PendingPasswordResets"),
+      };
+
+      const hasAny = Object.values(candidate).some((v) => v != null);
+      if (hasAny) {
+        return Object.assign({}, defaults, candidate);
+      }
+    }
   }
-  const headers = data[0];
-  const values = data[1];
 
-  const idx = (key) => {
-    const i = headers.indexOf(key);
-    return i >= 0 ? i : null;
-  };
-  const safeVal = (key) => {
-    const i = idx(key);
-    return i == null ? 0 : values[i] || 0;
-  };
+  // Fallback to direct sheet computations
+  const usersSheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.USERS
+  );
+  if (usersSheet) {
+    const usersData = usersSheet.getDataRange().getValues();
+    if (usersData && usersData.length > 1) {
+      const headers = usersData[0];
+      const isActiveIdx = headers.indexOf("IsActive");
+      defaults.totalUsers = usersData.length - 1;
+      if (isActiveIdx >= 0) {
+        let active = 0;
+        let inactive = 0;
+        usersData.slice(1).forEach((row) => {
+          const value = row[isActiveIdx];
+          const boolVal = value === true || String(value).toLowerCase() === "true";
+          if (boolVal) {
+            active += 1;
+          } else {
+            inactive += 1;
+          }
+        });
+        defaults.activeUsers = active;
+        defaults.inactiveUsers = inactive;
+      }
+    }
+  }
 
-  return {
-    userCount: safeVal("UserCount"),
-    activeProjects: safeVal("ActiveProjects"),
-    monthlyCosts: safeVal("MonthlyCosts"),
-    monthlyRevenue: safeVal("MonthlyRevenue"),
-  };
+  const rolesSheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.ROLES
+  );
+  if (rolesSheet) {
+    const roleData = rolesSheet.getDataRange().getValues();
+    if (roleData && roleData.length > 1) {
+      defaults.roleCount = roleData.length - 1;
+    }
+  }
+
+  const permsSheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.PERMS
+  );
+  if (permsSheet) {
+    const permData = permsSheet.getDataRange().getValues();
+    if (permData && permData.length > 1) {
+      defaults.permissionCount = permData.length - 1;
+    }
+  }
+
+  const propsSheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.USER_PROPERTIES
+  );
+  if (propsSheet) {
+    const propsData = propsSheet.getDataRange().getValues();
+    if (propsData && propsData.length > 1) {
+      const headers = propsData[0];
+      const keyIdx = headers.indexOf("Property_Key");
+      const valIdx = headers.indexOf("Property_Value");
+      const userIdx = headers.indexOf("User_Id");
+      if (keyIdx >= 0) {
+        const pending = propsData.slice(1).filter((row) => {
+          const key = String(row[keyIdx] || "").toLowerCase();
+          if (key !== "must_change" && key !== "must_change_password") return false;
+          const val = row[valIdx];
+          const boolVal =
+            val === true ||
+            String(val).toLowerCase() === "true" ||
+            String(val).toLowerCase() === "yes" ||
+            String(val).toLowerCase() === "1";
+          if (!boolVal) return false;
+          return userIdx >= 0 ? row[userIdx] != null && row[userIdx] !== "" : true;
+        });
+        defaults.pendingPasswordResets = pending.length;
+      }
+    }
+  }
+
+  return defaults;
 }
 
 // Enhanced user search with dynamic filtering
@@ -122,54 +205,97 @@ function searchUsers(filters = {}) {
   if (!data || data.length < 2) return [];
   const headers = data[0];
 
-  const h = (name) => headers.indexOf(name);
-  const iFull = h("Full_Name"),
-    iUsername = h("Username"),
-    iEmail = h("Email"),
-    iDept = h("Department"),
-    iRole = h("Role_Id"),
-    iActive = h("IsActive"),
-    iId = h("User_Id");
+  const idFilterSet = Array.isArray(filters.userIds)
+    ? new Set(filters.userIds.map((id) => String(id)))
+    : null;
+  const getIndex = (name) => headers.indexOf(name);
+  const idx = {
+    id: getIndex("User_Id"),
+    fullName: getIndex("Full_Name"),
+    username: getIndex("Username"),
+    email: getIndex("Email"),
+    department: getIndex("Department"),
+    role: getIndex("Role_Id"),
+    isActive: getIndex("IsActive"),
+    lastLogin: getIndex("Last_Login"),
+    updatedAt: getIndex("Updated_At"),
+  };
 
-  const users = data.slice(1).map(function (row) {
+  const normDate = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    const maybe = new Date(value);
+    return isNaN(maybe.getTime()) ? null : maybe;
+  };
+
+  const fromDate = normDate(filters.updatedFrom);
+  const toDate = normDate(filters.updatedTo);
+  const toString = (value) => {
+    if (value == null) return "";
+    if (value instanceof Date) return value.toISOString();
+    return String(value);
+  };
+
+  const result = data.slice(1).map((row) => {
+    const updatedRaw = idx.updatedAt >= 0 ? row[idx.updatedAt] : "";
     return {
-      fullName: iFull >= 0 ? row[iFull] || "" : "",
-      username: iUsername >= 0 ? row[iUsername] || "" : "",
-      email: iEmail >= 0 ? row[iEmail] || "" : "",
-      department: iDept >= 0 ? row[iDept] || "" : "",
-      role: iRole >= 0 ? row[iRole] || "" : "",
-      isActive: iActive >= 0 ? row[iActive] === true : false,
-      id: iId >= 0 ? row[iId] || "" : "",
+      User_Id: idx.id >= 0 ? row[idx.id] : "",
+      Full_Name: idx.fullName >= 0 ? row[idx.fullName] : "",
+      Username: idx.username >= 0 ? row[idx.username] : "",
+      Email: idx.email >= 0 ? row[idx.email] : "",
+      Department: idx.department >= 0 ? row[idx.department] : "",
+      Role_Id: idx.role >= 0 ? row[idx.role] : "",
+      IsActive:
+        idx.isActive >= 0
+          ? row[idx.isActive] === true ||
+            String(row[idx.isActive]).toLowerCase() === "true"
+          : false,
+      Last_Login: idx.lastLogin >= 0 ? row[idx.lastLogin] : "",
+      Updated_At: updatedRaw,
     };
   });
 
-  return users.filter(function (user) {
-    // Text search
+  return result.filter((user) => {
+    if (idFilterSet && !idFilterSet.has(String(user.User_Id || ""))) {
+      return false;
+    }
+
     if (filters.search) {
-      const searchQuery = String(filters.search).toLowerCase();
-      const matchesSearch = Object.values(user).some(function (value) {
-        return String(value).toLowerCase().includes(searchQuery);
-      });
-      if (!matchesSearch) return false;
+      const q = String(filters.search).toLowerCase();
+      const searchable = [
+        user.User_Id,
+        user.Full_Name,
+        user.Username,
+        user.Email,
+        user.Department,
+        user.Role_Id,
+      ]
+        .map(toString)
+        .join("||")
+        .toLowerCase();
+      if (!searchable.includes(q)) return false;
     }
 
-    // Department filter
-    if (filters.department && user.department !== filters.department) {
+    if (filters.department && user.Department !== filters.department) {
       return false;
     }
 
-    // Role filter
-    if (filters.role && user.role !== filters.role) {
+    if (filters.role && user.Role_Id !== filters.role) {
       return false;
     }
 
-    // Status filter
-    if (
-      filters.status !== undefined &&
-      filters.status !== "" &&
-      user.isActive !== (String(filters.status) === "true")
-    ) {
-      return false;
+    if (filters.status !== undefined && filters.status !== "") {
+      const desired = String(filters.status).toLowerCase();
+      const active = user.IsActive === true;
+      if (desired === "true" && !active) return false;
+      if (desired === "false" && active) return false;
+    }
+
+    if (fromDate || toDate) {
+      const updated = normDate(user.Updated_At);
+      if (!updated) return false;
+      if (fromDate && updated < fromDate) return false;
+      if (toDate && updated > toDate) return false;
     }
 
     return true;
@@ -358,8 +484,11 @@ function updateUserPassword(userId, newPassword) {
   const targetRow = rowIndex + 2; // 1-based + header
   const hashed = hashPassword(newPassword);
   sh.getRange(targetRow, iHash + 1).setValue(hashed);
-  if (iUpdAt >= 0) sh.getRange(targetRow, iUpdAt + 1).setValue(new Date());
-  if (iUpdBy >= 0) sh.getRange(targetRow, iUpdBy + 1).setValue("SYSTEM");
+  const now = new Date();
+  const actor = getActorEmail_();
+  if (iUpdAt >= 0) sh.getRange(targetRow, iUpdAt + 1).setValue(now);
+  if (iUpdBy >= 0) sh.getRange(targetRow, iUpdBy + 1).setValue(actor);
+  upsertUserProperty_(userId, "Must_Change", true);
   logAuditEvent("RESET_PASSWORD", { userId });
   return { success: true };
 }
@@ -381,14 +510,188 @@ function toggleUserActive(userId) {
   if (idx < 0) throw new Error("User not found");
 
   const row = idx + 2;
-  const current = sh.getRange(row, iAct + 1).getValue() === true;
+  const currentRaw = data[idx + 1][iAct];
+  const current = currentRaw === true || String(currentRaw).toLowerCase() === "true";
   const next = !current;
+  const actor = getActorEmail_();
   sh.getRange(row, iAct + 1).setValue(next);
   if (iDisAt >= 0)
     sh.getRange(row, iDisAt + 1).setValue(next ? "" : new Date());
-  if (iDisBy >= 0) sh.getRange(row, iDisBy + 1).setValue(next ? "" : "SYSTEM");
-  logAuditEvent(next ? "REACTIVATE_USER" : "DEACTIVATE_USER", { userId });
+  if (iDisBy >= 0) sh.getRange(row, iDisBy + 1).setValue(next ? "" : actor);
+  const iUpdAt = h.indexOf("Updated_At");
+  const iUpdBy = h.indexOf("Updated_By");
+  if (iUpdAt >= 0) sh.getRange(row, iUpdAt + 1).setValue(new Date());
+  if (iUpdBy >= 0) sh.getRange(row, iUpdBy + 1).setValue(actor);
+  logAuditEvent("TOGGLE_ACTIVE", {
+    userId,
+    previous: current,
+    next,
+  });
   return { success: true, isActive: next };
+}
+
+function bulkUpdateUserStatus(userIds = [], makeActive = true) {
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    return { success: false, message: "No users supplied" };
+  }
+
+  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  if (!sh) throw new Error("Users sheet not found");
+
+  const data = sh.getDataRange().getValues();
+  if (!data || data.length < 2) return { success: true, updated: 0 };
+  const headers = data[0];
+  const idx = {
+    id: headers.indexOf("User_Id"),
+    isActive: headers.indexOf("IsActive"),
+    disabledAt: headers.indexOf("Disabled_At"),
+    disabledBy: headers.indexOf("Disabled_By"),
+    updatedAt: headers.indexOf("Updated_At"),
+    updatedBy: headers.indexOf("Updated_By"),
+  };
+  if (idx.id < 0 || idx.isActive < 0) {
+    throw new Error("Users headers mismatch");
+  }
+
+  const actor = getActorEmail_();
+  const now = new Date();
+  const rows = data.slice(1);
+  const byId = new Map();
+  rows.forEach((row, i) => {
+    const id = row[idx.id];
+    if (id != null && id !== "") byId.set(String(id), { row, index: i });
+  });
+
+  let updated = 0;
+  userIds.forEach((rawId) => {
+    const key = String(rawId);
+    if (!byId.has(key)) return;
+    const entry = byId.get(key);
+    const prevRaw = entry.row[idx.isActive];
+    const prev = prevRaw === true || String(prevRaw).toLowerCase() === "true";
+    if (prev === makeActive) return;
+    const rowNumber = entry.index + 2;
+    sh.getRange(rowNumber, idx.isActive + 1).setValue(makeActive);
+    if (idx.disabledAt >= 0)
+      sh
+        .getRange(rowNumber, idx.disabledAt + 1)
+        .setValue(makeActive ? "" : now);
+    if (idx.disabledBy >= 0)
+      sh
+        .getRange(rowNumber, idx.disabledBy + 1)
+        .setValue(makeActive ? "" : actor);
+    if (idx.updatedAt >= 0)
+      sh.getRange(rowNumber, idx.updatedAt + 1).setValue(now);
+    if (idx.updatedBy >= 0)
+      sh.getRange(rowNumber, idx.updatedBy + 1).setValue(actor);
+    logAuditEvent("TOGGLE_ACTIVE", {
+      userId: rawId,
+      previous: prev,
+      next: makeActive,
+    });
+    updated += 1;
+  });
+
+  return { success: true, updated };
+}
+
+function bulkAssignRole(userIds = [], roleId) {
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    return { success: false, message: "No users supplied" };
+  }
+  if (!roleId) {
+    throw new Error("Role_Id is required");
+  }
+
+  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  if (!sh) throw new Error("Users sheet not found");
+
+  const data = sh.getDataRange().getValues();
+  if (!data || data.length < 2) return { success: true, updated: 0 };
+  const headers = data[0];
+  const idx = {
+    id: headers.indexOf("User_Id"),
+    role: headers.indexOf("Role_Id"),
+    updatedAt: headers.indexOf("Updated_At"),
+    updatedBy: headers.indexOf("Updated_By"),
+  };
+  if (idx.id < 0 || idx.role < 0) throw new Error("Users headers mismatch");
+
+  const actor = getActorEmail_();
+  const now = new Date();
+  const rows = data.slice(1);
+  const byId = new Map();
+  rows.forEach((row, i) => {
+    const id = row[idx.id];
+    if (id != null && id !== "") byId.set(String(id), { row, index: i });
+  });
+
+  let updated = 0;
+  userIds.forEach((rawId) => {
+    const key = String(rawId);
+    if (!byId.has(key)) return;
+    const entry = byId.get(key);
+    const currentRole = entry.row[idx.role];
+    if (String(currentRole) === String(roleId)) return;
+    const rowNumber = entry.index + 2;
+    sh.getRange(rowNumber, idx.role + 1).setValue(roleId);
+    if (idx.updatedAt >= 0)
+      sh.getRange(rowNumber, idx.updatedAt + 1).setValue(now);
+    if (idx.updatedBy >= 0)
+      sh.getRange(rowNumber, idx.updatedBy + 1).setValue(actor);
+    logAuditEvent("ASSIGN_ROLE", { userId: rawId, roleId });
+    updated += 1;
+  });
+
+  return { success: true, updated };
+}
+
+function exportUsers(filters = {}, format = "csv") {
+  const data = searchUsers(filters);
+  const headers = [
+    "User_Id",
+    "Full_Name",
+    "Username",
+    "Email",
+    "Department",
+    "Role_Id",
+    "IsActive",
+    "Last_Login",
+    "Updated_At",
+  ];
+
+  const serialize = (value) => {
+    if (value == null) return "";
+    if (value instanceof Date) return value.toISOString();
+    if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
+    if (typeof value === "number") return String(value);
+    const str = String(value);
+    if (/[",\n]/.test(str)) {
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  };
+
+  const csvRows = [headers.join(",")];
+  data.forEach((row) => {
+    logAuditEvent("EXPORT_USERS", { userId: row.User_Id });
+    const values = headers.map((h) => serialize(row[h]));
+    csvRows.push(values.join(","));
+  });
+
+  const csv = csvRows.join("\n");
+  const timestamp = Utilities.formatDate(
+    new Date(),
+    Session.getScriptTimeZone() || "GMT",
+    "yyyyMMdd_HHmmss"
+  );
+  const filename = `users_export_${timestamp}.csv`;
+  return {
+    format: format || "csv",
+    filename,
+    mimeType: "text/csv",
+    content: csv,
+  };
 }
 
 function getCurrentUser() {
@@ -492,14 +795,73 @@ function hashPassword(password) {
 function logAuditEvent(action, details) {
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.AUDIT);
   if (!sheet) return false;
-  const curr = getCurrentUser();
-  const actor = curr?.Email || curr?.email || "SYSTEM";
+  const actor = getActorEmail_();
   sheet.appendRow([new Date(), actor, action, JSON.stringify(details)]);
   return true;
 }
 
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+function getActorEmail_() {
+  const current = getCurrentUser();
+  if (current && (current.Email || current.email)) {
+    return current.Email || current.email;
+  }
+  const sessionUser = Session.getActiveUser();
+  const email = sessionUser ? sessionUser.getEmail() : "";
+  return email || "SYSTEM";
+}
+
+function upsertUserProperty_(userId, key, value) {
+  if (!userId || !key) return false;
+  const sheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.USER_PROPERTIES
+  );
+  if (!sheet) return false;
+
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length === 0) return false;
+  const headers = data[0];
+  const idx = {
+    user: headers.indexOf("User_Id"),
+    key: headers.indexOf("Property_Key"),
+    value: headers.indexOf("Property_Value"),
+    updatedAt: headers.indexOf("Updated_At"),
+    updatedBy: headers.indexOf("Updated_By"),
+  };
+
+  if (idx.user < 0 || idx.key < 0) return false;
+
+  const targetKey = String(key).toLowerCase();
+  const actor = getActorEmail_();
+  const now = new Date();
+  const rows = data.slice(1);
+  const existingIndex = rows.findIndex((row) => {
+    const userMatch = String(row[idx.user]) === String(userId);
+    const keyMatch =
+      idx.key >= 0 && String(row[idx.key] || "").toLowerCase() === targetKey;
+    return userMatch && keyMatch;
+  });
+
+  if (existingIndex >= 0) {
+    const rowNumber = existingIndex + 2;
+    if (idx.value >= 0) sheet.getRange(rowNumber, idx.value + 1).setValue(value);
+    if (idx.updatedAt >= 0)
+      sheet.getRange(rowNumber, idx.updatedAt + 1).setValue(now);
+    if (idx.updatedBy >= 0)
+      sheet.getRange(rowNumber, idx.updatedBy + 1).setValue(actor);
+  } else {
+    const row = new Array(headers.length).fill("");
+    row[idx.user] = userId;
+    if (idx.key >= 0) row[idx.key] = key;
+    if (idx.value >= 0) row[idx.value] = value;
+    if (idx.updatedAt >= 0) row[idx.updatedAt] = now;
+    if (idx.updatedBy >= 0) row[idx.updatedBy] = actor;
+    sheet.appendRow(row);
+  }
+  return true;
 }
 
 function generateSequentialUserId_() {
@@ -525,9 +887,10 @@ function getNextUserId() {
 /** ---- SMALL HELPERS FOR CLIENT FILTERS ---- */
 function getDeptAndRoleFilters() {
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
-  if (!sh) return { departments: [], roles: [] };
+  if (!sh) return { departments: [], roles: [], roleOptions: [] };
   const data = sh.getDataRange().getValues();
-  if (!data || data.length < 2) return { departments: [], roles: [] };
+  if (!data || data.length < 2)
+    return { departments: [], roles: [], roleOptions: getRoleOptions_() };
   const h = data[0];
   const iDept = h.indexOf("Department");
   const iRole = h.indexOf("Role_Id");
@@ -540,5 +903,266 @@ function getDeptAndRoleFilters() {
   return {
     departments: Array.from(depts).sort(),
     roles: Array.from(roles).sort(),
+    roleOptions: getRoleOptions_(),
   };
+}
+
+function getRoleOptions_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.ROLES);
+  if (!sh) return [];
+  const data = sh.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idIdx = headers.indexOf("Role_Id");
+  const titleIdx = headers.indexOf("Role_Title");
+  return data
+    .slice(1)
+    .map((row) => ({
+      value: idIdx >= 0 ? row[idIdx] : "",
+      label: titleIdx >= 0 ? row[titleIdx] || row[idIdx] : row[idIdx],
+    }))
+    .filter((opt) => opt.value != null && opt.value !== "");
+}
+
+function getRoleOptions() {
+  return getRoleOptions_();
+}
+
+function assignUserRole(userId, roleId) {
+  if (!userId) throw new Error("User_Id is required");
+  if (!roleId) throw new Error("Role_Id is required");
+  return bulkAssignRole([userId], roleId);
+}
+
+function softDeleteUser(userId, reason) {
+  if (!userId) throw new Error("User_Id is required");
+  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  if (!sh) throw new Error("Users sheet not found");
+
+  const data = sh.getDataRange().getValues();
+  if (!data || data.length < 2) throw new Error("User not found");
+  const headers = data[0];
+  const idx = {
+    id: headers.indexOf("User_Id"),
+    isActive: headers.indexOf("IsActive"),
+    disabledAt: headers.indexOf("Disabled_At"),
+    disabledBy: headers.indexOf("Disabled_By"),
+    updatedAt: headers.indexOf("Updated_At"),
+    updatedBy: headers.indexOf("Updated_By"),
+  };
+  if (idx.id < 0 || idx.isActive < 0) throw new Error("Users headers mismatch");
+
+  const rows = data.slice(1);
+  const rowIndex = rows.findIndex((row) => String(row[idx.id]) === String(userId));
+  if (rowIndex < 0) throw new Error("User not found");
+  const rowNumber = rowIndex + 2;
+  const actor = getActorEmail_();
+  const now = new Date();
+
+  sh.getRange(rowNumber, idx.isActive + 1).setValue(false);
+  if (idx.disabledAt >= 0)
+    sh.getRange(rowNumber, idx.disabledAt + 1).setValue(now);
+  if (idx.disabledBy >= 0)
+    sh.getRange(rowNumber, idx.disabledBy + 1).setValue(actor);
+  if (idx.updatedAt >= 0)
+    sh.getRange(rowNumber, idx.updatedAt + 1).setValue(now);
+  if (idx.updatedBy >= 0)
+    sh.getRange(rowNumber, idx.updatedBy + 1).setValue(actor);
+
+  upsertUserProperty_(userId, "Deleted", true);
+  if (reason) {
+    upsertUserProperty_(userId, "Delete_Note", reason);
+  }
+
+  logAuditEvent("DELETE_USER_SOFT", { userId, reason: reason || "" });
+  return { success: true };
+}
+
+function startImpersonation(userId) {
+  if (!userId) throw new Error("User_Id is required");
+  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.SESSIONS);
+  if (!sheet) throw new Error("Sessions sheet not found");
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const getCol = (name) => headers.indexOf(name) + 1;
+  const row = new Array(headers.length).fill("");
+  const sessionId = Utilities.getUuid();
+  const actor = getActorEmail_();
+  const now = new Date();
+
+  const set = (key, value) => {
+    const col = getCol(key);
+    if (col > 0) row[col - 1] = value;
+  };
+
+  set("Session_Id", sessionId);
+  set("Actor_Email", actor);
+  const actorUser = getCurrentUser();
+  if (actorUser && actorUser.User_Id) set("Actor_User_Id", actorUser.User_Id);
+  set("User_Id", userId);
+  set("Type", "IMPERSONATION");
+  set("Status", "ACTIVE");
+  set("Started_At", now);
+
+  sheet.appendRow(row);
+  logAuditEvent("IMPERSONATE_START", { userId, sessionId });
+  return { success: true, sessionId };
+}
+
+function getUserProfile(userId) {
+  if (!userId) throw new Error("User_Id is required");
+  return {
+    user: getUserById(userId),
+    properties: getUserProperties_(userId),
+    documents: getUserDocuments_(userId),
+    sessions: getUserSessions_(userId),
+    audit: getUserAuditTrail_(userId),
+  };
+}
+
+function getUserProperties_(userId) {
+  if (!userId) return [];
+  const sheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.USER_PROPERTIES
+  );
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idx = {
+    user: headers.indexOf("User_Id"),
+    key: headers.indexOf("Property_Key"),
+    value: headers.indexOf("Property_Value"),
+    updatedAt: headers.indexOf("Updated_At"),
+    updatedBy: headers.indexOf("Updated_By"),
+  };
+  if (idx.user < 0) return [];
+  return data
+    .slice(1)
+    .filter((row) => String(row[idx.user]) === String(userId))
+    .map((row) => ({
+      key: idx.key >= 0 ? row[idx.key] : "",
+      value: idx.value >= 0 ? row[idx.value] : "",
+      updatedAt:
+        idx.updatedAt >= 0 && row[idx.updatedAt]
+          ? new Date(row[idx.updatedAt])
+          : null,
+      updatedBy: idx.updatedBy >= 0 ? row[idx.updatedBy] : "",
+    }));
+}
+
+function getUserDocuments_(userId) {
+  if (!userId) return [];
+  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.DOCUMENTS);
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idx = {
+    entity: headers.indexOf("Entity"),
+    entityId: headers.indexOf("Entity_ID"),
+    fileId: headers.indexOf("Drive_File_ID"),
+    url: headers.indexOf("Drive_URL"),
+    label: headers.indexOf("Label"),
+    fileName: headers.indexOf("File_Name"),
+    createdAt: headers.indexOf("Created_At"),
+    uploadedBy: headers.indexOf("Uploaded_By"),
+  };
+  return data
+    .slice(1)
+    .filter((row) => {
+      const entityMatch = idx.entity < 0 || row[idx.entity] === "Users";
+      const idMatch = idx.entityId < 0 || String(row[idx.entityId]) === String(userId);
+      return entityMatch && idMatch;
+    })
+    .map((row) => ({
+      fileId: idx.fileId >= 0 ? row[idx.fileId] : "",
+      url: idx.url >= 0 ? row[idx.url] : "",
+      label: idx.label >= 0 ? row[idx.label] : "",
+      fileName: idx.fileName >= 0 ? row[idx.fileName] : "",
+      uploadedBy: idx.uploadedBy >= 0 ? row[idx.uploadedBy] : "",
+      createdAt:
+        idx.createdAt >= 0 && row[idx.createdAt]
+          ? new Date(row[idx.createdAt])
+          : null,
+    }));
+}
+
+function getUserSessions_(userId) {
+  if (!userId) return [];
+  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.SESSIONS);
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idx = {
+    user: headers.indexOf("User_Id"),
+    actor: headers.indexOf("Actor_Email"),
+    sessionId: headers.indexOf("Session_Id"),
+    type: headers.indexOf("Type"),
+    status: headers.indexOf("Status"),
+    startedAt: headers.indexOf("Started_At"),
+    endedAt: headers.indexOf("Ended_At"),
+  };
+  if (idx.user < 0) return [];
+  return data
+    .slice(1)
+    .filter((row) => String(row[idx.user]) === String(userId))
+    .map((row) => ({
+      sessionId: idx.sessionId >= 0 ? row[idx.sessionId] : "",
+      actor: idx.actor >= 0 ? row[idx.actor] : "",
+      type: idx.type >= 0 ? row[idx.type] : "",
+      status: idx.status >= 0 ? row[idx.status] : "",
+      startedAt:
+        idx.startedAt >= 0 && row[idx.startedAt]
+          ? new Date(row[idx.startedAt])
+          : null,
+      endedAt:
+        idx.endedAt >= 0 && row[idx.endedAt]
+          ? new Date(row[idx.endedAt])
+          : null,
+    }));
+}
+
+function getUserAuditTrail_(userId) {
+  if (!userId) return [];
+  const primarySheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.AUDIT_REPORT
+  );
+  const sheet =
+    primarySheet || SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.AUDIT);
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idx = {
+    userId:
+      headers.indexOf("Entity_ID") >= 0
+        ? headers.indexOf("Entity_ID")
+        : headers.indexOf("User_Id"),
+    action: headers.indexOf("Action"),
+    actor: headers.indexOf("User"),
+    details: headers.indexOf("Details"),
+    timestamp: headers.indexOf("Timestamp"),
+  };
+  return data
+    .slice(1)
+    .filter((row) => {
+      if (idx.userId < 0) return true;
+      return String(row[idx.userId]) === String(userId);
+    })
+    .map((row) => ({
+      action: idx.action >= 0 ? row[idx.action] : "",
+      actor: idx.actor >= 0 ? row[idx.actor] : "",
+      details: idx.details >= 0 ? row[idx.details] : "",
+      timestamp:
+        idx.timestamp >= 0 && row[idx.timestamp]
+          ? new Date(row[idx.timestamp])
+          : null,
+    }))
+    .sort((a, b) => {
+      const ta = a.timestamp ? a.timestamp.getTime() : 0;
+      const tb = b.timestamp ? b.timestamp.getTime() : 0;
+      return tb - ta;
+    });
 }

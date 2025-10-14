@@ -449,6 +449,7 @@
       }
       .icon-row {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.35rem;
       }
       .icon-btn {
@@ -482,6 +483,79 @@
       }
       dialog .form-grid .span-2 {
         grid-column: 1 / span 2;
+      }
+
+      .profile-dialog__header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        margin-bottom: 0.8rem;
+      }
+      .profile-dialog__username {
+        color: var(--color-text-secondary);
+        font-size: 0.95rem;
+      }
+      .profile-tabs {
+        display: flex;
+        gap: 0.4rem;
+        margin-bottom: 0.8rem;
+        flex-wrap: wrap;
+      }
+      .profile-tabs .nav-item {
+        border: 1px solid var(--color-border);
+      }
+      .profile-tabs .nav-item.active {
+        background: var(--color-accent);
+        color: #111;
+        border-color: transparent;
+      }
+      .profile-panels {
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        padding: 1rem;
+        background: rgba(0, 0, 0, 0.25);
+        max-height: 340px;
+        overflow: auto;
+      }
+      .profile-panel {
+        display: none;
+      }
+      .profile-panel.active {
+        display: block;
+      }
+      .profile-dl {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 0.4rem 0.8rem;
+      }
+      .profile-dl dt {
+        color: var(--color-text-secondary);
+      }
+      .profile-dl dd {
+        margin: 0;
+      }
+      .profile-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+      .profile-table th,
+      .profile-table td {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 0.45rem 0.6rem;
+        text-align: right;
+      }
+      .profile-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .profile-empty {
+        text-align: center;
+        color: var(--color-text-secondary);
+        padding: 1rem 0;
+      }
+      .profile-doc-link {
+        color: var(--color-accent);
+        text-decoration: none;
       }
 
       /* Toasts (under login button) */
@@ -565,6 +639,7 @@
         gap: 0.5rem;
         align-items: center;
         margin: 0 0 1rem 0;
+        flex-wrap: wrap;
       }
       .toolbar input,
       .toolbar select {
@@ -573,6 +648,34 @@
         border-radius: 8px;
         background: rgba(0, 0, 0, 0.25);
         color: var(--color-text-primary);
+      }
+      .toolbar-group {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .toolbar--bulk {
+        justify-content: flex-start;
+        margin-top: -0.5rem;
+        margin-bottom: 1rem;
+      }
+      .toolbar--bulk .ghost-button,
+      .toolbar--bulk select {
+        min-width: 110px;
+      }
+      .toolbar--bulk select:disabled,
+      .toolbar--bulk button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .select-cell {
+        width: 44px;
+        text-align: center;
+      }
+      .select-cell input {
+        width: 16px;
+        height: 16px;
       }
       dialog[open] {
         position: fixed;
@@ -789,20 +892,28 @@
           <div id="sys-overview-pane">
             <div class="overview-cards">
               <div class="overview-card">
-                <div class="muted">عدد المستخدمين</div>
-                <div id="kpi-users" class="kpi-value">—</div>
+                <div class="muted">إجمالي المستخدمين</div>
+                <div id="kpi-total-users" class="kpi-value">—</div>
               </div>
               <div class="overview-card">
-                <div class="muted">المشاريع النشطة</div>
-                <div id="kpi-projects" class="kpi-value">—</div>
+                <div class="muted">المستخدمون النشطون</div>
+                <div id="kpi-active-users" class="kpi-value">—</div>
               </div>
               <div class="overview-card">
-                <div class="muted">تكاليف الشهر</div>
-                <div id="kpi-monthly-costs" class="kpi-value">—</div>
+                <div class="muted">المستخدمون المعطلون</div>
+                <div id="kpi-inactive-users" class="kpi-value">—</div>
               </div>
               <div class="overview-card">
-                <div class="muted">إيراد الشهر</div>
-                <div id="kpi-monthly-revenue" class="kpi-value">—</div>
+                <div class="muted">عدد الأدوار</div>
+                <div id="kpi-role-count" class="kpi-value">—</div>
+              </div>
+              <div class="overview-card">
+                <div class="muted">عدد الأذونات</div>
+                <div id="kpi-permission-count" class="kpi-value">—</div>
+              </div>
+              <div class="overview-card">
+                <div class="muted">طلبات إعادة التعيين</div>
+                <div id="kpi-pending-resets" class="kpi-value">—</div>
               </div>
             </div>
             <p class="muted">
@@ -813,7 +924,7 @@
 
           <!-- المستخدمون: جدول + بحث ذكي + إنشاء مستخدم -->
           <div id="sys-users-pane" class="hidden">
-            <div class="toolbar">
+            <div class="toolbar toolbar--filters">
               <input
                 type="search"
                 id="users-search"
@@ -830,26 +941,53 @@
                 <option value="true">نشط</option>
                 <option value="false">غير نشط</option>
               </select>
+              <input type="date" id="updated-from" aria-label="تاريخ التحديث من" />
+              <input type="date" id="updated-to" aria-label="تاريخ التحديث إلى" />
               <button id="btn-new-user" class="accent-button">
                 إنشاء مستخدم جديد
               </button>
+            </div>
+            <div class="toolbar toolbar--bulk">
+              <div class="toolbar-group">
+                <button id="bulk-export" class="ghost-button" disabled>
+                  تصدير
+                </button>
+                <button id="bulk-activate" class="ghost-button" disabled>
+                  تفعيل
+                </button>
+                <button id="bulk-deactivate" class="ghost-button" disabled>
+                  تعطيل
+                </button>
+                <select id="bulk-role-select" disabled>
+                  <option value="">اختر دورًا</option>
+                </select>
+                <button id="bulk-assign-role" class="ghost-button" disabled>
+                  تعيين الدور
+                </button>
+              </div>
             </div>
             <div class="table-wrapper">
               <table id="users-table">
                 <thead>
                   <tr>
+                    <th class="select-cell">
+                      <input type="checkbox" id="select-all-users" />
+                    </th>
+                    <th>معرّف المستخدم</th>
                     <th>الاسم الكامل</th>
                     <th>اسم المستخدم</th>
                     <th>البريد الإلكتروني</th>
                     <th>القسم</th>
                     <th>الدور</th>
                     <th>الحالة</th>
+                    <th>آخر تسجيل دخول</th>
+                    <th>آخر تحديث</th>
                     <th>إجراءات</th>
                   </tr>
                 </thead>
                 <tbody id="users-tbody">
                   <tr>
-                    <td colspan="7" class="muted">جاري التحميل…</td>
+                    <td colspan="11" class="muted">جاري التحميل…</td>
                   </tr>
                 </tbody>
               </table>
@@ -877,6 +1015,116 @@
         <div class="actions">
           <button type="submit" class="accent-button">حفظ</button>
           <button type="button" id="btn-cancel-new" class="ghost-button">
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- ملف المستخدم -->
+    <dialog id="dlg-user-profile">
+      <div class="profile-dialog__header">
+        <h3 id="profile-title">ملف المستخدم</h3>
+        <div id="profile-username" class="profile-dialog__username"></div>
+      </div>
+      <div class="profile-tabs" id="profile-tabs">
+        <button type="button" class="nav-item active" data-tab="profile">
+          الملف
+        </button>
+        <button type="button" class="nav-item" data-tab="properties">
+          الخصائص
+        </button>
+        <button type="button" class="nav-item" data-tab="documents">
+          المستندات
+        </button>
+        <button type="button" class="nav-item" data-tab="sessions">
+          الجلسات
+        </button>
+        <button type="button" class="nav-item" data-tab="audit">
+          التدقيق
+        </button>
+      </div>
+      <div class="profile-panels" id="profile-panels">
+        <section class="profile-panel active" data-tab="profile">
+          <dl class="profile-dl" id="profile-overview-list"></dl>
+        </section>
+        <section class="profile-panel" data-tab="properties">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>المفتاح</th>
+                <th>القيمة</th>
+                <th>آخر تحديث</th>
+                <th>المحدّث</th>
+              </tr>
+            </thead>
+            <tbody id="profile-properties-body"></tbody>
+          </table>
+        </section>
+        <section class="profile-panel" data-tab="documents">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>المستند</th>
+                <th>المرفوع بواسطة</th>
+                <th>التاريخ</th>
+                <th>رابط</th>
+              </tr>
+            </thead>
+            <tbody id="profile-documents-body"></tbody>
+          </table>
+        </section>
+        <section class="profile-panel" data-tab="sessions">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>Session</th>
+                <th>المنتحل</th>
+                <th>النوع</th>
+                <th>الحالة</th>
+                <th>البداية</th>
+                <th>النهاية</th>
+              </tr>
+            </thead>
+            <tbody id="profile-sessions-body"></tbody>
+          </table>
+        </section>
+        <section class="profile-panel" data-tab="audit">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>الوقت</th>
+                <th>المستخدم</th>
+                <th>الإجراء</th>
+                <th>التفاصيل</th>
+              </tr>
+            </thead>
+            <tbody id="profile-audit-body"></tbody>
+          </table>
+        </section>
+      </div>
+      <div class="actions">
+        <button type="button" id="btn-close-profile" class="accent-button">
+          إغلاق
+        </button>
+      </div>
+    </dialog>
+
+    <!-- تعيين دور -->
+    <dialog id="dlg-assign-role">
+      <h3 style="margin-bottom: 0.6rem">تعيين دور للمستخدم</h3>
+      <form method="dialog" id="form-assign-role">
+        <input type="hidden" id="assign-role-user" name="userId" />
+        <div class="form-grid">
+          <div class="span-2">
+            <label for="assign-role-select">اختر الدور</label>
+            <select id="assign-role-select" name="roleId" required></select>
+          </div>
+          <div class="span-2 muted" id="assign-role-user-label"></div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="accent-button">حفظ</button>
+          <button type="button" id="btn-cancel-assign" class="ghost-button">
             إلغاء
           </button>
         </div>
@@ -921,7 +1169,41 @@
         const selDept = document.getElementById("department-filter");
         const selRole = document.getElementById("role-filter");
         const selStatus = document.getElementById("status-filter");
+        const dtUpdatedFrom = document.getElementById("updated-from");
+        const dtUpdatedTo = document.getElementById("updated-to");
         const usersTbody = document.getElementById("users-tbody");
+        const usersTable = document.getElementById("users-table");
+        const selectAllUsers = document.getElementById("select-all-users");
+        const bulkExportBtn = document.getElementById("bulk-export");
+        const bulkActivateBtn = document.getElementById("bulk-activate");
+        const bulkDeactivateBtn = document.getElementById("bulk-deactivate");
+        const bulkAssignRoleBtn = document.getElementById("bulk-assign-role");
+        const bulkRoleSelect = document.getElementById("bulk-role-select");
+        const dlgReset = document.getElementById("dlg-reset-pass");
+        const formReset = document.getElementById("form-reset-pass");
+        const dlgProfile = document.getElementById("dlg-user-profile");
+        const profileTabsContainer = document.getElementById("profile-tabs");
+        const profilePanelsContainer = document.getElementById("profile-panels");
+        const profileTabButtons = profileTabsContainer
+          ? Array.from(profileTabsContainer.querySelectorAll("[data-tab]"))
+          : [];
+        const profilePanels = profilePanelsContainer
+          ? Array.from(profilePanelsContainer.querySelectorAll(".profile-panel"))
+          : [];
+        const profileOverviewList = document.getElementById("profile-overview-list");
+        const profilePropertiesBody = document.getElementById("profile-properties-body");
+        const profileDocumentsBody = document.getElementById("profile-documents-body");
+        const profileSessionsBody = document.getElementById("profile-sessions-body");
+        const profileAuditBody = document.getElementById("profile-audit-body");
+        const profileTitle = document.getElementById("profile-title");
+        const profileUsername = document.getElementById("profile-username");
+        const btnCloseProfile = document.getElementById("btn-close-profile");
+        const dlgAssign = document.getElementById("dlg-assign-role");
+        const formAssignRole = document.getElementById("form-assign-role");
+        const assignRoleUserInput = document.getElementById("assign-role-user");
+        const assignRoleSelect = document.getElementById("assign-role-select");
+        const assignRoleUserLabel = document.getElementById("assign-role-user-label");
+        const btnCancelAssign = document.getElementById("btn-cancel-assign");
         const NAV_VIEW_MAP = {
           SYS: "system-management-view",
           PRJ: "projects-workspace",
@@ -929,26 +1211,12 @@
           HR: "hr-workspace",
         };
         let bootstrapData = null;
-
-        /* Toasts */
-        const toastContainer = document.getElementById("toast-container");
-        function showToast(message, type = "info", title) {
-          const t = document.createElement("div");
-          t.className = "toast " + type;
-          t.innerHTML =
-            '<div class="toast__title">' +
-            (title || (type === "success" ? "تم بنجاح" : "إشعار")) +
-            '</div><div class="toast__msg">' +
-            message +
-            "</div>";
-          toastContainer.appendChild(t);
-          const hide = () => {
-            t.classList.add("toast--hide");
-            setTimeout(() => t.remove(), 300);
-          };
-          t.addEventListener("click", hide);
-          setTimeout(hide, 3500);
-        }
+        const selectedUsers = new Set();
+        let resetUserId = null;
+        let currentProfileUserId = null;
+        let profileDataCache = null;
+        let roleOptionsCache = null;
+        let normalizedUsersCache = [];
 
         /* Basic nav */
         function updateUserContext(name) {
@@ -1010,6 +1278,12 @@
           if (data?.filters) {
             fillSelect(selDept, data.filters.departments);
             fillSelect(selRole, data.filters.roles);
+            fillSelect(
+              bulkRoleSelect,
+              data.filters.roleOptions || data.filters.roles
+            );
+            bulkRoleSelect.disabled =
+              !((data.filters.roleOptions || data.filters.roles || []).length > 0);
           } else {
             // Try lazy fetch
             if (window.google && google.script && google.script.run) {
@@ -1017,22 +1291,30 @@
                 .withSuccessHandler((f) => {
                   fillSelect(selDept, f?.departments || []);
                   fillSelect(selRole, f?.roles || []);
+                  fillSelect(bulkRoleSelect, f?.roleOptions || f?.roles || []);
+                  bulkRoleSelect.disabled = !((f?.roleOptions || f?.roles || [])?.length);
                 })
                 .getDeptAndRoleFilters();
             }
           }
           fetchKPIs();
           loadUsers(); // prefetch for smoother UX
+          syncBulkActionsState();
         }
         function fillSelect(selectEl, arr) {
           if (!selectEl) return;
           const keepFirst = selectEl.querySelector("option");
           selectEl.innerHTML = keepFirst ? keepFirst.outerHTML : "";
-          (arr || []).forEach((v) => {
-            const o = document.createElement("option");
-            o.value = v;
-            o.textContent = v;
-            selectEl.appendChild(o);
+          (arr || []).forEach((item) => {
+            const option = document.createElement("option");
+            if (item && typeof item === "object") {
+              option.value = item.value ?? item.label ?? "";
+              option.textContent = item.label ?? item.value ?? "";
+            } else {
+              option.value = item;
+              option.textContent = item;
+            }
+            selectEl.appendChild(option);
           });
         }
         function bootstrapApp() {
@@ -1142,10 +1424,14 @@
             .withSuccessHandler((k) => {
               if (!k) return;
               const $ = (id) => document.getElementById(id);
-              $("kpi-users").textContent = k.userCount ?? "—";
-              $("kpi-projects").textContent = k.activeProjects ?? "—";
-              $("kpi-monthly-costs").textContent = k.monthlyCosts ?? "—";
-              $("kpi-monthly-revenue").textContent = k.monthlyRevenue ?? "—";
+              $("kpi-total-users").textContent = k.totalUsers ?? "—";
+              $("kpi-active-users").textContent = k.activeUsers ?? "—";
+              $("kpi-inactive-users").textContent = k.inactiveUsers ?? "—";
+              $("kpi-role-count").textContent = k.roleCount ?? "—";
+              $("kpi-permission-count").textContent =
+                k.permissionCount ?? "—";
+              $("kpi-pending-resets").textContent =
+                k.pendingPasswordResets ?? "—";
             })
             .getSystemKPIs();
         }
@@ -1156,6 +1442,8 @@
             department: selDept.value || "",
             role: selRole.value || "",
             status: selStatus.value || "",
+            updatedFrom: dtUpdatedFrom.value || "",
+            updatedTo: dtUpdatedTo.value || "",
           };
         }
 
@@ -1163,11 +1451,14 @@
         function loadUsers() {
           if (!(window.google && google.script && google.script.run)) {
             usersTbody.innerHTML =
-              '<tr><td colspan="7" class="muted">غير متصل بالخادم.</td></tr>';
+              '<tr><td colspan="11" class="muted">غير متصل بالخادم.</td></tr>';
+            selectedUsers.clear();
+            syncSelectAllState();
+            syncBulkActionsState();
             return;
           }
           usersTbody.innerHTML =
-            '<tr><td colspan="7" class="muted">جاري التحميل…</td></tr>';
+            '<tr><td colspan="11" class="muted">جاري التحميل…</td></tr>';
           // watchdog in case server throws silently
           clearTimeout(usersReqTimer);
           usersReqTimer = setTimeout(() => {
@@ -1175,14 +1466,22 @@
               usersTbody.textContent.includes("جاري التحميل");
             if (stillLoading)
               usersTbody.innerHTML =
-                '<tr><td colspan="7" class="muted">تعذر التحميل.</td></tr>';
+                '<tr><td colspan="11" class="muted">تعذر التحميل.</td></tr>';
+            if (stillLoading) {
+              selectedUsers.clear();
+              syncSelectAllState();
+              syncBulkActionsState();
+            }
           }, 8000);
           google.script.run
             .withFailureHandler((err) => {
               clearTimeout(usersReqTimer);
               usersTbody.innerHTML =
-                '<tr><td colspan="7" class="muted">تعذر التحميل.</td></tr>';
+                '<tr><td colspan="11" class="muted">تعذر التحميل.</td></tr>';
               console.error(err);
+              selectedUsers.clear();
+              syncSelectAllState();
+              syncBulkActionsState();
             })
             .withSuccessHandler((list) => {
               clearTimeout(usersReqTimer);
@@ -1192,61 +1491,102 @@
         }
 
         // تفويض أحداث الجدول
-        document
-          .getElementById("users-table")
-          .addEventListener("click", (e) => {
-            const btn = e.target.closest("button[data-act]");
-            if (!btn) return;
-            const act = btn.dataset.act;
-            const userId = btn.dataset.id;
-            if (!(window.google && google.script && google.script.run)) {
-              showToast("غير متصل بالخادم.", "error");
-              return;
-            }
+        usersTable.addEventListener("click", (e) => {
+          const btn = e.target.closest("button[data-act]");
+          if (!btn) return;
+          const act = btn.dataset.act;
+          const userId = btn.dataset.id;
+          if (!userId) return;
+          if (!(window.google && google.script && google.script.run)) {
+            showToast("غير متصل بالخادم.", "error");
+            return;
+          }
 
-            if (act === "reset") {
-              resetUserId = userId;
-              formReset.reset();
-              dlgReset.showModal();
-            } else if (act === "toggle") {
-              google.script.run
-                .withFailureHandler((err) => {
-                  console.error(err);
-                  showToast("تعذر تغيير حالة الحساب.", "error");
-                })
-                .withSuccessHandler(() => {
-                  showToast("تم تحديث الحالة.", "success");
-                  loadUsers();
-                })
-                .toggleUserActive(userId);
-            } else if (act === "edit") {
-              showToast("نموذج التعديل قادم (placeholder).", "info");
-            } else if (act === "view") {
-              showToast("عرض الملف قادم (placeholder).", "info");
-            } else if (act === "audit") {
-              google.script.run
-                .withFailureHandler((err) => {
-                  console.error(err);
-                  showToast("تعذر عرض السجل.", "error");
-                })
-                .withSuccessHandler((list) => {
-                  alert(
-                    (list || [])
-                      .slice(0, 20)
-                      .map((a) => `${a.timestamp} • ${a.action}`)
-                      .join("\n") || "لا توجد سجلات."
-                  );
-                })
-                .getAuditLog();
-            }
-          });
+          if (act === "reset") {
+            resetUserId = userId;
+            formReset.reset();
+            dlgReset.showModal();
+          } else if (act === "toggle") {
+            google.script.run
+              .withFailureHandler((err) => {
+                console.error(err);
+                showToast("تعذر تغيير حالة الحساب.", "error");
+              })
+              .withSuccessHandler(() => {
+                showToast("تم تحديث الحالة.", "success");
+                loadUsers();
+              })
+              .toggleUserActive(userId);
+          } else if (act === "edit") {
+            openUserEditor(userId);
+          } else if (act === "view") {
+            openUserProfile(userId, "profile");
+          } else if (act === "audit") {
+            openUserProfile(userId, "audit");
+          } else if (act === "assign") {
+            openAssignRoleDialog(userId);
+          } else if (act === "docs") {
+            openUserProfile(userId, "documents");
+          } else if (act === "impersonate") {
+            startImpersonationFlow(userId);
+          } else if (act === "delete") {
+            performSoftDelete(userId);
+          }
+        });
+
+        usersTable.addEventListener("change", (e) => {
+          const checkbox = e.target.closest(".row-select");
+          if (!checkbox) return;
+          const userId = checkbox.dataset.id;
+          if (!userId) return;
+          if (checkbox.checked) {
+            selectedUsers.add(userId);
+          } else {
+            selectedUsers.delete(userId);
+          }
+          syncSelectAllState();
+          syncBulkActionsState();
+        });
+
+        selectAllUsers.addEventListener("change", (e) => {
+          const checked = e.target.checked;
+          usersTbody
+            .querySelectorAll('input.row-select[type="checkbox"]')
+            .forEach((cb) => {
+              cb.checked = checked;
+              const id = cb.dataset.id;
+              if (!id) return;
+              if (checked) {
+                selectedUsers.add(id);
+              } else {
+                selectedUsers.delete(id);
+              }
+            });
+          syncSelectAllState();
+          syncBulkActionsState();
+        });
 
         ["input", "change"].forEach((evt) => {
           txtSearch.addEventListener(evt, loadUsers);
           selDept.addEventListener(evt, loadUsers);
           selRole.addEventListener(evt, loadUsers);
           selStatus.addEventListener(evt, loadUsers);
+          dtUpdatedFrom.addEventListener(evt, loadUsers);
+          dtUpdatedTo.addEventListener(evt, loadUsers);
         });
+
+        if (bulkExportBtn)
+          bulkExportBtn.addEventListener("click", handleBulkExport);
+        if (bulkActivateBtn)
+          bulkActivateBtn.addEventListener("click", () => performBulkStatus(true));
+        if (bulkDeactivateBtn)
+          bulkDeactivateBtn.addEventListener("click", () => performBulkStatus(false));
+        if (bulkAssignRoleBtn)
+          bulkAssignRoleBtn.addEventListener("click", handleBulkAssignRole);
+        if (bulkRoleSelect)
+          bulkRoleSelect.addEventListener("change", () => {
+            syncBulkActionsState();
+          });
 
         // Reset password dialog is already initialized above
         document
@@ -1277,53 +1617,122 @@
             .updateUserPassword(resetUserId, p);
         });
 
+        const DATE_OPTS = {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        };
+
+        function formatDateTime(value) {
+          if (!value) return "—";
+          const date = value instanceof Date ? value : new Date(value);
+          if (Number.isNaN(date.getTime())) return "—";
+          try {
+            return date.toLocaleString("ar-EG", DATE_OPTS);
+          } catch (err) {
+            return date.toISOString();
+          }
+        }
+
+        function escapeHtml(value) {
+          return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        }
+
         function renderUsers(list) {
           usersTbody.innerHTML = "";
           if (!Array.isArray(list) || list.length === 0) {
             usersTbody.innerHTML =
-              '<tr><td colspan="7" class="muted">لا توجد نتائج.</td></tr>';
+              '<tr><td colspan="11" class="muted">لا توجد نتائج.</td></tr>';
+            selectedUsers.clear();
+            syncSelectAllState();
+            syncBulkActionsState();
             return;
           }
-          const norm = (u) => ({
-            id: u.User_Id || u.user_id || u.id,
-            fullName: u.Full_Name || u.fullName || u.name,
-            username: u.Username || u.username,
-            email: u.Email || u.email,
-            department: u.Department || u.department,
-            role: u.Role_Id || u.role || u.Role,
-            isActive:
-              u.IsActive === true ||
-              String(u.IsActive).toLowerCase() === "true" ||
-              u.isActive === true,
-          });
+          const toDate = (value) => {
+            if (!value) return null;
+            if (value instanceof Date) return value;
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+          };
+          const norm = (u) => {
+            const id = u?.User_Id ?? u?.user_id ?? u?.id ?? "";
+            const normalizedId = id != null ? String(id) : "";
+            return {
+              userId: normalizedId,
+              fullName: u?.Full_Name ?? u?.fullName ?? u?.name ?? "",
+              username: u?.Username ?? u?.username ?? "",
+              email: u?.Email ?? u?.email ?? "",
+              department: u?.Department ?? u?.department ?? "",
+              role: u?.Role_Id ?? u?.role ?? u?.Role ?? "",
+              isActive:
+                u?.IsActive === true ||
+                String(u?.IsActive).toLowerCase() === "true" ||
+                u?.isActive === true,
+              lastLogin: toDate(u?.Last_Login ?? u?.lastLogin),
+              updatedAt: toDate(u?.Updated_At ?? u?.updatedAt),
+            };
+          };
+          const normalized = list.map(norm);
+          normalizedUsersCache = normalized;
           const frag = document.createDocumentFragment();
-          list.map(norm).forEach((u) => {
+          const visibleIds = new Set();
+          normalized.forEach((u) => {
+            if (u.userId) visibleIds.add(u.userId);
             const tr = document.createElement("tr");
+            const checked = u.userId && selectedUsers.has(u.userId);
             tr.innerHTML = `
-              <td>${u.fullName || ""}</td>
-              <td>${u.username || ""}</td>
-              <td>${u.email || ""}</td>
-              <td>${u.department || ""}</td>
-              <td>${u.role || ""}</td>
+              <td class="select-cell">
+                <input type="checkbox" class="row-select" data-id="${
+                  escapeHtml(u.userId)
+                }" ${checked ? "checked" : ""} ${
+              u.userId ? "" : "disabled"
+            } />
+              </td>
+              <td>${escapeHtml(u.userId)}</td>
+              <td>${escapeHtml(u.fullName)}</td>
+              <td>${escapeHtml(u.username)}</td>
+              <td>${escapeHtml(u.email)}</td>
+              <td>${escapeHtml(u.department)}</td>
+              <td>${escapeHtml(u.role)}</td>
               <td>${
                 u.isActive
                   ? '<span class="badge badge--ok">نشط</span>'
                   : '<span class="badge badge--no">غير نشط</span>'
               }</td>
+              <td>${formatDateTime(u.lastLogin)}</td>
+              <td>${formatDateTime(u.updatedAt)}</td>
               <td>
                 <div class="icon-row">
-                  <button class="icon-btn" data-act="edit"   data-id="${
-                    u.id
+                  <button class="icon-btn" data-act="view" data-id="${
+                    escapeHtml(u.userId)
+                  }" title="عرض الملف" aria-label="عرض الملف">
+                    <svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <button class="icon-btn" data-act="edit" data-id="${
+                    escapeHtml(u.userId)
                   }" title="تعديل" aria-label="تعديل">
                     <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 4l2 2"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="reset"  data-id="${
-                    u.id
+                  <button class="icon-btn" data-act="assign" data-id="${
+                    escapeHtml(u.userId)
+                  }" title="تعيين دور" aria-label="تعيين دور">
+                    <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M4 20v-1a5 5 0 0 1 10 0v1"/><path d="M16 11v6"/><path d="M19 14h-6"/></svg>
+                  </button>
+                  <button class="icon-btn" data-act="reset" data-id="${
+                    escapeHtml(u.userId)
                   }" title="إعادة كلمة المرور" aria-label="إعادة كلمة المرور">
                     <svg viewBox="0 0 24 24"><path d="M12 11v6"/><path d="M9 14h6"/><path d="M6 11V8a6 6 0 1 1 12 0v3"/></svg>
                   </button>
                   <button class="icon-btn" data-act="toggle" data-id="${
-                    u.id
+                    escapeHtml(u.userId)
                   }" title="${
               u.isActive ? "تعطيل" : "تفعيل"
             }" aria-label="تفعيل/تعطيل">
@@ -1333,16 +1742,190 @@
                         : '<path d="M5 12h14"/><path d="M12 5v14"/>'
                     }</svg>
                   </button>
-                  <button class="icon-btn" data-act="audit"  data-id="${
-                    u.id
+                  <button class="icon-btn" data-act="docs" data-id="${
+                    escapeHtml(u.userId)
+                  }" title="مستندات" aria-label="مستندات">
+                    <svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6"/><path d="M10 17h6"/></svg>
+                  </button>
+                  <button class="icon-btn" data-act="impersonate" data-id="${
+                    escapeHtml(u.userId)
+                  }" title="انتحال" aria-label="انتحال">
+                    <svg viewBox="0 0 24 24"><path d="M3 12c2-4 6-6 9-6s7 2 9 6c-2 4-6 6-9 6s-7-2-9-6z"/><path d="M9 12h.01"/><path d="M15 12h.01"/><path d="M9 15c1 .8 2 .8 3 0 1 .8 2 .8 3 0"/></svg>
+                  </button>
+                  <button class="icon-btn" data-act="delete" data-id="${
+                    escapeHtml(u.userId)
+                  }" title="حذف رمزي" aria-label="حذف رمزي">
+                    <svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M10 7V5h4v2"/><path d="M8 7l1 12h6l1-12"/></svg>
+                  </button>
+                  <button class="icon-btn" data-act="audit" data-id="${
+                    escapeHtml(u.userId)
                   }" title="سجل التدقيق" aria-label="سجل التدقيق">
                     <svg viewBox="0 0 24 24"><path d="M7 3h10v4H7z"/><path d="M5 7h14v14H5z"/><path d="M9 11h6M9 15h6"/></svg>
                   </button>
                 </div>
               </td>`;
             frag.appendChild(tr);
+            const checkboxEl = tr.querySelector("input.row-select");
+            if (checkboxEl) {
+              if (u.userId) {
+                checkboxEl.dataset.id = u.userId;
+                checkboxEl.checked = !!checked;
+              } else {
+                checkboxEl.disabled = true;
+                checkboxEl.removeAttribute("data-id");
+              }
+            }
+            tr.querySelectorAll(".icon-btn").forEach((btn) => {
+              if (u.userId) {
+                btn.dataset.id = u.userId;
+              } else {
+                btn.removeAttribute("data-id");
+              }
+            });
           });
           usersTbody.appendChild(frag);
+          Array.from(selectedUsers).forEach((id) => {
+            if (!visibleIds.has(id)) {
+              selectedUsers.delete(id);
+            }
+          });
+          syncSelectAllState();
+          syncBulkActionsState();
+        }
+
+        function syncSelectAllState() {
+          if (!selectAllUsers) return;
+          const checkboxes = Array.from(
+            usersTbody.querySelectorAll('input.row-select[type="checkbox"]')
+          ).filter((cb) => !cb.disabled);
+          if (checkboxes.length === 0) {
+            selectAllUsers.checked = false;
+            selectAllUsers.indeterminate = false;
+            return;
+          }
+          const checkedCount = checkboxes.filter((cb) => cb.checked).length;
+          selectAllUsers.checked = checkedCount === checkboxes.length;
+          selectAllUsers.indeterminate =
+            checkedCount > 0 && checkedCount < checkboxes.length;
+        }
+
+        function syncBulkActionsState() {
+          const hasSelection = selectedUsers.size > 0;
+          if (bulkExportBtn) bulkExportBtn.disabled = !hasSelection;
+          if (bulkActivateBtn) bulkActivateBtn.disabled = !hasSelection;
+          if (bulkDeactivateBtn) bulkDeactivateBtn.disabled = !hasSelection;
+          if (bulkAssignRoleBtn)
+            bulkAssignRoleBtn.disabled =
+              !hasSelection || !bulkRoleSelect || !bulkRoleSelect.value;
+        }
+
+        function ensureSelection() {
+          if (selectedUsers.size === 0) {
+            showToast("الرجاء اختيار مستخدم واحد على الأقل.", "info");
+            return false;
+          }
+          return true;
+        }
+
+        function performBulkStatus(makeActive) {
+          if (!ensureSelection()) return;
+          if (!(window.google && google.script && google.script.run)) {
+            showToast("غير متصل بالخادم.", "error");
+            return;
+          }
+          const ids = Array.from(selectedUsers);
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذر تحديث الحالة للمستخدمين المحددين.", "error");
+            })
+            .withSuccessHandler((res) => {
+              const count = res?.updated ?? ids.length;
+              showToast(
+                "تم تحديث حالة " + count + " مستخدم.",
+                "success",
+                "تم التحديث"
+              );
+              selectedUsers.clear();
+              loadUsers();
+            })
+            .bulkUpdateUserStatus(ids, makeActive);
+        }
+
+        function handleBulkAssignRole() {
+          if (!bulkRoleSelect || !bulkRoleSelect.value) {
+            showToast("يرجى اختيار دور للتعيين.", "info");
+            return;
+          }
+          if (!ensureSelection()) return;
+          if (!(window.google && google.script && google.script.run)) {
+            showToast("غير متصل بالخادم.", "error");
+            return;
+          }
+          const ids = Array.from(selectedUsers);
+          const roleId = bulkRoleSelect.value;
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذر تعيين الدور للمستخدمين المحددين.", "error");
+            })
+            .withSuccessHandler((res) => {
+              const count = res?.updated ?? ids.length;
+              showToast(
+                "تم تعيين الدور لـ " + count + " مستخدم.",
+                "success",
+                "تم التعيين"
+              );
+              selectedUsers.clear();
+              loadUsers();
+            })
+            .bulkAssignRole(ids, roleId);
+        }
+
+        function triggerExportDownload(payload) {
+          if (!payload || !payload.content) {
+            showToast("لا توجد بيانات للتصدير.", "info");
+            return;
+          }
+          try {
+            const blob = new Blob([payload.content], {
+              type: payload.mimeType || "text/csv",
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = payload.filename || "users_export.csv";
+            document.body.appendChild(a);
+            a.click();
+            requestAnimationFrame(() => {
+              URL.revokeObjectURL(url);
+              a.remove();
+            });
+          } catch (err) {
+            console.error(err);
+            showToast("تعذر تنزيل ملف التصدير.", "error");
+          }
+        }
+
+        function handleBulkExport() {
+          if (!ensureSelection()) return;
+          if (!(window.google && google.script && google.script.run)) {
+            showToast("غير متصل بالخادم.", "error");
+            return;
+          }
+          const filters = Object.assign({}, currentFilters(), {
+            userIds: Array.from(selectedUsers),
+          });
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذر تجهيز ملف التصدير.", "error");
+            })
+            .withSuccessHandler((payload) => {
+              triggerExportDownload(payload);
+              showToast("تم تجهيز ملف التصدير.", "success");
+            })
+            .exportUsers(filters, "csv");
         }
 
         /* ---------- Create New User ---------- */
@@ -1625,185 +2208,6 @@
           }
         }
 
-        // تفويض أحداث الجدول (تعديل/إعادة كلمة المرور/تفعيل)
-        document
-          .getElementById("users-table")
-          .addEventListener("click", (e) => {
-            const btn = e.target.closest("button[data-act]");
-            if (!btn) return;
-            const act = btn.dataset.act;
-            const userId = btn.dataset.id;
-            if (!(window.google && google.script && google.script.run)) {
-              showToast("غير متصل بالخادم.", "error");
-              return;
-            }
-
-            if (act === "reset") {
-              resetUserId = userId;
-              formReset.reset();
-              dlgReset.showModal();
-            } else if (act === "toggle") {
-              google.script.run
-                .withFailureHandler((err) => {
-                  console.error(err);
-                  showToast("تعذر تغيير حالة الحساب.", "error");
-                })
-                .withSuccessHandler(() => {
-                  showToast("تم تحديث الحالة.", "success");
-                  loadUsers();
-                })
-                .toggleUserActive(userId);
-            } else if (act === "edit") {
-              currentEditId = userId;
-              // Prefer dynamic structure, pre-fill. Fallback to minimal
-              google.script.run
-                .withFailureHandler((err) => {
-                  console.error(err);
-                })
-                .withSuccessHandler((userObj) => {
-                  if (!userObj) {
-                    showToast("تعذر جلب بيانات المستخدم.", "error");
-                    return;
-                  }
-                  google.script.run
-                    .withSuccessHandler((fields) => {
-                      if (Array.isArray(fields) && fields.length) {
-                        renderDynamicUserForm(fields, userObj);
-                      } else {
-                        buildMinimalUserForm(userObj);
-                      }
-                      dlgNew.showModal();
-                    })
-                    .getFormWithOptions("FORM_SYS_AddUser");
-                })
-                .getUserById(userId);
-            } else if (act === "view") {
-              showToast("عرض الملف قادم (placeholder).", "info");
-            } else if (act === "audit") {
-              google.script.run
-                .withFailureHandler((err) => {
-                  console.error(err);
-                  showToast("تعذر عرض السجل.", "error");
-                })
-                .withSuccessHandler((list) => {
-                  alert(
-                    (list || [])
-                      .slice(0, 20)
-                      .map((a) => `${a.timestamp} • ${a.action}`)
-                      .join("\n") || "لا توجد سجلات."
-                  );
-                })
-                .getAuditLog();
-            }
-          });
-
-        // استماع للفلاتر
-        ["input", "change"].forEach((evt) => {
-          txtSearch.addEventListener(evt, loadUsers);
-          selDept.addEventListener(evt, loadUsers);
-          selRole.addEventListener(evt, loadUsers);
-          selStatus.addEventListener(evt, loadUsers);
-        });
-
-        const dlgReset = document.getElementById("dlg-reset-pass");
-        const formReset = document.getElementById("form-reset-pass");
-        let resetUserId = null;
-        document
-          .getElementById("btn-cancel-reset")
-          .addEventListener("click", () => dlgReset.close());
-        formReset.addEventListener("submit", (e) => {
-          e.preventDefault();
-          const fd = new FormData(formReset);
-          const p = fd.get("password") || "",
-            c = fd.get("confirm") || "";
-          if (p !== c) {
-            showToast("التأكيد غير مطابق.", "error");
-            return;
-          }
-          if (!(window.google && google.script && google.script.run)) {
-            showToast("غير متصل بالخادم.", "error");
-            return;
-          }
-          google.script.run
-            .withFailureHandler((err) => {
-              console.error(err);
-              showToast("تعذّر إعادة كلمة المرور.", "error");
-            })
-            .withSuccessHandler(() => {
-              showToast("تم تحديث كلمة المرور (مشفّرة).", "success");
-              dlgReset.close();
-            })
-            .updateUserPassword(resetUserId, p);
-        });
-
-        function renderUsers(list) {
-          usersTbody.innerHTML = "";
-          if (!Array.isArray(list) || list.length === 0) {
-            usersTbody.innerHTML =
-              '<tr><td colspan="7" class="muted">لا توجد نتائج.</td></tr>';
-            return;
-          }
-          const norm = (u) => ({
-            id: u.User_Id || u.user_id || u.id,
-            fullName: u.Full_Name || u.fullName || u.name,
-            username: u.Username || u.username,
-            email: u.Email || u.email,
-            department: u.Department || u.department,
-            role: u.Role_Id || u.role || u.Role,
-            isActive:
-              u.IsActive === true ||
-              String(u.IsActive).toLowerCase() === "true" ||
-              u.isActive === true,
-          });
-          const frag = document.createDocumentFragment();
-          list.map(norm).forEach((u) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${u.fullName || ""}</td>
-              <td>${u.username || ""}</td>
-              <td>${u.email || ""}</td>
-              <td>${u.department || ""}</td>
-              <td>${u.role || ""}</td>
-              <td>${
-                u.isActive
-                  ? '<span class="badge badge--ok">نشط</span>'
-                  : '<span class="badge badge--no">غير نشط</span>'
-              }</td>
-              <td>
-                <div class="icon-row">
-                  <button class="icon-btn" data-act="edit"   data-id="${
-                    u.id
-                  }" title="تعديل" aria-label="تعديل">
-                    <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 4l2 2"/></svg>
-                  </button>
-                  <button class="icon-btn" data-act="reset"  data-id="${
-                    u.id
-                  }" title="إعادة كلمة المرور" aria-label="إعادة كلمة المرور">
-                    <svg viewBox="0 0 24 24"><path d="M12 11v6"/><path d="M9 14h6"/><path d="M6 11V8a6 6 0 1 1 12 0v3"/></svg>
-                  </button>
-                  <button class="icon-btn" data-act="toggle" data-id="${
-                    u.id
-                  }" title="${
-              u.isActive ? "تعطيل" : "تفعيل"
-            }" aria-label="تفعيل/تعطيل">
-                    <svg viewBox="0 0 24 24">${
-                      u.isActive
-                        ? '<path d="M18 6L6 18"/><path d="M6 6l12 12"/>'
-                        : '<path d="M5 12h14"/><path d="M12 5v14"/>'
-                    }</svg>
-                  </button>
-                  <button class="icon-btn" data-act="audit"  data-id="${
-                    u.id
-                  }" title="سجل التدقيق" aria-label="سجل التدقيق">
-                    <svg viewBox="0 0 24 24"><path d="M7 3h10v4H7z"/><path d="M5 7h14v14H5z"/><path d="M9 11h6M9 15h6"/></svg>
-                  </button>
-                </div>
-              </td>`;
-            frag.appendChild(tr);
-          });
-          usersTbody.appendChild(frag);
-        }
-
         // إرسال النموذج (يخدم الإنشاء والتعديل)
         document
           .getElementById("new-user-form")
@@ -1854,6 +2258,372 @@
                 .createUser(payload);
             }
           });
+
+        function openUserEditor(userId) {
+          currentEditId = userId;
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذر تحميل بيانات المستخدم.", "error");
+            })
+            .withSuccessHandler((user) => {
+              if (!user) {
+                showToast("لم يتم العثور على المستخدم.", "error");
+                return;
+              }
+              const handleForm = (fields) => {
+                if (Array.isArray(fields) && fields.length) {
+                  renderDynamicUserForm(fields, user);
+                } else {
+                  buildMinimalUserForm(user);
+                }
+                dlgNew.showModal();
+              };
+              google.script.run
+                .withFailureHandler((err2) => {
+                  console.error(err2);
+                  buildMinimalUserForm(user);
+                  dlgNew.showModal();
+                })
+                .withSuccessHandler(handleForm)
+                .getFormWithOptions("FORM_SYS_EditUser");
+            })
+            .getUserById(userId);
+        }
+
+        function ensureRoleOptionsLoaded(callback) {
+          const bootstrapRoles = (() => {
+            if (bootstrapData?.filters?.roleOptions?.length) {
+              return bootstrapData.filters.roleOptions;
+            }
+            if (bootstrapData?.filters?.roles?.length) {
+              return bootstrapData.filters.roles.map((value) => ({
+                value,
+                label: value,
+              }));
+            }
+            return [];
+          })();
+          const cached =
+            (roleOptionsCache && roleOptionsCache.length
+              ? roleOptionsCache
+              : bootstrapRoles) || [];
+          if (cached.length) {
+            roleOptionsCache = cached;
+            callback(roleOptionsCache);
+            return;
+          }
+          if (!(window.google && google.script && google.script.run)) {
+            callback([]);
+            return;
+          }
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              callback([]);
+            })
+            .withSuccessHandler((options) => {
+              roleOptionsCache = Array.isArray(options) ? options : [];
+              callback(roleOptionsCache);
+            })
+            .getRoleOptions();
+        }
+
+        function describeUserForLabel(userId) {
+          const match = normalizedUsersCache.find((u) => u.userId === userId);
+          if (!match) return userId;
+          const pieces = [];
+          if (match.fullName) pieces.push(match.fullName);
+          if (match.username) pieces.push(`(${match.username})`);
+          const joined = pieces.join(" ").trim();
+          return joined || userId;
+        }
+
+        function openAssignRoleDialog(userId) {
+          assignRoleUserInput.value = userId;
+          assignRoleUserLabel.textContent = `المستخدم: ${describeUserForLabel(
+            userId
+          )}`;
+          ensureRoleOptionsLoaded((options) => {
+            assignRoleSelect.innerHTML = '<option value="">اختر دورًا</option>';
+            fillSelect(assignRoleSelect, options);
+            const match = normalizedUsersCache.find((u) => u.userId === userId);
+            if (match?.role) {
+              assignRoleSelect.value = match.role;
+            }
+            dlgAssign.showModal();
+          });
+        }
+
+        function setProfileTab(tabName = "profile") {
+          profileTabButtons.forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.tab === tabName);
+          });
+          profilePanels.forEach((panel) => {
+            panel.classList.toggle("active", panel.dataset.tab === tabName);
+          });
+        }
+
+        profileTabButtons.forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const tab = btn.dataset.tab || "profile";
+            setProfileTab(tab);
+          });
+        });
+
+        if (btnCloseProfile)
+          btnCloseProfile.addEventListener("click", () => dlgProfile.close());
+        if (btnCancelAssign)
+          btnCancelAssign.addEventListener("click", () => dlgAssign.close());
+        if (dlgProfile)
+          dlgProfile.addEventListener("close", () => {
+            currentProfileUserId = null;
+            profileDataCache = null;
+          });
+
+        if (formAssignRole)
+          formAssignRole.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const userId = assignRoleUserInput.value;
+            const roleId = assignRoleSelect.value;
+            if (!userId || !roleId) {
+              showToast("يرجى اختيار الدور.", "info");
+              return;
+            }
+            google.script.run
+              .withFailureHandler((err) => {
+                console.error(err);
+                showToast("تعذر تعيين الدور للمستخدم المحدد.", "error");
+              })
+              .withSuccessHandler(() => {
+                showToast("تم تعيين الدور بنجاح.", "success");
+                dlgAssign.close();
+                loadUsers();
+              })
+              .assignUserRole(userId, roleId);
+          });
+
+        function renderDefinitionList(listEl, rows) {
+          if (!listEl) return;
+          listEl.innerHTML = "";
+          rows
+            .filter((row) => row && row.label)
+            .forEach((row) => {
+              const dt = document.createElement("dt");
+              dt.textContent = row.label;
+              const dd = document.createElement("dd");
+              dd.textContent = row.value ?? "—";
+              listEl.appendChild(dt);
+              listEl.appendChild(dd);
+            });
+        }
+
+        function renderTableRows(bodyEl, rows, renderRow) {
+          if (!bodyEl) return;
+          bodyEl.innerHTML = "";
+          if (!rows || !rows.length) {
+            const empty = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = bodyEl.parentElement
+              ? bodyEl.parentElement.querySelectorAll("thead th").length || 1
+              : 1;
+            td.className = "profile-empty";
+            td.textContent = "لا توجد بيانات";
+            empty.appendChild(td);
+            bodyEl.appendChild(empty);
+            return;
+          }
+          rows.forEach((row) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = renderRow(row);
+            bodyEl.appendChild(tr);
+          });
+        }
+
+        function normalizeBool(val) {
+          if (val === true) return true;
+          if (val === false) return false;
+          const str = String(val || "").toLowerCase();
+          return (
+            str === "true" ||
+            str === "yes" ||
+            str === "نشط" ||
+            str === "1" ||
+            str === "enabled" ||
+            str === "مفعل" ||
+            str === "مُفعّل" ||
+            str === "active"
+          );
+        }
+
+        function parseDetails(details) {
+          if (!details) return "";
+          if (typeof details === "string") {
+            try {
+              const parsed = JSON.parse(details);
+              if (parsed && typeof parsed === "object") {
+                return JSON.stringify(parsed, null, 2);
+              }
+            } catch (err) {
+              return details;
+            }
+            return details;
+          }
+          if (typeof details === "object") {
+            try {
+              return JSON.stringify(details, null, 2);
+            } catch (err) {
+              return String(details);
+            }
+          }
+          return String(details);
+        }
+
+        function renderUserProfileDialog(payload, defaultTab = "profile") {
+          if (!payload) return;
+          const user = payload.user || {};
+          profileTitle.textContent =
+            user.Full_Name || user.Username || user.User_Id || "مستخدم";
+          profileUsername.textContent = user.Username ? `@${user.Username}` : "";
+          renderDefinitionList(profileOverviewList, [
+            { label: "الاسم الكامل", value: user.Full_Name || "—" },
+            { label: "اسم المستخدم", value: user.Username || "—" },
+            { label: "البريد الإلكتروني", value: user.Email || "—" },
+            { label: "القسم", value: user.Department || "—" },
+            { label: "الدور", value: user.Role_Id || "—" },
+            {
+              label: "نشط؟",
+              value: normalizeBool(user.IsActive) ? "نعم" : "لا",
+            },
+            {
+              label: "تفعيل MFA",
+              value: normalizeBool(user.MFA_Enabled) ? "مُفعّل" : "غير مُفعّل",
+            },
+            {
+              label: "آخر تسجيل دخول",
+              value: formatDateTime(user.Last_Login || user.lastLogin),
+            },
+            {
+              label: "تاريخ الإنشاء",
+              value: formatDateTime(user.Created_At || user.createdAt),
+            },
+            {
+              label: "آخر تحديث",
+              value: formatDateTime(user.Updated_At || user.updatedAt),
+            },
+            { label: "ملاحظات", value: user.Notes || "—" },
+          ]);
+
+          renderTableRows(profilePropertiesBody, payload.properties, (row) => {
+            return `
+              <td>${escapeHtml(row.key || "")}</td>
+              <td>${escapeHtml(row.value || "")}</td>
+              <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
+              <td>${escapeHtml(row.updatedBy || "")}</td>
+            `;
+          });
+
+          renderTableRows(profileDocumentsBody, payload.documents, (row) => {
+            const label = row.label || row.fileName || "—";
+            const link = row.url
+              ? `<a class="profile-doc-link" href="${escapeHtml(
+                  row.url
+                )}" target="_blank" rel="noopener">فتح</a>`
+              : "—";
+            return `
+              <td>${escapeHtml(label)}</td>
+              <td>${escapeHtml(row.uploadedBy || "")}</td>
+              <td>${escapeHtml(formatDateTime(row.createdAt))}</td>
+              <td>${link}</td>
+            `;
+          });
+
+          renderTableRows(profileSessionsBody, payload.sessions, (row) => {
+            return `
+              <td>${escapeHtml(row.sessionId || "")}</td>
+              <td>${escapeHtml(row.actor || "")}</td>
+              <td>${escapeHtml(row.type || "")}</td>
+              <td>${escapeHtml(row.status || "")}</td>
+              <td>${escapeHtml(formatDateTime(row.startedAt))}</td>
+              <td>${escapeHtml(formatDateTime(row.endedAt))}</td>
+            `;
+          });
+
+          renderTableRows(profileAuditBody, payload.audit, (row) => {
+            return `
+              <td>${escapeHtml(formatDateTime(row.timestamp))}</td>
+              <td>${escapeHtml(row.actor || "")}</td>
+              <td>${escapeHtml(row.action || "")}</td>
+              <td><pre style="white-space:pre-wrap;margin:0;">${escapeHtml(
+                parseDetails(row.details)
+              )}</pre></td>
+            `;
+          });
+
+          setProfileTab(defaultTab);
+          dlgProfile.showModal();
+        }
+
+        function openUserProfile(userId, tabName = "profile") {
+          currentProfileUserId = userId;
+          profileDataCache = null;
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذر تحميل ملف المستخدم.", "error");
+            })
+            .withSuccessHandler((payload) => {
+              if (!payload || !payload.user) {
+                showToast("لم يتم العثور على المستخدم.", "error");
+                return;
+              }
+              profileDataCache = payload;
+              renderUserProfileDialog(payload, tabName);
+            })
+            .getUserProfile(userId);
+        }
+
+        function startImpersonationFlow(userId) {
+          if (!userId) return;
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذر بدء جلسة الانتحال.", "error");
+            })
+            .withSuccessHandler((res) => {
+              const sessionId = res?.sessionId || "";
+              showToast(
+                sessionId
+                  ? `تم بدء جلسة انتحال (${sessionId}).`
+                  : "تم تسجيل الانتحال.",
+                "success"
+              );
+              if (currentProfileUserId === userId && profileDataCache) {
+                openUserProfile(userId, "sessions");
+              }
+            })
+            .startImpersonation(userId);
+        }
+
+        function performSoftDelete(userId) {
+          const confirmed = confirm("هل أنت متأكد من تنفيذ حذف رمزي؟");
+          if (!confirmed) return;
+          const reason =
+            prompt("أدخل سبب الحذف الرمزي (اختياري):", "") || "";
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذر حذف المستخدم.", "error");
+            })
+            .withSuccessHandler(() => {
+              showToast("تم تعطيل المستخدم ووضع علامة الحذف.", "success");
+              loadUsers();
+              if (currentProfileUserId === userId && profileDataCache) {
+                openUserProfile(userId, "profile");
+              }
+            })
+            .softDeleteUser(userId, reason);
+        }
 
         /* Welcome label shows Full_Name (Username) when available */
         function updateUserContext(nameOrObj) {
