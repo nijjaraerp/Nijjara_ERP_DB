@@ -771,28 +771,44 @@
         background: #191919;
         color: var(--color-text-primary);
         padding: 1rem 1.2rem;
-        max-width: 640px;
-        width: 92vw;
+        max-width: 860px;
+        width: 95vw;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
       }
       dialog::backdrop {
         background: rgba(0, 0, 0, 0.55);
         backdrop-filter: blur(2px);
       }
-      dialog .form-grid {
+      dialog form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        flex: 1;
+        min-height: 0;
+      }
+      dialog .dialog-body {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 0.2rem;
+      }
+      dialog .dialog-body .form-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 0.8rem;
         direction: rtl;
       }
-      dialog .form-grid label {
+      dialog .dialog-body label {
         display: block;
         margin-bottom: 0.25rem;
         font-size: 0.9rem;
         color: var(--color-text-secondary);
       }
-      dialog .form-grid input,
-      dialog .form-grid select,
-      dialog .form-grid textarea {
+      dialog .dialog-body input,
+      dialog .dialog-body select,
+      dialog .dialog-body textarea {
         width: 100%;
         padding: 0.55rem 0.7rem;
         border: 1px solid var(--color-border);
@@ -800,69 +816,89 @@
         background: rgba(0, 0, 0, 0.25);
         color: var(--color-text-primary);
       }
-      dialog .form-grid .span-2 {
-        grid-column: 1 / span 2;
+      dialog .dialog-body .span-2 {
+        grid-column: 1 / -1;
       }
       dialog .actions {
         display: flex;
         gap: 0.6rem;
         justify-content: flex-start;
-        margin-top: 1rem;
+        margin-top: 0.5rem;
       }
 
       /* dynamic form layout */
       .dyn-layout {
-        display: flex;
+        display: grid;
+        grid-template-columns: 240px 1fr;
         gap: 1rem;
         align-items: stretch;
         width: 100%;
+        min-height: 320px;
       }
       .dyn-tabs {
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        width: 220px;
         padding: 0.75rem;
         border: 1px solid var(--color-border);
         border-radius: 12px;
-        background: rgba(0, 0, 0, 0.25);
+        background: rgba(0, 0, 0, 0.2);
+        overflow-y: auto;
       }
       .dyn-tabs .nav-item {
         width: 100%;
         text-align: right;
         padding: 0.55rem 0.8rem;
-        border-color: var(--color-border);
-        background: rgba(0, 0, 0, 0.12);
+        border-color: transparent;
+        background: transparent;
         color: var(--color-text-secondary);
+        border-radius: 10px;
+        font-weight: 600;
       }
       .dyn-tabs .nav-item.active {
-        background: var(--theme-accent);
+        background: linear-gradient(
+          135deg,
+          rgba(212, 175, 55, 0.3),
+          rgba(212, 175, 55, 0.12)
+        );
         border-color: var(--theme-accent);
-        color: #111;
+        color: var(--color-text-primary);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25) inset,
+          0 0 0 1px rgba(212, 175, 55, 0.25);
+      }
+      .dyn-tabs .nav-item:focus-visible {
+        outline: 2px solid var(--theme-accent);
+        outline-offset: 2px;
       }
       .dyn-pages {
-        flex: 1;
-        min-width: 0;
         border: 1px solid var(--color-border);
         border-radius: 12px;
         background: rgba(0, 0, 0, 0.25);
         padding: 1rem;
-        overflow-y: auto;
+        overflow: hidden;
+        position: relative;
       }
-      @media (max-width: 768px) {
+      .dyn-pages .dyn-page {
+        max-height: calc(75vh - 160px);
+        overflow-y: auto;
+        padding-inline-end: 0.5rem;
+      }
+      .dyn-pages .dyn-page.hidden {
+        display: none !important;
+      }
+      @media (max-width: 900px) {
         .dyn-layout {
-          flex-direction: column;
+          grid-template-columns: 1fr;
         }
         .dyn-tabs {
           flex-direction: row;
-          width: 100%;
+          justify-content: flex-start;
           overflow-x: auto;
+          padding: 0.5rem;
         }
         .dyn-tabs .nav-item {
-          flex: 1 0 140px;
-        }
-        .dyn-pages {
-          width: 100%;
+          flex: 0 0 auto;
+          min-width: 140px;
         }
       }
     </style>
@@ -1361,7 +1397,7 @@
     <dialog id="dlg-new-user">
       <h3 style="margin-bottom: 0.6rem">إنشاء مستخدم جديد</h3>
       <form method="dialog" id="new-user-form">
-        <div id="new-user-fields" class="form-grid"></div>
+        <div id="new-user-fields" class="dialog-body"></div>
         <div class="actions">
           <button type="submit" class="action-button save-button">حفظ</button>
           <button type="button" id="btn-cancel-new" class="action-button cancel-button">
@@ -2674,6 +2710,7 @@
 
         function renderDynamicUserForm(fields, initialData = null) {
           const host = document.getElementById("new-user-fields");
+          host.classList.add("dialog-body");
           host.innerHTML = "";
           const layout = document.createElement("div");
           layout.className = "dyn-layout";
@@ -2701,7 +2738,7 @@
             const safeKey = String(tabKey || "tab")
               .replace(/[^a-zA-Z0-9_-]+/g, "_")
               .toLowerCase();
-            page.className = "form-grid hidden";
+            page.className = "form-grid dyn-page hidden";
             page.id = `dyn-tab-${index}-${safeKey}`;
             page.setAttribute("role", "tabpanel");
             page.setAttribute("aria-hidden", "true");
@@ -2854,6 +2891,7 @@
 
         function buildMinimalUserForm(initialData = null) {
           fieldsHost.innerHTML = "";
+          fieldsHost.classList.add("dialog-body");
           const grid = document.createElement("div");
           grid.className = "form-grid";
           const isEdit = !!initialData;
