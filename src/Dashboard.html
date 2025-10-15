@@ -380,11 +380,25 @@
         color: var(--theme-accent);
       }
 
+      .sys-overview {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .sys-overview__summary {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .sys-overview__directory {
+        display: flex;
+        flex-direction: column;
+      }
       .overview-cards {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 0.8rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0;
       }
       .overview-card {
         border: 1px solid var(--color-border);
@@ -1031,88 +1045,95 @@
         </header>
 
         <section class="workspace-content">
-          <!-- نظرة عامة: KPIs فقط -->
-          <div id="sys-overview-pane">
-            <div class="overview-cards">
-              <div class="overview-card">
-                <div class="muted">إجمالي المستخدمين</div>
-                <div id="kpi-total-users" class="kpi-value">—</div>
+          <!-- نظرة عامة: KPIs + دليل المستخدمين -->
+          <div id="sys-overview-pane" class="sys-overview">
+            <section class="sys-overview__summary">
+              <div class="overview-cards">
+                <div class="overview-card">
+                  <div class="muted">إجمالي المستخدمين</div>
+                  <div id="kpi-total-users" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">المستخدمون النشطون</div>
+                  <div id="kpi-active-users" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">المستخدمون المعطلون</div>
+                  <div id="kpi-inactive-users" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">عدد الأدوار</div>
+                  <div id="kpi-role-count" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">عدد الأذونات</div>
+                  <div id="kpi-permission-count" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">طلبات إعادة التعيين</div>
+                  <div id="kpi-pending-resets" class="kpi-value">—</div>
+                </div>
               </div>
-              <div class="overview-card">
-                <div class="muted">المستخدمون النشطون</div>
-                <div id="kpi-active-users" class="kpi-value">—</div>
-              </div>
-              <div class="overview-card">
-                <div class="muted">المستخدمون المعطلون</div>
-                <div id="kpi-inactive-users" class="kpi-value">—</div>
-              </div>
-              <div class="overview-card">
-                <div class="muted">عدد الأدوار</div>
-                <div id="kpi-role-count" class="kpi-value">—</div>
-              </div>
-              <div class="overview-card">
-                <div class="muted">عدد الأذونات</div>
-                <div id="kpi-permission-count" class="kpi-value">—</div>
-              </div>
-              <div class="overview-card">
-                <div class="muted">طلبات إعادة التعيين</div>
-                <div id="kpi-pending-resets" class="kpi-value">—</div>
-              </div>
-            </div>
-            <p class="muted">
-              لوحة موجزة لقياسات النظام. يتم جلبها من ‎SYS_Profile_View‎ إن
-              وُجدت.
-            </p>
-          </div>
-
-          <!-- المستخدمون: جدول + بحث ذكي + إنشاء مستخدم -->
-          <div id="sys-users-pane" class="hidden">
-            <div class="toolbar toolbar--filters">
-              <input
-                type="search"
-                id="users-search"
-                placeholder="بحث سريع..."
-              />
-              <select id="department-filter">
-                <option value="">كل الأقسام</option>
-              </select>
-              <select id="role-filter">
-                <option value="">كل الأدوار</option>
-              </select>
-              <select id="status-filter">
-                <option value="">كل الحالات</option>
-                <option value="true">نشط</option>
-                <option value="false">غير نشط</option>
-              </select>
-              <input type="date" id="updated-from" aria-label="تاريخ التحديث من" />
-              <input type="date" id="updated-to" aria-label="تاريخ التحديث إلى" />
-              <button id="btn-new-user" class="accent-button">
-                إنشاء مستخدم جديد
-              </button>
-            </div>
-            <div class="toolbar toolbar--bulk">
-              <div class="toolbar-group">
-                <button id="bulk-export" class="ghost-button" disabled>
-                  تصدير
-                </button>
-                <button id="bulk-activate" class="ghost-button" disabled>
-                  تفعيل
-                </button>
-                <button id="bulk-deactivate" class="ghost-button" disabled>
-                  تعطيل
-                </button>
-                <select id="bulk-role-select" disabled>
-                  <option value="">اختر دورًا</option>
+              <p class="muted">
+                لوحة موجزة لقياسات النظام. يتم جلبها من ‎SYS_Profile_View‎ إن
+                وُجدت.
+              </p>
+            </section>
+            <section class="sys-overview__directory">
+              <div class="toolbar toolbar--filters">
+                <input
+                  type="search"
+                  id="users-search"
+                  placeholder="بحث سريع..."
+                />
+                <select id="department-filter">
+                  <option value="">كل الأقسام</option>
                 </select>
-                <button id="bulk-assign-role" class="ghost-button" disabled>
-                  تعيين الدور
+                <select id="role-filter">
+                  <option value="">كل الأدوار</option>
+                </select>
+                <select id="status-filter">
+                  <option value="">كل الحالات</option>
+                  <option value="true">نشط</option>
+                  <option value="false">غير نشط</option>
+                </select>
+                <input
+                  type="date"
+                  id="updated-from"
+                  aria-label="تاريخ التحديث من"
+                />
+                <input
+                  type="date"
+                  id="updated-to"
+                  aria-label="تاريخ التحديث إلى"
+                />
+                <button id="btn-new-user" class="accent-button">
+                  إنشاء مستخدم جديد
                 </button>
               </div>
-            </div>
-            <div class="table-wrapper">
-              <table id="users-table">
-                <thead>
-                  <tr>
+              <div class="toolbar toolbar--bulk">
+                <div class="toolbar-group">
+                  <button id="bulk-export" class="ghost-button" disabled>
+                    تصدير
+                  </button>
+                  <button id="bulk-activate" class="ghost-button" disabled>
+                    تفعيل
+                  </button>
+                  <button id="bulk-deactivate" class="ghost-button" disabled>
+                    تعطيل
+                  </button>
+                  <select id="bulk-role-select" disabled>
+                    <option value="">اختر دورًا</option>
+                  </select>
+                  <button id="bulk-assign-role" class="ghost-button" disabled>
+                    تعيين الدور
+                  </button>
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table id="users-table">
+                  <thead>
+                    <tr>
                     <th class="select-cell">
                       <input type="checkbox" id="select-all-users" />
                     </th>
@@ -1127,24 +1148,20 @@
                     <th>آخر تحديث</th>
                     <th>إجراءات</th>
                   </tr>
-                </thead>
-                <tbody id="users-tbody">
-                  <tr>
-                    <td colspan="11" class="muted">جاري التحميل…</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody id="users-tbody">
+                    <tr>
+                      <td colspan="11" class="muted">جاري التحميل…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </section>
 
         <aside class="workspace-nav">
-          <button class="nav-item active" data-pane="sys-overview-pane">
-            نظرة عامة
-          </button>
-          <button class="nav-item" data-pane="sys-users-pane">
-            المستخدمون
-          </button>
+          <button class="nav-item active">نظرة عامة</button>
           <button class="nav-item" disabled>الأذونات</button>
         </aside>
       </div>
@@ -1539,25 +1556,6 @@
             switchView("login-screen");
             showToast("You have been signed out.", "info", "Logged Out");
           });
-
-        /* ---------- System Management: tabs inside workspace ---------- */
-        const sysView = document.getElementById("system-management-view");
-        const paneButtons = sysView.querySelectorAll(
-          ".workspace-nav .nav-item[data-pane]"
-        );
-        paneButtons.forEach((b) => {
-          b.addEventListener("click", () => {
-            paneButtons.forEach((x) => x.classList.remove("active"));
-            b.classList.add("active");
-            const target = b.dataset.pane;
-            sysView
-              .querySelectorAll("#sys-overview-pane, #sys-users-pane")
-              .forEach((p) => p.classList.toggle("hidden", p.id !== target));
-            if (target === "sys-users-pane") {
-              loadUsers();
-            }
-          });
-        });
 
         /* ---------- KPIs ---------- */
         function fetchKPIs() {
