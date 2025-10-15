@@ -198,6 +198,15 @@ function getSheetSchemas() {
     SYS_PubHolidays: ["Pub_Holiday_Date", "Pub_Holiday_Name"],
 
     // ================== HR MODULE ==================
+    HR_Departments: [
+      "Dept_Code",
+      "Dept_Name_EN",
+      "Dept_Name_AR",
+      "Is_Active",
+      "Sort_Order",
+      "Created_At",
+      "Created_By",
+    ],
     HR_Employees: [
       "Employee_ID",
       "Full_Name_EN",
@@ -574,6 +583,562 @@ function seedSysSettings(ss) {
   appendRowsIfEmpty(sh, rows);
 }
 
+function seedSysTabRegister(ss) {
+  const sh = ss.getSheetByName("SYS_Tab_Register");
+  const rows = [
+    [
+      "TAB",
+      "Tab_SYS_Management",
+      "System's Management",
+      "إدارة النظام",
+      "",
+      "",
+      "",
+      "",
+      1,
+    ],
+    [
+      "SUB",
+      "Tab_SYS_Management",
+      "System's Management",
+      "إدارة النظام",
+      "Sub_SYS_Overview",
+      "Overview",
+      "نظرة عامة",
+      "/sys",
+      1,
+    ],
+    [
+      "SUB",
+      "Tab_SYS_Management",
+      "System's Management",
+      "إدارة النظام",
+      "Sub_SYS_Users",
+      "Users",
+      "المستخدمون",
+      "/sys/users",
+      2,
+    ],
+    [
+      "SUB",
+      "Tab_SYS_Management",
+      "System's Management",
+      "إدارة النظام",
+      "Sub_SYS_Roles",
+      "Roles",
+      "الأدوار",
+      "/sys/roles",
+      3,
+    ],
+    [
+      "SUB",
+      "Tab_SYS_Management",
+      "System's Management",
+      "إدارة النظام",
+      "Sub_SYS_Permissions",
+      "Permissions",
+      "الأذونات",
+      "/sys/permissions",
+      4,
+    ],
+    [
+      "SUB",
+      "Tab_SYS_Management",
+      "System's Management",
+      "إدارة النظام",
+      "Sub_SYS_RolePerms",
+      "Role Permissions",
+      "تعيين أذونات الأدوار",
+      "/sys/role-perms",
+      5,
+    ],
+    [
+      "SUB",
+      "Tab_SYS_Management",
+      "System's Management",
+      "إدارة النظام",
+      "Sub_SYS_Properties",
+      "User Properties",
+      "خصائص المستخدم",
+      "/sys/properties",
+      6,
+    ],
+    [
+      "SUB",
+      "Tab_SYS_Management",
+      "System's Management",
+      "إدارة النظام",
+      "Sub_SYS_Sessions",
+      "Sessions",
+      "الجلسات",
+      "/sys/sessions",
+      7,
+    ],
+    [
+      "SUB",
+      "Tab_SYS_Management",
+      "System's Management",
+      "إدارة النظام",
+      "Sub_SYS_Audit",
+      "Audit",
+      "التدقيق",
+      "/sys/audit",
+      8,
+    ],
+  ];
+  appendRowsIfEmpty(sh, rows);
+}
+
+function seedSysProfileView(ss) {
+  const sh = ss.getSheetByName("SYS_Profile_View");
+  const rows = [
+    [
+      "PV_SYS_Overview_TotalUsers",
+      "Sub_SYS_Overview",
+      "Overview",
+      "إحصائيات النظام",
+      "Number",
+      "SYS_Users",
+      "",
+      "User_Id",
+      "إجمالي المستخدمين",
+      "Number",
+      1,
+      "",
+    ],
+    [
+      "PV_SYS_Overview_Active",
+      "Sub_SYS_Overview",
+      "Overview",
+      "إحصائيات النظام",
+      "Number",
+      "SYS_Users",
+      "IsActive",
+      "IsActive",
+      "المستخدمون النشطون",
+      "Number",
+      2,
+      "",
+    ],
+    [
+      "PV_SYS_Overview_Roles",
+      "Sub_SYS_Overview",
+      "Overview",
+      "إحصائيات النظام",
+      "Number",
+      "SYS_Roles",
+      "",
+      "Role_Id",
+      "إجمالي الأدوار",
+      "Number",
+      3,
+      "",
+    ],
+    [
+      "PV_SYS_Users_Table",
+      "Sub_SYS_Users",
+      "Users",
+      "قائمة المستخدمين",
+      "Table",
+      "SYS_Users",
+      "",
+      "*",
+      "قائمة المستخدمين",
+      "Table",
+      1,
+      "",
+    ],
+    [
+      "PV_SYS_User_Documents",
+      "Sub_SYS_Users",
+      "Users",
+      "مستندات المستخدم",
+      "Table",
+      "SYS_Documents",
+      "Entity_ID",
+      "*",
+      "مستندات",
+      "Table",
+      2,
+      "",
+    ],
+  ];
+  appendRowsIfEmpty(sh, rows);
+}
+
+function seedSysDynamicForms(ss) {
+  const sh = ss.getSheetByName("SYS_Dynamic_Forms");
+  const rows = [
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "التعريف",
+      "USR_User_Id",
+      "معرّف المستخدم",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "SYS_Users",
+      "User_Id",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Full_Name",
+      "الاسم الكامل",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Full_Name",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Username",
+      "اسم المستخدم",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Username",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Email",
+      "البريد الإلكتروني",
+      "Email",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Email",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Job_Title",
+      "المسمى الوظيفي",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "SYS_Users",
+      "Job_Title",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Department",
+      "القسم",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Departments",
+      "SYS_Users",
+      "Department",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Role",
+      "الدور",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Roles",
+      "SYS_Users",
+      "Role_Id",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "الإعدادات",
+      "USR_IsActive",
+      "نشط؟",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "TRUE",
+      "DD_YesNo",
+      "SYS_Users",
+      "IsActive",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "الإعدادات",
+      "USR_Password",
+      "كلمة المرور",
+      "Password",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "password",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "الإعدادات",
+      "USR_MFA",
+      "تفعيل MFA",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "Disabled",
+      "DD_MFA_Status",
+      "SYS_Users",
+      "MFA_Enabled",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "الإعدادات",
+      "USR_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "SYS_Users",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_SYS_EditUser",
+      "تعديل مستخدم",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Full_Name",
+      "الاسم الكامل",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Full_Name",
+      "",
+    ],
+    [
+      "FORM_SYS_EditUser",
+      "تعديل مستخدم",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Email",
+      "البريد الإلكتروني",
+      "Email",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Email",
+      "",
+    ],
+    [
+      "FORM_SYS_EditUser",
+      "تعديل مستخدم",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Department",
+      "القسم",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Departments",
+      "SYS_Users",
+      "Department",
+      "",
+    ],
+    [
+      "FORM_SYS_EditUser",
+      "تعديل مستخدم",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Role",
+      "الدور",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Roles",
+      "SYS_Users",
+      "Role_Id",
+      "",
+    ],
+  ];
+  appendRowsIfEmpty(sh, rows);
+}
+
+function seedSysDropdowns(ss) {
+  const sh = ss.getSheetByName("SYS_Dropdowns");
+  const rows = [
+    ["DD_YesNo", "Yes", "نعم", "TRUE", 1],
+    ["DD_YesNo", "No", "لا", "TRUE", 2],
+    ["DD_Boolean", "True", "صحيح", "TRUE", 1],
+    ["DD_Boolean", "False", "خطأ", "TRUE", 2],
+    ["DD_User_Status", "Active", "نشط", "TRUE", 1],
+    ["DD_User_Status", "Inactive", "غير نشط", "TRUE", 2],
+    ["DD_MFA_Status", "Enabled", "مُفعّل", "TRUE", 1],
+    ["DD_MFA_Status", "Disabled", "غير مُفعّل", "TRUE", 2],
+    ["DD_Permission_Categories", "USERS", "المستخدمون", "TRUE", 1],
+    ["DD_Permission_Categories", "SECURITY", "الأمان", "TRUE", 2],
+    ["DD_Permission_Categories", "AUDIT", "التدقيق", "TRUE", 3],
+    ["DD_Scopes", "GLOBAL", "عالمي", "TRUE", 1],
+    ["DD_Scopes", "DEPARTMENT", "الإدارة", "TRUE", 2],
+    ["DD_Scopes", "SELF", "ذاتي", "TRUE", 3],
+    ["DD_Scopes", "LIMITED", "محدود", "TRUE", 4],
+    ["DD_Attachment_Entities", "Users", "المستخدمون", "TRUE", 1],
+    ["DD_Attachment_Entities", "Roles", "الأدوار", "TRUE", 2],
+    ["DD_Attachment_Entities", "Permissions", "الأذونات", "TRUE", 3],
+    [
+      "DD_Attachment_Entities",
+      "Role_Permissions",
+      "أذونات_الأدوار",
+      "TRUE",
+      4,
+    ],
+    ["DD_Export_Formats", "CSV", "CSV", "TRUE", 1],
+    ["DD_Export_Formats", "XLSX", "XLSX", "TRUE", 2],
+    ["DD_Export_Formats", "JSON", "JSON", "TRUE", 3],
+  ];
+
+  const deptSheet = ss.getSheetByName("HR_Departments");
+  if (deptSheet && deptSheet.getLastRow() > 1) {
+    const deptData = deptSheet.getDataRange().getValues();
+    const headers = deptData[0];
+    const codeIdx = headers.indexOf("Dept_Code");
+    const nameEnIdx = headers.indexOf("Dept_Name_EN");
+    const nameArIdx = headers.indexOf("Dept_Name_AR");
+    deptData.slice(1).forEach((row, index) => {
+      const value =
+        codeIdx >= 0 && row[codeIdx]
+          ? row[codeIdx]
+          : nameEnIdx >= 0
+          ? row[nameEnIdx]
+          : "";
+      const labelAr = nameArIdx >= 0 ? row[nameArIdx] : "";
+      const labelEn = nameEnIdx >= 0 ? row[nameEnIdx] : value;
+      if (value) {
+        rows.push([
+          "DD_Departments",
+          labelEn,
+          labelAr || labelEn,
+          "TRUE",
+          10 + index,
+        ]);
+      }
+    });
+  }
+
+  const rolesSheet = ss.getSheetByName("SYS_Roles");
+  if (rolesSheet && rolesSheet.getLastRow() > 1) {
+    const rolesData = rolesSheet.getDataRange().getValues();
+    const headers = rolesData[0];
+    const idIdx = headers.indexOf("Role_Id");
+    const titleIdx = headers.indexOf("Role_Title");
+    rolesData.slice(1).forEach((row, index) => {
+      const roleId = idIdx >= 0 ? row[idIdx] : "";
+      if (!roleId) return;
+      const title = titleIdx >= 0 ? row[titleIdx] : roleId;
+      rows.push([
+        "DD_Roles",
+        roleId,
+        title,
+        "TRUE",
+        20 + index,
+      ]);
+    });
+  }
+
+  appendRowsIfEmpty(sh, rows);
+}
+
+function seedHrDepartments(ss) {
+  const sh = ss.getSheetByName("HR_Departments");
+  const nowIso = ensureISODate(new Date());
+  const rows = [
+    ["MGMT", "Management", "الإدارة", "TRUE", 1, nowIso, SYSTEM_USER],
+    ["HR", "Human Resources", "الموارد البشرية", "TRUE", 2, nowIso, SYSTEM_USER],
+    ["FIN", "Finance", "المالية", "TRUE", 3, nowIso, SYSTEM_USER],
+    ["PRJ", "Projects", "المشروعات", "TRUE", 4, nowIso, SYSTEM_USER],
+  ];
+  appendRowsIfEmpty(sh, rows);
+}
+
 function seedSysRoles(ss) {
   const sh = ss.getSheetByName("SYS_Roles");
   const nowIso = ensureISODate(new Date());
@@ -699,8 +1264,7 @@ function setupERPAllSheets() {
   Object.keys(schemas).forEach((name) =>
     createOrClearSheet(ss, name, schemas[name])
   );
-  seedSysSettings(ss);
-  seedSysRoles(ss);
+  seedCoreData();
   Logger.log("✅ Full ERP Setup Completed.");
 }
 /** ---------- Seed Admin User ---------- **/
@@ -976,8 +1540,13 @@ function seedCoreData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   seedSysSettings(ss);
   seedSysRoles(ss);
+  seedSysDropdowns(ss);
+  seedSysTabRegister(ss);
+  seedSysProfileView(ss);
+  seedSysDynamicForms(ss);
   seedSysPermissions(ss);
   seedSysRolePermissions(ss);
   seedAdminUser(ss);
+  seedHrDepartments(ss);
   Logger.log("✅ Core SYS + Admin seeding completed.");
 }

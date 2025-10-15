@@ -2675,6 +2675,7 @@
                 const t = String(f.type || "text").toLowerCase();
                 const isPassword =
                   f.targetColumn === "Password_Hash" ||
+                  f.targetColumn === "password" ||
                   /password/i.test(f.fieldId || "");
                 if (currentEditId && isPassword) return; // لا نعرض كلمة المرور في وضع التعديل
                 if (t === "dropdown") {
@@ -2685,7 +2686,7 @@
                     o.textContent = opt.label || opt.value;
                     el.appendChild(o);
                   });
-                } else if (t === "textarea") {
+                } else if (t === "textarea" || t === "paragraph") {
                   el = document.createElement("textarea");
                   el.rows = 4;
                   wrap.classList.add("span-2");
@@ -2694,6 +2695,9 @@
                   el.type = "text";
                   el.readOnly = true;
                   el.placeholder = "AutoGenerate";
+                } else if (t === "password" || isPassword) {
+                  el = document.createElement("input");
+                  el.type = "password";
                 } else {
                   el = document.createElement("input");
                   el.type = t === "email" ? "email" : "text";
@@ -2706,6 +2710,12 @@
                   const k = f.targetColumn || f.fieldId;
                   if (k && initialData[k] != null) el.value = initialData[k];
                   if (k === "User_Id") el.readOnly = true;
+                } else if (
+                  f.defaultValue !== undefined &&
+                  f.defaultValue !== null &&
+                  String(f.defaultValue) !== ""
+                ) {
+                  el.value = f.defaultValue;
                 }
                 if (
                   !initialData &&
