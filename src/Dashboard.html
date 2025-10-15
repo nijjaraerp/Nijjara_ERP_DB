@@ -720,14 +720,52 @@
         margin-top: 1rem;
       }
 
-      /* small visual for dyn tabs */
+      /* dynamic form layout */
+      .dyn-layout {
+        display: flex;
+        gap: 1rem;
+        align-items: stretch;
+        width: 100%;
+      }
       .dyn-tabs {
         display: flex;
+        flex-direction: column;
         gap: 0.5rem;
-        margin-bottom: 0.8rem;
+        width: 220px;
+        padding: 0.75rem;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.25);
       }
       .dyn-tabs .nav-item {
-        padding: 0.4rem 0.6rem;
+        width: 100%;
+        text-align: right;
+        padding: 0.55rem 0.8rem;
+      }
+      .dyn-pages {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.25);
+        padding: 1rem;
+        overflow-y: auto;
+      }
+      @media (max-width: 768px) {
+        .dyn-layout {
+          flex-direction: column;
+        }
+        .dyn-tabs {
+          flex-direction: row;
+          width: 100%;
+          overflow-x: auto;
+        }
+        .dyn-tabs .nav-item {
+          flex: 1 0 140px;
+        }
+        .dyn-pages {
+          width: 100%;
+        }
       }
     </style>
   </head>
@@ -2013,12 +2051,15 @@
         function renderDynamicUserForm(fields, initialData = null) {
           const host = document.getElementById("new-user-fields");
           host.innerHTML = "";
+          const layout = document.createElement("div");
+          layout.className = "dyn-layout";
           const tabBar = document.createElement("div");
           tabBar.className = "dyn-tabs";
           const pages = document.createElement("div");
           pages.className = "dyn-pages";
-          host.appendChild(tabBar);
-          host.appendChild(pages);
+          layout.appendChild(tabBar);
+          layout.appendChild(pages);
+          host.appendChild(layout);
 
           const tabs = {};
           fields.forEach((f) => {
