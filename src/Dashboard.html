@@ -439,13 +439,45 @@
         border-radius: 10px;
         cursor: pointer;
       }
-      .accent-button {
-        background: var(--color-accent);
+      .module-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        background: var(--theme-accent, var(--color-accent));
         color: #111;
-        border: 1px solid rgba(255, 255, 255, 0.25);
+        border: 1px solid var(--theme-accent, var(--color-accent));
         padding: 0.55rem 1rem;
         border-radius: 10px;
         cursor: pointer;
+        font-weight: 600;
+        transition: transform 0.2s ease, box-shadow 0.2s ease,
+          border-color 0.2s ease, background 0.2s ease;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35),
+          inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      }
+      .workspace[data-theme] .module-action {
+        background: var(--theme-accent);
+        border-color: var(--theme-accent);
+      }
+      .module-action:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45),
+          inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      }
+      .module-action:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.24);
+      }
+      .module-action:focus-visible {
+        outline: 3px solid var(--theme-accent-24, rgba(212, 175, 55, 0.24));
+        outline-offset: 3px;
+      }
+      .module-action:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        box-shadow: none;
       }
       .btn-save,
       .btn-cancel,
@@ -1074,20 +1106,51 @@
                   <div id="kpi-pending-resets" class="kpi-value">—</div>
                 </div>
               </div>
-              <p class="muted">
-                لوحة موجزة لقياسات النظام. يتم جلبها من ‎SYS_Profile_View‎ إن
-                وُجدت.
-              </p>
-            </section>
-            <section class="sys-overview__directory">
-              <div class="toolbar toolbar--filters">
-                <input
-                  type="search"
-                  id="users-search"
-                  placeholder="بحث سريع..."
-                />
-                <select id="department-filter">
-                  <option value="">كل الأقسام</option>
+            </div>
+            <p class="muted">
+              لوحة موجزة لقياسات النظام. يتم جلبها من ‎SYS_Profile_View‎ إن
+              وُجدت.
+            </p>
+          </div>
+
+          <!-- المستخدمون: جدول + بحث ذكي + إنشاء مستخدم -->
+          <div id="sys-users-pane" class="hidden">
+            <div class="toolbar toolbar--filters">
+              <input
+                type="search"
+                id="users-search"
+                placeholder="بحث سريع..."
+              />
+              <select id="department-filter">
+                <option value="">كل الأقسام</option>
+              </select>
+              <select id="role-filter">
+                <option value="">كل الأدوار</option>
+              </select>
+              <select id="status-filter">
+                <option value="">كل الحالات</option>
+                <option value="true">نشط</option>
+                <option value="false">غير نشط</option>
+              </select>
+              <input type="date" id="updated-from" aria-label="تاريخ التحديث من" />
+              <input type="date" id="updated-to" aria-label="تاريخ التحديث إلى" />
+              <button id="btn-new-user" class="module-action">
+                إنشاء مستخدم جديد
+              </button>
+            </div>
+            <div class="toolbar toolbar--bulk">
+              <div class="toolbar-group">
+                <button id="bulk-export" class="ghost-button" disabled>
+                  تصدير
+                </button>
+                <button id="bulk-activate" class="ghost-button" disabled>
+                  تفعيل
+                </button>
+                <button id="bulk-deactivate" class="ghost-button" disabled>
+                  تعطيل
+                </button>
+                <select id="bulk-role-select" disabled>
+                  <option value="">اختر دورًا</option>
                 </select>
                 <select id="role-filter">
                   <option value="">كل الأدوار</option>
@@ -1173,8 +1236,8 @@
       <form method="dialog" id="new-user-form">
         <div id="new-user-fields" class="form-grid"></div>
         <div class="actions">
-          <button type="submit" class="btn-save">حفظ</button>
-          <button type="button" id="btn-cancel-new" class="btn-cancel">
+          <button type="submit" class="module-action">حفظ</button>
+          <button type="button" id="btn-cancel-new" class="ghost-button">
             إلغاء
           </button>
         </div>
@@ -1264,7 +1327,7 @@
         </section>
       </div>
       <div class="actions">
-        <button type="button" id="btn-close-profile" class="btn-cancel">
+        <button type="button" id="btn-close-profile" class="module-action">
           إغلاق
         </button>
       </div>
@@ -1283,8 +1346,8 @@
           <div class="span-2 muted" id="assign-role-user-label"></div>
         </div>
         <div class="actions">
-          <button type="submit" class="btn-save">حفظ</button>
-          <button type="button" id="btn-cancel-assign" class="btn-cancel">
+          <button type="submit" class="module-action">حفظ</button>
+          <button type="button" id="btn-cancel-assign" class="ghost-button">
             إلغاء
           </button>
         </div>
@@ -1311,8 +1374,8 @@
           </div>
         </div>
         <div class="actions">
-          <button type="submit" class="btn-save">تحديث</button>
-          <button type="button" id="btn-cancel-reset" class="btn-cancel">
+          <button type="submit" class="module-action">تحديث</button>
+          <button type="button" id="btn-cancel-reset" class="ghost-button">
             إلغاء
           </button>
         </div>
