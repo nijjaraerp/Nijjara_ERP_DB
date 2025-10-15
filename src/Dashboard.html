@@ -80,7 +80,7 @@
       #login-screen {
         display: grid;
         place-content: center;
-        background-image: url('data:image/svgxml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Cg fill-rule="evenodd"%3E%3Cg fill="%232a2a2a" fill-opacity="0.2"%3E%3Cpath opacity=".5" d="M96 95h4v1h-4v-1zm-7 5h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM54 95h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM9 95h1v4h-1v-4zm-7 0h1v4H2v-4zM95 0h1v4h-1V0zM2 0h1v4H2V0z"/%3E%3Cpath d="M6 95h4v1H6v-1zM4 95h1v4H4v-4zM95 6h1v4h-1V6zM95 4h1v1h-1V4z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+        background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Cg fill-rule="evenodd"%3E%3Cg fill="%232a2a2a" fill-opacity="0.2"%3E%3Cpath opacity=".5" d="M96 95h4v1h-4v-1zm-7 5h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM54 95h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM9 95h1v4h-1v-4zm-7 0h1v4H2v-4zM95 0h1v4h-1V0zM2 0h1v4H2V0z"/%3E%3Cpath d="M6 95h4v1H6v-1zM4 95h1v4H4v-4zM95 6h1v4h-1V6zM95 4h1v1h-1V4z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
       }
       .login-container {
         width: 400px;
@@ -422,36 +422,14 @@
         border-radius: 10px;
         cursor: pointer;
       }
-        .accent-button {
-    /* use the current workspace’s accent colour instead of the global accent */
-    background: var(--theme-accent);
-    color: #111;
-    border: 1px solid var(--theme-accent-24);
-    padding: 0.55rem 1rem;
-    border-radius: 10px;
-    cursor: pointer;
-  }
-      
-  /* save-button: use the global success colour for save actions */
-  .save-button {
-    background: var(--color-success);
-    color: #111;
-    border: 1px solid rgba(46, 204, 113, 0.3);
-  }
-
-  /* cancel-button: use the global danger colour for cancel/close actions */
-  .cancel-button {
-    background: var(--color-danger);
-    color: #111;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-  }
-
-  /* edit-button: orange for update/edit actions */
-  .edit-button {
-    background: #e67e22;
-    color: #111;
-    border: 1px solid rgba(230, 126, 34, 0.3);
-  }
+      .accent-button {
+        background: var(--color-accent);
+        color: #111;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 0.55rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+      }
       .badge {
         display: inline-block;
         padding: 0.15rem 0.5rem;
@@ -944,7 +922,7 @@
             </p>
           </div>
 
-          <!-- المستخدمون: جدول  بحث ذكي  إنشاء مستخدم -->
+          <!-- المستخدمون: جدول + بحث ذكي + إنشاء مستخدم -->
           <div id="sys-users-pane" class="hidden">
             <div class="toolbar toolbar--filters">
               <input
@@ -963,8 +941,16 @@
                 <option value="true">نشط</option>
                 <option value="false">غير نشط</option>
               </select>
-              <input type="date" id="updated-from" aria-label="تاريخ التحديث من" />
-              <input type="date" id="updated-to" aria-label="تاريخ التحديث إلى" />
+              <input
+                type="date"
+                id="updated-from"
+                aria-label="تاريخ التحديث من"
+              />
+              <input
+                type="date"
+                id="updated-to"
+                aria-label="تاريخ التحديث إلى"
+              />
               <button id="btn-new-user" class="accent-button">
                 إنشاء مستخدم جديد
               </button>
@@ -1035,12 +1021,11 @@
       <form method="dialog" id="new-user-form">
         <div id="new-user-fields" class="form-grid"></div>
         <div class="actions">
-  <button type="submit" class="accent-button save-button">حفظ</button>
-  <button type="button" id="btn-cancel-new" class="ghost-button cancel-button">
-    إلغاء
-  </button>
-</div>
-
+          <button type="submit" class="accent-button">حفظ</button>
+          <button type="button" id="btn-cancel-new" class="ghost-button">
+            إلغاء
+          </button>
+        </div>
       </form>
     </dialog>
 
@@ -1063,9 +1048,7 @@
         <button type="button" class="nav-item" data-tab="sessions">
           الجلسات
         </button>
-        <button type="button" class="nav-item" data-tab="audit">
-          التدقيق
-        </button>
+        <button type="button" class="nav-item" data-tab="audit">التدقيق</button>
       </div>
       <div class="profile-panels" id="profile-panels">
         <section class="profile-panel active" data-tab="profile">
@@ -1126,12 +1109,11 @@
           </table>
         </section>
       </div>
-     <div class="actions">
-  <button type="button" id="btn-close-profile" class="accent-button cancel-button">
-    إغلاق
-  </button>
-</div>
-
+      <div class="actions">
+        <button type="button" id="btn-close-profile" class="accent-button">
+          إغلاق
+        </button>
+      </div>
     </dialog>
 
     <!-- تعيين دور -->
@@ -1147,12 +1129,11 @@
           <div class="span-2 muted" id="assign-role-user-label"></div>
         </div>
         <div class="actions">
-  <button type="submit" class="accent-button save-button">حفظ</button>
-  <button type="button" id="btn-cancel-assign" class="ghost-button cancel-button">
-    إلغاء
-  </button>
-</div>
-
+          <button type="submit" class="accent-button">حفظ</button>
+          <button type="button" id="btn-cancel-assign" class="ghost-button">
+            إلغاء
+          </button>
+        </div>
       </form>
     </dialog>
 
@@ -1176,12 +1157,11 @@
           </div>
         </div>
         <div class="actions">
-  <button type="submit" class="accent-button edit-button">تحديث</button>
-  <button type="button" id="btn-cancel-reset" class="ghost-button cancel-button">
-    إلغاء
-  </button>
-</div>
-
+          <button type="submit" class="accent-button">تحديث</button>
+          <button type="button" id="btn-cancel-reset" class="ghost-button">
+            إلغاء
+          </button>
+        </div>
       </form>
     </dialog>
 
@@ -1209,17 +1189,28 @@
         const formReset = document.getElementById("form-reset-pass");
         const dlgProfile = document.getElementById("dlg-user-profile");
         const profileTabsContainer = document.getElementById("profile-tabs");
-        const profilePanelsContainer = document.getElementById("profile-panels");
+        const profilePanelsContainer =
+          document.getElementById("profile-panels");
         const profileTabButtons = profileTabsContainer
           ? Array.from(profileTabsContainer.querySelectorAll("[data-tab]"))
           : [];
         const profilePanels = profilePanelsContainer
-          ? Array.from(profilePanelsContainer.querySelectorAll(".profile-panel"))
+          ? Array.from(
+              profilePanelsContainer.querySelectorAll(".profile-panel")
+            )
           : [];
-        const profileOverviewList = document.getElementById("profile-overview-list");
-        const profilePropertiesBody = document.getElementById("profile-properties-body");
-        const profileDocumentsBody = document.getElementById("profile-documents-body");
-        const profileSessionsBody = document.getElementById("profile-sessions-body");
+        const profileOverviewList = document.getElementById(
+          "profile-overview-list"
+        );
+        const profilePropertiesBody = document.getElementById(
+          "profile-properties-body"
+        );
+        const profileDocumentsBody = document.getElementById(
+          "profile-documents-body"
+        );
+        const profileSessionsBody = document.getElementById(
+          "profile-sessions-body"
+        );
         const profileAuditBody = document.getElementById("profile-audit-body");
         const profileTitle = document.getElementById("profile-title");
         const profileUsername = document.getElementById("profile-username");
@@ -1228,7 +1219,9 @@
         const formAssignRole = document.getElementById("form-assign-role");
         const assignRoleUserInput = document.getElementById("assign-role-user");
         const assignRoleSelect = document.getElementById("assign-role-select");
-        const assignRoleUserLabel = document.getElementById("assign-role-user-label");
+        const assignRoleUserLabel = document.getElementById(
+          "assign-role-user-label"
+        );
         const btnCancelAssign = document.getElementById("btn-cancel-assign");
         const NAV_VIEW_MAP = {
           SYS: "system-management-view",
@@ -1247,9 +1240,9 @@
         /* Basic nav */
         function updateUserContext(name) {
           const safe = name || "User";
-          userLabel.textContent = "User: "  safe;
+          userLabel.textContent = "User: " + safe;
           const welcome = document.getElementById("portal-welcome-message");
-          if (welcome) welcome.textContent = "Welcome, "  safe;
+          if (welcome) welcome.textContent = "Welcome, " + safe;
         }
         function switchView(id) {
           views.forEach((v) => v.classList.toggle("active", v.id === id));
@@ -1308,8 +1301,9 @@
               bulkRoleSelect,
               data.filters.roleOptions || data.filters.roles
             );
-            bulkRoleSelect.disabled =
-              !((data.filters.roleOptions || data.filters.roles || []).length > 0);
+            bulkRoleSelect.disabled = !(
+              (data.filters.roleOptions || data.filters.roles || []).length > 0
+            );
           } else {
             // Try lazy fetch
             if (window.google && google.script && google.script.run) {
@@ -1318,7 +1312,8 @@
                   fillSelect(selDept, f?.departments || []);
                   fillSelect(selRole, f?.roles || []);
                   fillSelect(bulkRoleSelect, f?.roleOptions || f?.roles || []);
-                  bulkRoleSelect.disabled = !((f?.roleOptions || f?.roles || [])?.length);
+                  bulkRoleSelect.disabled = !(f?.roleOptions || f?.roles || [])
+                    ?.length;
                 })
                 .getDeptAndRoleFilters();
             }
@@ -1454,8 +1449,7 @@
               $("kpi-active-users").textContent = k.activeUsers ?? "—";
               $("kpi-inactive-users").textContent = k.inactiveUsers ?? "—";
               $("kpi-role-count").textContent = k.roleCount ?? "—";
-              $("kpi-permission-count").textContent =
-                k.permissionCount ?? "—";
+              $("kpi-permission-count").textContent = k.permissionCount ?? "—";
               $("kpi-pending-resets").textContent =
                 k.pendingPasswordResets ?? "—";
             })
@@ -1604,9 +1598,13 @@
         if (bulkExportBtn)
           bulkExportBtn.addEventListener("click", handleBulkExport);
         if (bulkActivateBtn)
-          bulkActivateBtn.addEventListener("click", () => performBulkStatus(true));
+          bulkActivateBtn.addEventListener("click", () =>
+            performBulkStatus(true)
+          );
         if (bulkDeactivateBtn)
-          bulkDeactivateBtn.addEventListener("click", () => performBulkStatus(false));
+          bulkDeactivateBtn.addEventListener("click", () =>
+            performBulkStatus(false)
+          );
         if (bulkAssignRoleBtn)
           bulkAssignRoleBtn.addEventListener("click", handleBulkAssignRole);
         if (bulkRoleSelect)
@@ -1716,11 +1714,9 @@
             const checked = u.userId && selectedUsers.has(u.userId);
             tr.innerHTML = `
               <td class="select-cell">
-                <input type="checkbox" class="row-select" data-id="${
-                  escapeHtml(u.userId)
-                }" ${checked ? "checked" : ""} ${
-              u.userId ? "" : "disabled"
-            } />
+                <input type="checkbox" class="row-select" data-id="${escapeHtml(
+                  u.userId
+                )}" ${checked ? "checked" : ""} ${u.userId ? "" : "disabled"} />
               </td>
               <td>${escapeHtml(u.userId)}</td>
               <td>${escapeHtml(u.fullName)}</td>
@@ -1737,29 +1733,29 @@
               <td>${formatDateTime(u.updatedAt)}</td>
               <td>
                 <div class="icon-row">
-                  <button class="icon-btn" data-act="view" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="عرض الملف" aria-label="عرض الملف">
+                  <button class="icon-btn" data-act="view" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="عرض الملف" aria-label="عرض الملف">
                     <svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="edit" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="تعديل" aria-label="تعديل">
+                  <button class="icon-btn" data-act="edit" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="تعديل" aria-label="تعديل">
                     <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 4l2 2"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="assign" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="تعيين دور" aria-label="تعيين دور">
+                  <button class="icon-btn" data-act="assign" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="تعيين دور" aria-label="تعيين دور">
                     <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M4 20v-1a5 5 0 0 1 10 0v1"/><path d="M16 11v6"/><path d="M19 14h-6"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="reset" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="إعادة كلمة المرور" aria-label="إعادة كلمة المرور">
+                  <button class="icon-btn" data-act="reset" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="إعادة كلمة المرور" aria-label="إعادة كلمة المرور">
                     <svg viewBox="0 0 24 24"><path d="M12 11v6"/><path d="M9 14h6"/><path d="M6 11V8a6 6 0 1 1 12 0v3"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="toggle" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="${
+                  <button class="icon-btn" data-act="toggle" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="${
               u.isActive ? "تعطيل" : "تفعيل"
             }" aria-label="تفعيل/تعطيل">
                     <svg viewBox="0 0 24 24">${
@@ -1768,24 +1764,24 @@
                         : '<path d="M5 12h14"/><path d="M12 5v14"/>'
                     }</svg>
                   </button>
-                  <button class="icon-btn" data-act="docs" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="مستندات" aria-label="مستندات">
+                  <button class="icon-btn" data-act="docs" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="مستندات" aria-label="مستندات">
                     <svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6"/><path d="M10 17h6"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="impersonate" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="انتحال" aria-label="انتحال">
+                  <button class="icon-btn" data-act="impersonate" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="انتحال" aria-label="انتحال">
                     <svg viewBox="0 0 24 24"><path d="M3 12c2-4 6-6 9-6s7 2 9 6c-2 4-6 6-9 6s-7-2-9-6z"/><path d="M9 12h.01"/><path d="M15 12h.01"/><path d="M9 15c1 .8 2 .8 3 0 1 .8 2 .8 3 0"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="delete" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="حذف رمزي" aria-label="حذف رمزي">
+                  <button class="icon-btn" data-act="delete" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="حذف رمزي" aria-label="حذف رمزي">
                     <svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M10 7V5h4v2"/><path d="M8 7l1 12h6l1-12"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="audit" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="سجل التدقيق" aria-label="سجل التدقيق">
+                  <button class="icon-btn" data-act="audit" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="سجل التدقيق" aria-label="سجل التدقيق">
                     <svg viewBox="0 0 24 24"><path d="M7 3h10v4H7z"/><path d="M5 7h14v14H5z"/><path d="M9 11h6M9 15h6"/></svg>
                   </button>
                 </div>
@@ -1868,7 +1864,7 @@
             .withSuccessHandler((res) => {
               const count = res?.updated ?? ids.length;
               showToast(
-                "تم تحديث حالة "  count  " مستخدم.",
+                "تم تحديث حالة " + count + " مستخدم.",
                 "success",
                 "تم التحديث"
               );
@@ -1898,7 +1894,7 @@
             .withSuccessHandler((res) => {
               const count = res?.updated ?? ids.length;
               showToast(
-                "تم تعيين الدور لـ "  count  " مستخدم.",
+                "تم تعيين الدور لـ " + count + " مستخدم.",
                 "success",
                 "تم التعيين"
               );
@@ -1958,11 +1954,9 @@
         /* ---------- Runtime style overrides (visibility & RTL polish) ---------- */
         (function addRuntimeStyles() {
           const css = `
+            .workspace-nav .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
             .workspace-nav .nav-item{border:1px solid var(--theme-accent-24)}
-.workspace-nav .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
-.dyn-tabs .nav-item{border:1px solid var(--theme-accent-24)}
-.dyn-tabs .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
-
+            .dyn-tabs .nav-item.active{background:var(--theme-accent);color:#111}
             dialog .form-grid{direction:rtl}
             dialog .form-grid label{display:block;margin-bottom:.25rem}
             dialog .form-grid .span-2{grid-column:1 / span 2}
@@ -1987,12 +1981,12 @@
         function showToast(message, type = "info", title) {
           const toastContainer = ensureToastContainer();
           const t = document.createElement("div");
-          t.className = "toast "  type;
+          t.className = "toast " + type;
           t.innerHTML =
-            '<div class="toast__title">' 
-            (title || (type === "success" ? "تم بنجاح" : "إشعار")) 
-            '</div><div class="toast__msg">' 
-            message 
+            '<div class="toast__title">' +
+            (title || (type === "success" ? "تم بنجاح" : "إشعار")) +
+            '</div><div class="toast__msg">' +
+            message +
             "</div>";
           toastContainer.appendChild(t);
           const hide = () => {
@@ -2073,12 +2067,12 @@
                 const id = `nu_${(
                   f.targetColumn ||
                   f.fieldId ||
-                  tabKey  i
-                ).replace(/\s/g, "_")}`;
+                  tabKey + i
+                ).replace(/\s+/g, "_")}`;
                 const wrap = document.createElement("div");
                 const label = document.createElement("label");
                 label.textContent =
-                  f.label || f.targetColumn || f.fieldId || "حقل "  (i  1);
+                  f.label || f.targetColumn || f.fieldId || "حقل " + (i + 1);
                 label.setAttribute("for", id);
                 let el;
                 const t = String(f.type || "text").toLowerCase();
@@ -2150,7 +2144,7 @@
           tabKeys.forEach((k, idx) => {
             const b = document.createElement("button");
             b.type = "button";
-            b.className = "nav-item"  (idx === 0 ? " active" : "");
+            b.className = "nav-item" + (idx === 0 ? " active" : "");
             b.textContent = tabs[k].name || "تبويب";
             b.addEventListener("click", () => {
               tabBar
@@ -2209,7 +2203,7 @@
                 [d, r].forEach((arr, idx) => {
                   const sel = idx === 0 ? dSel : rSel;
                   sel.innerHTML =
-                    '<option value=""></option>' 
+                    '<option value=""></option>' +
                     (arr || [])
                       .map((v) => `<option value="${v}">${v}</option>`)
                       .join("");
@@ -2512,7 +2506,9 @@
           const user = payload.user || {};
           profileTitle.textContent =
             user.Full_Name || user.Username || user.User_Id || "مستخدم";
-          profileUsername.textContent = user.Username ? `@${user.Username}` : "";
+          profileUsername.textContent = user.Username
+            ? `@${user.Username}`
+            : "";
           renderDefinitionList(profileOverviewList, [
             { label: "الاسم الكامل", value: user.Full_Name || "—" },
             { label: "اسم المستخدم", value: user.Username || "—" },
@@ -2636,8 +2632,7 @@
         function performSoftDelete(userId) {
           const confirmed = confirm("هل أنت متأكد من تنفيذ حذف رمزي؟");
           if (!confirmed) return;
-          const reason =
-            prompt("أدخل سبب الحذف الرمزي (اختياري):", "") || "";
+          const reason = prompt("أدخل سبب الحذف الرمزي (اختياري):", "") || "";
           google.script.run
             .withFailureHandler((err) => {
               console.error(err);
