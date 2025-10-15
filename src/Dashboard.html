@@ -18,6 +18,9 @@
         --color-text-primary: #f0f0f0;
         --color-text-secondary: #a0a0a0;
         --color-accent: #d4af37;
+        --theme-accent: var(--color-accent);
+        --theme-accent-16: rgba(212, 175, 55, 0.16);
+        --theme-accent-24: rgba(212, 175, 55, 0.24);
         --color-success: #2ecc71;
         --color-danger: #e74c3c;
         --font-family-arabic: "Cairo", sans-serif;
@@ -377,11 +380,25 @@
         color: var(--theme-accent);
       }
 
+      .sys-overview {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .sys-overview__summary {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .sys-overview__directory {
+        display: flex;
+        flex-direction: column;
+      }
       .overview-cards {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 0.8rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0;
       }
       .overview-card {
         border: 1px solid var(--color-border);
@@ -422,14 +439,36 @@
         border-radius: 10px;
         cursor: pointer;
       }
-      .accent-button {
-        background: var(--color-accent);
-        color: #111;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        padding: 0.55rem 1rem;
-        border-radius: 10px;
-        cursor: pointer;
-      }
+        .accent-button {
+    /* use the current workspace’s accent colour instead of the global accent */
+    background: var(--theme-accent);
+    color: #111;
+    border: 1px solid var(--theme-accent-24);
+    padding: 0.55rem 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+      
+  /* save-button: use the global success colour for save actions */
+  .save-button {
+    background: var(--color-success);
+    color: #111;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+  }
+
+  /* cancel-button: use the global danger colour for cancel/close actions */
+  .cancel-button {
+    background: var(--color-danger);
+    color: #111;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+  }
+
+  /* edit-button: orange for update/edit actions */
+  .edit-button {
+    background: #e67e22;
+    color: #111;
+    border: 1px solid rgba(230, 126, 34, 0.3);
+  }
       .badge {
         display: inline-block;
         padding: 0.15rem 0.5rem;
@@ -720,14 +759,52 @@
         margin-top: 1rem;
       }
 
-      /* small visual for dyn tabs */
+      /* dynamic form layout */
+      .dyn-layout {
+        display: flex;
+        gap: 1rem;
+        align-items: stretch;
+        width: 100%;
+      }
       .dyn-tabs {
         display: flex;
+        flex-direction: column;
         gap: 0.5rem;
-        margin-bottom: 0.8rem;
+        width: 220px;
+        padding: 0.75rem;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.25);
       }
       .dyn-tabs .nav-item {
-        padding: 0.4rem 0.6rem;
+        width: 100%;
+        text-align: right;
+        padding: 0.55rem 0.8rem;
+      }
+      .dyn-pages {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.25);
+        padding: 1rem;
+        overflow-y: auto;
+      }
+      @media (max-width: 768px) {
+        .dyn-layout {
+          flex-direction: column;
+        }
+        .dyn-tabs {
+          flex-direction: row;
+          width: 100%;
+          overflow-x: auto;
+        }
+        .dyn-tabs .nav-item {
+          flex: 1 0 140px;
+        }
+        .dyn-pages {
+          width: 100%;
+        }
       }
     </style>
   </head>
@@ -888,32 +965,34 @@
         </header>
 
         <section class="workspace-content">
-          <!-- نظرة عامة: KPIs فقط -->
-          <div id="sys-overview-pane">
-            <div class="overview-cards">
-              <div class="overview-card">
-                <div class="muted">إجمالي المستخدمين</div>
-                <div id="kpi-total-users" class="kpi-value">—</div>
-              </div>
-              <div class="overview-card">
-                <div class="muted">المستخدمون النشطون</div>
-                <div id="kpi-active-users" class="kpi-value">—</div>
-              </div>
-              <div class="overview-card">
-                <div class="muted">المستخدمون المعطلون</div>
-                <div id="kpi-inactive-users" class="kpi-value">—</div>
-              </div>
-              <div class="overview-card">
-                <div class="muted">عدد الأدوار</div>
-                <div id="kpi-role-count" class="kpi-value">—</div>
-              </div>
-              <div class="overview-card">
-                <div class="muted">عدد الأذونات</div>
-                <div id="kpi-permission-count" class="kpi-value">—</div>
-              </div>
-              <div class="overview-card">
-                <div class="muted">طلبات إعادة التعيين</div>
-                <div id="kpi-pending-resets" class="kpi-value">—</div>
+          <!-- نظرة عامة: KPIs + دليل المستخدمين -->
+          <div id="sys-overview-pane" class="sys-overview">
+            <section class="sys-overview__summary">
+              <div class="overview-cards">
+                <div class="overview-card">
+                  <div class="muted">إجمالي المستخدمين</div>
+                  <div id="kpi-total-users" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">المستخدمون النشطون</div>
+                  <div id="kpi-active-users" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">المستخدمون المعطلون</div>
+                  <div id="kpi-inactive-users" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">عدد الأدوار</div>
+                  <div id="kpi-role-count" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">عدد الأذونات</div>
+                  <div id="kpi-permission-count" class="kpi-value">—</div>
+                </div>
+                <div class="overview-card">
+                  <div class="muted">طلبات إعادة التعيين</div>
+                  <div id="kpi-pending-resets" class="kpi-value">—</div>
+                </div>
               </div>
             </div>
             <p class="muted">
@@ -941,16 +1020,8 @@
                 <option value="true">نشط</option>
                 <option value="false">غير نشط</option>
               </select>
-              <input
-                type="date"
-                id="updated-from"
-                aria-label="تاريخ التحديث من"
-              />
-              <input
-                type="date"
-                id="updated-to"
-                aria-label="تاريخ التحديث إلى"
-              />
+              <input type="date" id="updated-from" aria-label="تاريخ التحديث من" />
+              <input type="date" id="updated-to" aria-label="تاريخ التحديث إلى" />
               <button id="btn-new-user" class="accent-button">
                 إنشاء مستخدم جديد
               </button>
@@ -992,24 +1063,20 @@
                     <th>آخر تحديث</th>
                     <th>إجراءات</th>
                   </tr>
-                </thead>
-                <tbody id="users-tbody">
-                  <tr>
-                    <td colspan="11" class="muted">جاري التحميل…</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody id="users-tbody">
+                    <tr>
+                      <td colspan="11" class="muted">جاري التحميل…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
         </section>
 
         <aside class="workspace-nav">
-          <button class="nav-item active" data-pane="sys-overview-pane">
-            نظرة عامة
-          </button>
-          <button class="nav-item" data-pane="sys-users-pane">
-            المستخدمون
-          </button>
+          <button class="nav-item active">نظرة عامة</button>
           <button class="nav-item" disabled>الأذونات</button>
         </aside>
       </div>
@@ -1021,11 +1088,12 @@
       <form method="dialog" id="new-user-form">
         <div id="new-user-fields" class="form-grid"></div>
         <div class="actions">
-          <button type="submit" class="accent-button">حفظ</button>
-          <button type="button" id="btn-cancel-new" class="ghost-button">
-            إلغاء
-          </button>
-        </div>
+  <button type="submit" class="accent-button save-button">حفظ</button>
+  <button type="button" id="btn-cancel-new" class="ghost-button cancel-button">
+    إلغاء
+  </button>
+</div>
+
       </form>
     </dialog>
 
@@ -1109,11 +1177,12 @@
           </table>
         </section>
       </div>
-      <div class="actions">
-        <button type="button" id="btn-close-profile" class="accent-button">
-          إغلاق
-        </button>
-      </div>
+     <div class="actions">
+  <button type="button" id="btn-close-profile" class="accent-button cancel-button">
+    إغلاق
+  </button>
+</div>
+
     </dialog>
 
     <!-- تعيين دور -->
@@ -1129,11 +1198,12 @@
           <div class="span-2 muted" id="assign-role-user-label"></div>
         </div>
         <div class="actions">
-          <button type="submit" class="accent-button">حفظ</button>
-          <button type="button" id="btn-cancel-assign" class="ghost-button">
-            إلغاء
-          </button>
-        </div>
+  <button type="submit" class="accent-button save-button">حفظ</button>
+  <button type="button" id="btn-cancel-assign" class="ghost-button cancel-button">
+    إلغاء
+  </button>
+</div>
+
       </form>
     </dialog>
 
@@ -1157,11 +1227,12 @@
           </div>
         </div>
         <div class="actions">
-          <button type="submit" class="accent-button">تحديث</button>
-          <button type="button" id="btn-cancel-reset" class="ghost-button">
-            إلغاء
-          </button>
-        </div>
+  <button type="submit" class="accent-button edit-button">تحديث</button>
+  <button type="button" id="btn-cancel-reset" class="ghost-button cancel-button">
+    إلغاء
+  </button>
+</div>
+
       </form>
     </dialog>
 
@@ -1417,25 +1488,6 @@
             switchView("login-screen");
             showToast("You have been signed out.", "info", "Logged Out");
           });
-
-        /* ---------- System Management: tabs inside workspace ---------- */
-        const sysView = document.getElementById("system-management-view");
-        const paneButtons = sysView.querySelectorAll(
-          ".workspace-nav .nav-item[data-pane]"
-        );
-        paneButtons.forEach((b) => {
-          b.addEventListener("click", () => {
-            paneButtons.forEach((x) => x.classList.remove("active"));
-            b.classList.add("active");
-            const target = b.dataset.pane;
-            sysView
-              .querySelectorAll("#sys-overview-pane, #sys-users-pane")
-              .forEach((p) => p.classList.toggle("hidden", p.id !== target));
-            if (target === "sys-users-pane") {
-              loadUsers();
-            }
-          });
-        });
 
         /* ---------- KPIs ---------- */
         function fetchKPIs() {
@@ -1738,9 +1790,9 @@
                   )}" title="عرض الملف" aria-label="عرض الملف">
                     <svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="edit" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="تعديل" aria-label="تعديل">
+                  <button class="icon-btn" data-act="edit" data-id="${
+                    escapeHtml(u.userId)
+                  }" title="تعديل" aria-label="تعديل">
                     <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 4l2 2"/></svg>
                   </button>
                   <button class="icon-btn" data-act="assign" data-id="${escapeHtml(
@@ -2035,12 +2087,15 @@
         function renderDynamicUserForm(fields, initialData = null) {
           const host = document.getElementById("new-user-fields");
           host.innerHTML = "";
+          const layout = document.createElement("div");
+          layout.className = "dyn-layout";
           const tabBar = document.createElement("div");
           tabBar.className = "dyn-tabs";
           const pages = document.createElement("div");
           pages.className = "dyn-pages";
-          host.appendChild(tabBar);
-          host.appendChild(pages);
+          layout.appendChild(tabBar);
+          layout.appendChild(pages);
+          host.appendChild(layout);
 
           const tabs = {};
           fields.forEach((f) => {
@@ -2141,23 +2196,29 @@
           const tabKeys = Object.keys(tabs);
           const pagesEls = tabKeys.map((k) => makePage(k, tabs[k]));
           pagesEls.forEach((p) => pages.appendChild(p));
+
+          const activateTab = (targetIdx) => {
+            const buttons = tabBar.querySelectorAll(".nav-item");
+            buttons.forEach((btn, idx) => {
+              btn.classList.toggle("active", idx === targetIdx);
+            });
+            pagesEls.forEach((page, idx) => {
+              page.classList.toggle("hidden", idx !== targetIdx);
+            });
+          };
+
           tabKeys.forEach((k, idx) => {
             const b = document.createElement("button");
             b.type = "button";
-            b.className = "nav-item" + (idx === 0 ? " active" : "");
+            b.className = "nav-item"  (idx === 0 ? " active" : "");
             b.textContent = tabs[k].name || "تبويب";
-            b.addEventListener("click", () => {
-              tabBar
-                .querySelectorAll(".nav-item")
-                .forEach((x) => x.classList.remove("active"));
-              b.classList.add("active");
-              pagesEls.forEach((p, i) =>
-                p.classList.toggle("hidden", i !== tabKeys.indexOf(k))
-              );
-            });
+            b.addEventListener("click", () => activateTab(idx));
             tabBar.appendChild(b);
           });
-          if (pagesEls[0]) pagesEls[0].classList.remove("hidden");
+
+          if (tabKeys.length) {
+            activateTab(0);
+          }
         }
 
         function buildMinimalUserForm(initialData = null) {
