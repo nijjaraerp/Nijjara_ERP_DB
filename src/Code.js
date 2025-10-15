@@ -46,10 +46,73 @@ const CONFIG = {
     HR_DEDUCTIONS: "HR_Deductions",
     HR_PAYROLL: "HR_Payroll",
   },
+  DEBUG: true,
+  DEBUG_MAX_ARRAY_LENGTH: 25,
 };
+
+/** ---- DEBUGGING UTILITIES ---- */
+function debugLog(context, message, data) {
+  if (!CONFIG.DEBUG) return;
+  try {
+    const entry = {
+      ts: new Date().toISOString(),
+      context,
+      message,
+    };
+    if (data !== undefined) {
+      entry.data = sanitizeForLog(data);
+    }
+    Logger.log(JSON.stringify(entry));
+  } catch (err) {
+    Logger.log(`${context}::${message} (failed to stringify) -> ${err}`);
+  }
+}
+
+function debugError(context, error, data) {
+  if (!CONFIG.DEBUG) return;
+  const payload = {
+    message: error && error.message ? error.message : String(error),
+    stack: error && error.stack ? String(error.stack) : null,
+  };
+  if (data !== undefined) payload.meta = sanitizeForLog(data);
+  debugLog(context, "error", payload);
+}
+
+function sanitizeForLog(value, depth = 0) {
+  if (value == null) return value;
+  if (typeof value === "string") {
+    const trimmed = value.length > 512 ? value.slice(0, 509) + "…" : value;
+    return trimmed;
+  }
+  if (typeof value !== "object") return value;
+  if (depth > 3) return "[MaxDepth]";
+  if (Array.isArray(value)) {
+    const limit = CONFIG.DEBUG_MAX_ARRAY_LENGTH || 25;
+    const slice = value.slice(0, limit).map((item) => sanitizeForLog(item, depth + 1));
+    if (value.length > limit) slice.push(`…+${value.length - limit} more`);
+    return slice;
+  }
+  const redactedFields = [
+    "password",
+    "Password",
+    "Password_Hash",
+    "Temp_Password",
+    "USR_Temp_Password",
+  ];
+  const safe = {};
+  Object.keys(value).forEach((key) => {
+    if (redactedFields.indexOf(key) >= 0) {
+      safe[key] = "[REDACTED]";
+    } else {
+      safe[key] = sanitizeForLog(value[key], depth + 1);
+    }
+  });
+  return safe;
+}
 
 /** ---- ENTRY POINT ---- */
 function doGet(e) {
+  debugLog("doGet", "render", { query: e && e.parameter });
   const t = HtmlService.createTemplateFromFile("Dashboard");
   t.appName = CONFIG.APP_NAME;
   return t
@@ -60,12 +123,13 @@ function doGet(e) {
 
 /** ---- DATA ACCESS ---- */
 function getBootstrapData() {
+  debugLog("getBootstrapData", "start");
   const user = getCurrentUser();
   const role = user?.Role_Id || user?.role || "GUEST";
   const perms = getRolePermissions(role);
   const filters = getDeptAndRoleFilters();
 
-  return {
+  const payload = {
     appName: CONFIG.APP_NAME,
     now: new Date().toISOString(),
     user,
@@ -73,9 +137,16 @@ function getBootstrapData() {
     permissions: perms,
     filters,
   };
+  debugLog("getBootstrapData", "resolved", {
+    role,
+    perms: perms ? perms.length || Object.keys(perms).length : 0,
+    hasFilters: !!filters,
+  });
+  return payload;
 }
 
 function getSystemKPIs() {
+  debugLog("getSystemKPIs", "start");
   const defaults = {
     totalUsers: 0,
     activeUsers: 0,
@@ -90,30 +161,35 @@ function getSystemKPIs() {
   );
 
   if (sheet) {
-    const data = sheet.getDataRange().getValues();
-    if (data && data.length > 1) {
-      const headers = data[0];
-      const values = data[1];
-      const read = (key) => {
-        const index = headers.indexOf(key);
-        if (index === -1) return null;
-        const value = values[index];
-        return value == null || value === "" ? null : value;
-      };
+    try {
+      const data = sheet.getDataRange().getValues();
+      if (data && data.length > 1) {
+        const headers = data[0];
+        const values = data[1];
+        const read = (key) => {
+          const index = headers.indexOf(key);
+          if (index === -1) return null;
+          const value = values[index];
+          return value == null || value === "" ? null : value;
+        };
 
-      const candidate = {
-        totalUsers: read("TotalUsers"),
-        activeUsers: read("ActiveUsers"),
-        inactiveUsers: read("InactiveUsers"),
-        roleCount: read("RoleCount"),
-        permissionCount: read("PermissionCount"),
-        pendingPasswordResets: read("PendingPasswordResets"),
-      };
+        const candidate = {
+          totalUsers: read("TotalUsers"),
+          activeUsers: read("ActiveUsers"),
+          inactiveUsers: read("InactiveUsers"),
+          roleCount: read("RoleCount"),
+          permissionCount: read("PermissionCount"),
+          pendingPasswordResets: read("PendingPasswordResets"),
+        };
 
-      const hasAny = Object.values(candidate).some((v) => v != null);
-      if (hasAny) {
-        return Object.assign({}, defaults, candidate);
+        const hasAny = Object.values(candidate).some((v) => v != null);
+        if (hasAny) {
+          debugLog("getSystemKPIs", "fromProfileView", candidate);
+          return Object.assign({}, defaults, candidate);
+        }
       }
+    } catch (err) {
+      debugError("getSystemKPIs", err, { stage: "profile_view" });
     }
   }
 
@@ -193,333 +269,409 @@ function getSystemKPIs() {
     }
   }
 
+  debugLog("getSystemKPIs", "fallback", defaults);
   return defaults;
 }
 
 // Enhanced user search with dynamic filtering
 function searchUsers(filters = {}) {
+  debugLog("searchUsers", "start", { filters });
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
   if (!sheet) return [];
 
-  const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const headers = data[0];
+  try {
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) {
+      debugLog("searchUsers", "noData");
+      return [];
+    }
+    const headers = data[0];
 
-  const idFilterSet = Array.isArray(filters.userIds)
-    ? new Set(filters.userIds.map((id) => String(id)))
-    : null;
-  const getIndex = (name) => headers.indexOf(name);
-  const idx = {
-    id: getIndex("User_Id"),
-    fullName: getIndex("Full_Name"),
-    username: getIndex("Username"),
-    email: getIndex("Email"),
-    department: getIndex("Department"),
-    role: getIndex("Role_Id"),
-    isActive: getIndex("IsActive"),
-    lastLogin: getIndex("Last_Login"),
-    updatedAt: getIndex("Updated_At"),
-  };
-
-  const normDate = (value) => {
-    if (!value) return null;
-    if (value instanceof Date) return value;
-    const maybe = new Date(value);
-    return isNaN(maybe.getTime()) ? null : maybe;
-  };
-
-  const fromDate = normDate(filters.updatedFrom);
-  const toDate = normDate(filters.updatedTo);
-  const toString = (value) => {
-    if (value == null) return "";
-    if (value instanceof Date) return value.toISOString();
-    return String(value);
-  };
-
-  const result = data.slice(1).map((row) => {
-    const updatedRaw = idx.updatedAt >= 0 ? row[idx.updatedAt] : "";
-    return {
-      User_Id: idx.id >= 0 ? row[idx.id] : "",
-      Full_Name: idx.fullName >= 0 ? row[idx.fullName] : "",
-      Username: idx.username >= 0 ? row[idx.username] : "",
-      Email: idx.email >= 0 ? row[idx.email] : "",
-      Department: idx.department >= 0 ? row[idx.department] : "",
-      Role_Id: idx.role >= 0 ? row[idx.role] : "",
-      IsActive:
-        idx.isActive >= 0
-          ? row[idx.isActive] === true ||
-            String(row[idx.isActive]).toLowerCase() === "true"
-          : false,
-      Last_Login: idx.lastLogin >= 0 ? row[idx.lastLogin] : "",
-      Updated_At: updatedRaw,
+    const idFilterSet = Array.isArray(filters.userIds)
+      ? new Set(filters.userIds.map((id) => String(id)))
+      : null;
+    const getIndex = (name) => headers.indexOf(name);
+    const idx = {
+      id: getIndex("User_Id"),
+      fullName: getIndex("Full_Name"),
+      username: getIndex("Username"),
+      email: getIndex("Email"),
+      department: getIndex("Department"),
+      role: getIndex("Role_Id"),
+      isActive: getIndex("IsActive"),
+      lastLogin: getIndex("Last_Login"),
+      updatedAt: getIndex("Updated_At"),
     };
-  });
 
-  return result.filter((user) => {
-    if (idFilterSet && !idFilterSet.has(String(user.User_Id || ""))) {
-      return false;
-    }
+    const normDate = (value) => {
+      if (!value) return null;
+      if (value instanceof Date) return value;
+      const maybe = new Date(value);
+      return isNaN(maybe.getTime()) ? null : maybe;
+    };
 
-    if (filters.search) {
-      const q = String(filters.search).toLowerCase();
-      const searchable = [
-        user.User_Id,
-        user.Full_Name,
-        user.Username,
-        user.Email,
-        user.Department,
-        user.Role_Id,
-      ]
-        .map(toString)
-        .join("||")
-        .toLowerCase();
-      if (!searchable.includes(q)) return false;
-    }
+    const fromDate = normDate(filters.updatedFrom);
+    const toDate = normDate(filters.updatedTo);
+    const toString = (value) => {
+      if (value == null) return "";
+      if (value instanceof Date) return value.toISOString();
+      return String(value);
+    };
 
-    if (filters.department && user.Department !== filters.department) {
-      return false;
-    }
+    const result = data.slice(1).map((row) => {
+      const updatedRaw = idx.updatedAt >= 0 ? row[idx.updatedAt] : "";
+      return {
+        User_Id: idx.id >= 0 ? row[idx.id] : "",
+        Full_Name: idx.fullName >= 0 ? row[idx.fullName] : "",
+        Username: idx.username >= 0 ? row[idx.username] : "",
+        Email: idx.email >= 0 ? row[idx.email] : "",
+        Department: idx.department >= 0 ? row[idx.department] : "",
+        Role_Id: idx.role >= 0 ? row[idx.role] : "",
+        IsActive:
+          idx.isActive >= 0
+            ? row[idx.isActive] === true ||
+              String(row[idx.isActive]).toLowerCase() === "true"
+            : false,
+        Last_Login: idx.lastLogin >= 0 ? row[idx.lastLogin] : "",
+        Updated_At: updatedRaw,
+      };
+    });
 
-    if (filters.role && user.Role_Id !== filters.role) {
-      return false;
-    }
+    const filtered = result.filter((user) => {
+      if (idFilterSet && !idFilterSet.has(String(user.User_Id || ""))) {
+        return false;
+      }
 
-    if (filters.status !== undefined && filters.status !== "") {
-      const desired = String(filters.status).toLowerCase();
-      const active = user.IsActive === true;
-      if (desired === "true" && !active) return false;
-      if (desired === "false" && active) return false;
-    }
+      if (filters.search) {
+        const q = String(filters.search).toLowerCase();
+        const searchable = [
+          user.User_Id,
+          user.Full_Name,
+          user.Username,
+          user.Email,
+          user.Department,
+          user.Role_Id,
+        ]
+          .map(toString)
+          .join("||")
+          .toLowerCase();
+        if (!searchable.includes(q)) return false;
+      }
 
-    if (fromDate || toDate) {
-      const updated = normDate(user.Updated_At);
-      if (!updated) return false;
-      if (fromDate && updated < fromDate) return false;
-      if (toDate && updated > toDate) return false;
-    }
+      if (filters.department && user.Department !== filters.department) {
+        return false;
+      }
 
-    return true;
-  });
+      if (filters.role && user.Role_Id !== filters.role) {
+        return false;
+      }
+
+      if (filters.status !== undefined && filters.status !== "") {
+        const desired = String(filters.status).toLowerCase();
+        const active = user.IsActive === true;
+        if (desired === "true" && !active) return false;
+        if (desired === "false" && active) return false;
+      }
+
+      if (fromDate || toDate) {
+        const updated = normDate(user.Updated_At);
+        if (!updated) return false;
+        if (fromDate && updated < fromDate) return false;
+        if (toDate && updated > toDate) return false;
+      }
+
+      return true;
+    });
+
+    debugLog("searchUsers", "result", {
+      totalRows: result.length,
+      filteredCount: filtered.length,
+    });
+    return filtered;
+  } catch (err) {
+    debugError("searchUsers", err, { filters });
+    throw err;
+  }
 }
 
 function getUserFormStructure(formId = "FORM_SYS_AddUser") {
+  debugLog("getUserFormStructure", "start", { formId });
   const sh = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.DYNAMIC_FORMS
   );
   if (!sh) return [];
 
-  const data = sh.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const h = data[0];
-  const idx = {
-    Form_ID: h.indexOf("Form_ID"),
-    Form_Title: h.indexOf("Form_Title"),
-    Tab_ID: h.indexOf("Tab_ID"),
-    Tab_Name: h.indexOf("Tab_Name"),
-    Section_Header: h.indexOf("Section_Header"),
-    Field_ID: h.indexOf("Field_ID"),
-    Field_Label: h.indexOf("Field_Label"),
-    Field_Type: h.indexOf("Field_Type"),
-    Source_Sheet: h.indexOf("Source_Sheet"),
-    Source_Range: h.indexOf("Source_Range"),
-    Dropdown_Key: h.indexOf("Dropdown_Key"),
-    Mandatory: h.indexOf("Mandatory"),
-    Default_Value: h.indexOf("Default_Value"),
-    Read_Only: h.indexOf("Read_Only"),
-    Target_Sheet: h.indexOf("Target_Sheet"),
-    Target_Column: h.indexOf("Target_Column"),
-    Role_ID: h.indexOf("Role_ID"),
-  };
+  try {
+    const data = sh.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const h = data[0];
+    const idx = {
+      Form_ID: h.indexOf("Form_ID"),
+      Form_Title: h.indexOf("Form_Title"),
+      Tab_ID: h.indexOf("Tab_ID"),
+      Tab_Name: h.indexOf("Tab_Name"),
+      Section_Header: h.indexOf("Section_Header"),
+      Field_ID: h.indexOf("Field_ID"),
+      Field_Label: h.indexOf("Field_Label"),
+      Field_Type: h.indexOf("Field_Type"),
+      Source_Sheet: h.indexOf("Source_Sheet"),
+      Source_Range: h.indexOf("Source_Range"),
+      Dropdown_Key: h.indexOf("Dropdown_Key"),
+      Mandatory: h.indexOf("Mandatory"),
+      Default_Value: h.indexOf("Default_Value"),
+      Read_Only: h.indexOf("Read_Only"),
+      Target_Sheet: h.indexOf("Target_Sheet"),
+      Target_Column: h.indexOf("Target_Column"),
+      Role_ID: h.indexOf("Role_ID"),
+    };
 
-  return data
-    .slice(1)
-    .filter((r) => r[idx.Form_ID] === formId)
-    .map((r) => ({
-      formId: r[idx.Form_ID],
-      formTitle: r[idx.Form_Title],
-      tabId: r[idx.Tab_ID],
-      tabName: r[idx.Tab_Name],
-      section: r[idx.Section_Header],
-      fieldId: r[idx.Field_ID],
-      label: r[idx.Field_Label],
-      type: String(r[idx.Field_Type] || "Text").toLowerCase(),
-      sourceSheet: r[idx.Source_Sheet] || "",
-      sourceRange: idx.Source_Range >= 0 ? r[idx.Source_Range] || "" : "",
-      sourceKey: idx.Dropdown_Key >= 0 ? r[idx.Dropdown_Key] || "" : "",
-      required: String(r[idx.Mandatory] || "").toLowerCase() === "yes",
-      defaultValue: idx.Default_Value >= 0 ? r[idx.Default_Value] || "" : "",
-      readOnly:
-        idx.Read_Only >= 0
-          ? r[idx.Read_Only] === true ||
-            String(r[idx.Read_Only]).toLowerCase() === "yes"
-          : false,
-      targetSheet: r[idx.Target_Sheet] || "",
-      targetColumn: r[idx.Target_Column] || "",
-      roleId: r[idx.Role_ID] || "",
-    }));
+    const fields = data
+      .slice(1)
+      .filter((r) => r[idx.Form_ID] === formId)
+      .map((r) => ({
+        formId: r[idx.Form_ID],
+        formTitle: r[idx.Form_Title],
+        tabId: r[idx.Tab_ID],
+        tabName: r[idx.Tab_Name],
+        section: r[idx.Section_Header],
+        fieldId: r[idx.Field_ID],
+        label: r[idx.Field_Label],
+        type: String(r[idx.Field_Type] || "Text").toLowerCase(),
+        sourceSheet: r[idx.Source_Sheet] || "",
+        sourceRange: idx.Source_Range >= 0 ? r[idx.Source_Range] || "" : "",
+        sourceKey: idx.Dropdown_Key >= 0 ? r[idx.Dropdown_Key] || "" : "",
+        required: String(r[idx.Mandatory] || "").toLowerCase() === "yes",
+        defaultValue: idx.Default_Value >= 0 ? r[idx.Default_Value] || "" : "",
+        readOnly:
+          idx.Read_Only >= 0
+            ? r[idx.Read_Only] === true ||
+              String(r[idx.Read_Only]).toLowerCase() === "yes"
+            : false,
+        targetSheet: r[idx.Target_Sheet] || "",
+        targetColumn: r[idx.Target_Column] || "",
+        roleId: r[idx.Role_ID] || "",
+      }));
+    debugLog("getUserFormStructure", "loaded", {
+      formId,
+      fieldCount: fields.length,
+    });
+    return fields;
+  } catch (err) {
+    debugError("getUserFormStructure", err, { formId });
+    throw err;
+  }
 }
 
 function getDropdownOptions(key) {
+  debugLog("getDropdownOptions", "start", { key });
   if (!key) return [];
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.DROPDOWNS);
   if (!sh) return [];
 
-  const data = sh.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const h = data[0];
-  const ix = {
-    Key: h.indexOf("Key"),
-    En: h.indexOf("English_Title"),
-    Ar: h.indexOf("Arabic_Title"),
-    Active: h.indexOf("Is_Active"),
-    Sort: h.indexOf("Sort_Order"),
-  };
+  try {
+    const data = sh.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const h = data[0];
+    const ix = {
+      Key: h.indexOf("Key"),
+      En: h.indexOf("English_Title"),
+      Ar: h.indexOf("Arabic_Title"),
+      Active: h.indexOf("Is_Active"),
+      Sort: h.indexOf("Sort_Order"),
+    };
 
-  return data
-    .slice(1)
-    .filter((r) => r[ix.Key] === key)
-    .filter((r) => {
-      const v = String(r[ix.Active]).toLowerCase();
-      return (
-        v === "true" || v === "yes" || v === "1" || v === "نشط" || v === "y"
-      );
-    })
-    .sort((a, b) => (Number(a[ix.Sort]) || 0) - (Number(b[ix.Sort]) || 0))
-    .map((r) => ({
-      label: r[ix.Ar] || r[ix.En] || "",
-      value: r[ix.En] || r[ix.Ar] || "",
-    }));
+    const options = data
+      .slice(1)
+      .filter((r) => r[ix.Key] === key)
+      .filter((r) => {
+        const v = String(r[ix.Active]).toLowerCase();
+        return (
+          v === "true" || v === "yes" || v === "1" || v === "نشط" || v === "y"
+        );
+      })
+      .sort((a, b) => (Number(a[ix.Sort]) || 0) - (Number(b[ix.Sort]) || 0))
+      .map((r) => ({
+        label: r[ix.Ar] || r[ix.En] || "",
+        value: r[ix.En] || r[ix.Ar] || "",
+      }));
+    debugLog("getDropdownOptions", "loaded", { key, count: options.length });
+    return options;
+  } catch (err) {
+    debugError("getDropdownOptions", err, { key });
+    throw err;
+  }
 }
 
 function listRoles() {
+  debugLog("listRoles", "start");
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.ROLES);
   if (!sheet) return [];
-  const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const headers = data[0];
-  const idx = {
-    id: headers.indexOf("Role_Id"),
-    title: headers.indexOf("Role_Title"),
-    desc: headers.indexOf("Description"),
-    isSystem: headers.indexOf("Is_System"),
-    updatedAt: headers.indexOf("Updated_At"),
-  };
-  const toBool = (value) =>
-    value === true || String(value).toLowerCase() === "true";
-  return data.slice(1).map((row) => ({
-    roleId: idx.id >= 0 ? row[idx.id] : "",
-    title: idx.title >= 0 ? row[idx.title] : "",
-    description: idx.desc >= 0 ? row[idx.desc] : "",
-    isSystem: idx.isSystem >= 0 ? toBool(row[idx.isSystem]) : false,
-    updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
-  }));
+  try {
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const headers = data[0];
+    const idx = {
+      id: headers.indexOf("Role_Id"),
+      title: headers.indexOf("Role_Title"),
+      desc: headers.indexOf("Description"),
+      isSystem: headers.indexOf("Is_System"),
+      updatedAt: headers.indexOf("Updated_At"),
+    };
+    const toBool = (value) =>
+      value === true || String(value).toLowerCase() === "true";
+    const roles = data.slice(1).map((row) => ({
+      roleId: idx.id >= 0 ? row[idx.id] : "",
+      title: idx.title >= 0 ? row[idx.title] : "",
+      description: idx.desc >= 0 ? row[idx.desc] : "",
+      isSystem: idx.isSystem >= 0 ? toBool(row[idx.isSystem]) : false,
+      updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+    }));
+    debugLog("listRoles", "loaded", { count: roles.length });
+    return roles;
+  } catch (err) {
+    debugError("listRoles", err);
+    throw err;
+  }
 }
 
 function listPermissions() {
+  debugLog("listPermissions", "start");
   const sheet = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.PERMS
   );
   if (!sheet) return [];
-  const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const headers = data[0];
-  const idx = {
-    key: headers.indexOf("Permission_Key"),
-    label: headers.indexOf("Permission_Label"),
-    desc: headers.indexOf("Description"),
-    category: headers.indexOf("Category"),
-    updatedAt: headers.indexOf("Updated_At"),
-  };
-  return data.slice(1).map((row) => ({
-    permissionKey: idx.key >= 0 ? row[idx.key] : "",
-    label: idx.label >= 0 ? row[idx.label] : "",
-    description: idx.desc >= 0 ? row[idx.desc] : "",
-    category: idx.category >= 0 ? row[idx.category] : "",
-    updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
-  }));
+  try {
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const headers = data[0];
+    const idx = {
+      key: headers.indexOf("Permission_Key"),
+      label: headers.indexOf("Permission_Label"),
+      desc: headers.indexOf("Description"),
+      category: headers.indexOf("Category"),
+      updatedAt: headers.indexOf("Updated_At"),
+    };
+    const rows = data.slice(1).map((row) => ({
+      permissionKey: idx.key >= 0 ? row[idx.key] : "",
+      label: idx.label >= 0 ? row[idx.label] : "",
+      description: idx.desc >= 0 ? row[idx.desc] : "",
+      category: idx.category >= 0 ? row[idx.category] : "",
+      updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+    }));
+    debugLog("listPermissions", "loaded", { count: rows.length });
+    return rows;
+  } catch (err) {
+    debugError("listPermissions", err);
+    throw err;
+  }
 }
 
 function listRolePermissions() {
+  debugLog("listRolePermissions", "start");
   const sheet = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.ROLE_PERMS
   );
   if (!sheet) return [];
-  const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const headers = data[0];
-  const idx = {
-    role: headers.indexOf("Role_Id"),
-    permission: headers.indexOf("Permission_Key"),
-    scope: headers.indexOf("Scope"),
-    allowed: headers.indexOf("Allowed"),
-    updatedAt: headers.indexOf("Updated_At"),
-  };
-  const toBool = (value) =>
-    value === true || String(value).toLowerCase() === "true";
-  return data.slice(1).map((row) => ({
-    roleId: idx.role >= 0 ? row[idx.role] : "",
-    permissionKey: idx.permission >= 0 ? row[idx.permission] : "",
-    scope: idx.scope >= 0 ? row[idx.scope] : "",
-    allowed: idx.allowed >= 0 ? toBool(row[idx.allowed]) : false,
-    updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
-  }));
+  try {
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const headers = data[0];
+    const idx = {
+      role: headers.indexOf("Role_Id"),
+      permission: headers.indexOf("Permission_Key"),
+      scope: headers.indexOf("Scope"),
+      allowed: headers.indexOf("Allowed"),
+      updatedAt: headers.indexOf("Updated_At"),
+    };
+    const toBool = (value) =>
+      value === true || String(value).toLowerCase() === "true";
+    const rows = data.slice(1).map((row) => ({
+      roleId: idx.role >= 0 ? row[idx.role] : "",
+      permissionKey: idx.permission >= 0 ? row[idx.permission] : "",
+      scope: idx.scope >= 0 ? row[idx.scope] : "",
+      allowed: idx.allowed >= 0 ? toBool(row[idx.allowed]) : false,
+      updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+    }));
+    debugLog("listRolePermissions", "loaded", { count: rows.length });
+    return rows;
+  } catch (err) {
+    debugError("listRolePermissions", err);
+    throw err;
+  }
 }
 
 function listUserProperties() {
+  debugLog("listUserProperties", "start");
   const sheet = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.USER_PROPERTIES
   );
   if (!sheet) return [];
-  const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const headers = data[0];
-  const idx = {
-    user: headers.indexOf("User_Id"),
-    key: headers.indexOf("Property_Key"),
-    value: headers.indexOf("Property_Value"),
-    updatedAt: headers.indexOf("Updated_At"),
-    updatedBy: headers.indexOf("Updated_By"),
-  };
-  return data.slice(1).map((row) => ({
-    userId: idx.user >= 0 ? row[idx.user] : "",
-    key: idx.key >= 0 ? row[idx.key] : "",
-    value: idx.value >= 0 ? row[idx.value] : "",
-    updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
-    updatedBy: idx.updatedBy >= 0 ? row[idx.updatedBy] : "",
-  }));
+  try {
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const headers = data[0];
+    const idx = {
+      user: headers.indexOf("User_Id"),
+      key: headers.indexOf("Property_Key"),
+      value: headers.indexOf("Property_Value"),
+      updatedAt: headers.indexOf("Updated_At"),
+      updatedBy: headers.indexOf("Updated_By"),
+    };
+    const rows = data.slice(1).map((row) => ({
+      userId: idx.user >= 0 ? row[idx.user] : "",
+      key: idx.key >= 0 ? row[idx.key] : "",
+      value: idx.value >= 0 ? row[idx.value] : "",
+      updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+      updatedBy: idx.updatedBy >= 0 ? row[idx.updatedBy] : "",
+    }));
+    debugLog("listUserProperties", "loaded", { count: rows.length });
+    return rows;
+  } catch (err) {
+    debugError("listUserProperties", err);
+    throw err;
+  }
 }
 
 function listSessions() {
+  debugLog("listSessions", "start");
   const sheet = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.SESSIONS
   );
   if (!sheet) return [];
-  const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const headers = data[0];
-  const idx = {
-    session: headers.indexOf("Session_Id"),
-    user: headers.indexOf("User_Id"),
-    actor: headers.indexOf("Actor_Email"),
-    type: headers.indexOf("Type"),
-    status: headers.indexOf("Status"),
-    started: headers.indexOf("Started_At"),
-    ended: headers.indexOf("Ended_At"),
-  };
-  return data.slice(1).map((row) => ({
-    sessionId: idx.session >= 0 ? row[idx.session] : "",
-    userId: idx.user >= 0 ? row[idx.user] : "",
-    actor: idx.actor >= 0 ? row[idx.actor] : "",
-    type: idx.type >= 0 ? row[idx.type] : "",
-    status: idx.status >= 0 ? row[idx.status] : "",
-    startedAt: idx.started >= 0 ? row[idx.started] : "",
-    endedAt: idx.ended >= 0 ? row[idx.ended] : "",
-  }));
+  try {
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const headers = data[0];
+    const idx = {
+      session: headers.indexOf("Session_Id"),
+      user: headers.indexOf("User_Id"),
+      actor: headers.indexOf("Actor_Email"),
+      type: headers.indexOf("Type"),
+      status: headers.indexOf("Status"),
+      started: headers.indexOf("Started_At"),
+      ended: headers.indexOf("Ended_At"),
+    };
+    const rows = data.slice(1).map((row) => ({
+      sessionId: idx.session >= 0 ? row[idx.session] : "",
+      userId: idx.user >= 0 ? row[idx.user] : "",
+      actor: idx.actor >= 0 ? row[idx.actor] : "",
+      type: idx.type >= 0 ? row[idx.type] : "",
+      status: idx.status >= 0 ? row[idx.status] : "",
+      startedAt: idx.started >= 0 ? row[idx.started] : "",
+      endedAt: idx.ended >= 0 ? row[idx.ended] : "",
+    }));
+    debugLog("listSessions", "loaded", { count: rows.length });
+    return rows;
+  } catch (err) {
+    debugError("listSessions", err);
+    throw err;
+  }
 }
 
 function getFormWithOptions(formId = "FORM_SYS_AddUser") {
+  debugLog("getFormWithOptions", "start", { formId });
   const fields = getUserFormStructure(formId);
-  return fields.map((f) => {
+  const enriched = fields.map((f) => {
     if (
       f.type === "dropdown" &&
       f.sourceSheet === "SYS_Dropdowns" &&
@@ -529,36 +681,59 @@ function getFormWithOptions(formId = "FORM_SYS_AddUser") {
     }
     return f;
   });
+  debugLog("getFormWithOptions", "complete", {
+    formId,
+    fieldCount: enriched.length,
+  });
+  return enriched;
 }
 
 function getAuditLog() {
+  debugLog("getAuditLog", "start");
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.AUDIT);
   if (!sheet) return [];
 
-  const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const headers = data[0];
+  try {
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const headers = data[0];
 
-  return data
-    .slice(1)
-    .map(function (row) {
-      const iTs = headers.indexOf("Timestamp");
-      const iU = headers.indexOf("User");
-      const iA = headers.indexOf("Action");
-      const iD = headers.indexOf("Details");
-      return {
-        timestamp: new Date(row[iTs]).toISOString(),
-        user: row[iU],
-        action: row[iA],
-        details: row[iD],
-      };
-    })
-    .sort(function (a, b) {
-      return new Date(b.timestamp) - new Date(a.timestamp);
-    });
+    const rows = data
+      .slice(1)
+      .map(function (row) {
+        const iTs = headers.indexOf("Timestamp");
+        const iU = headers.indexOf("User");
+        const iA = headers.indexOf("Action");
+        const iD = headers.indexOf("Details");
+        return {
+          timestamp: new Date(row[iTs]).toISOString(),
+          user: row[iU],
+          action: row[iA],
+          details: row[iD],
+        };
+      })
+      .sort(function (a, b) {
+        return new Date(b.timestamp) - new Date(a.timestamp);
+      });
+    debugLog("getAuditLog", "loaded", { count: rows.length });
+    return rows;
+  } catch (err) {
+    debugError("getAuditLog", err);
+    throw err;
+  }
 }
 
 function createUser(userData) {
+  debugLog("createUser", "start", {
+    supplied: sanitizeForLog({
+      Full_Name: userData?.Full_Name,
+      Username: userData?.Username,
+      Email: userData?.Email,
+      Department: userData?.Department,
+      Role_Id: userData?.Role_Id,
+      IsActive: userData?.IsActive,
+    }),
+  });
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
   const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
@@ -614,11 +789,14 @@ function createUser(userData) {
   set("Updated_By", actor);
 
   sh.appendRow(row);
-  logAuditEvent("CREATE_USER", { userId: row[getCol("User_Id") - 1] });
-  return { success: true, userId: row[getCol("User_Id") - 1] };
+  const createdId = row[getCol("User_Id") - 1];
+  debugLog("createUser", "success", { userId: createdId });
+  logAuditEvent("CREATE_USER", { userId: createdId });
+  return { success: true, userId: createdId };
 }
 
 function updateUserPassword(userId, newPassword) {
+  debugLog("updateUserPassword", "start", { userId });
   if (!userId || !newPassword) throw new Error("Missing userId/password");
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
@@ -643,10 +821,12 @@ function updateUserPassword(userId, newPassword) {
   if (iUpdBy >= 0) sh.getRange(targetRow, iUpdBy + 1).setValue(actor);
   upsertUserProperty_(userId, "Must_Change", true);
   logAuditEvent("RESET_PASSWORD", { userId });
+  debugLog("updateUserPassword", "updated", { userId });
   return { success: true };
 }
 
 function toggleUserActive(userId) {
+  debugLog("toggleUserActive", "start", { userId });
   if (!userId) throw new Error("Missing userId");
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
@@ -680,10 +860,15 @@ function toggleUserActive(userId) {
     previous: current,
     next,
   });
+  debugLog("toggleUserActive", "updated", { userId, previous: current, next });
   return { success: true, isActive: next };
 }
 
 function bulkUpdateUserStatus(userIds = [], makeActive = true) {
+  debugLog("bulkUpdateUserStatus", "start", {
+    ids: userIds ? userIds.length : 0,
+    makeActive,
+  });
   if (!Array.isArray(userIds) || userIds.length === 0) {
     return { success: false, message: "No users supplied" };
   }
@@ -745,10 +930,15 @@ function bulkUpdateUserStatus(userIds = [], makeActive = true) {
     updated += 1;
   });
 
+  debugLog("bulkUpdateUserStatus", "complete", { updated, makeActive });
   return { success: true, updated };
 }
 
 function bulkAssignRole(userIds = [], roleId) {
+  debugLog("bulkAssignRole", "start", {
+    ids: userIds ? userIds.length : 0,
+    roleId,
+  });
   if (!Array.isArray(userIds) || userIds.length === 0) {
     return { success: false, message: "No users supplied" };
   }
@@ -796,10 +986,12 @@ function bulkAssignRole(userIds = [], roleId) {
     updated += 1;
   });
 
+  debugLog("bulkAssignRole", "complete", { updated, roleId });
   return { success: true, updated };
 }
 
 function exportUsers(filters = {}, format = "csv") {
+  debugLog("exportUsers", "start", { format, filters });
   const data = searchUsers(filters);
   const headers = [
     "User_Id",
@@ -839,38 +1031,59 @@ function exportUsers(filters = {}, format = "csv") {
     "yyyyMMdd_HHmmss"
   );
   const filename = `users_export_${timestamp}.csv`;
-  return {
+  const response = {
     format: format || "csv",
     filename,
     mimeType: "text/csv",
     content: csv,
   };
+  debugLog("exportUsers", "complete", { rows: data.length, filename });
+  return response;
 }
 
 function getCurrentUser() {
+  debugLog("getCurrentUser", "start");
   const email = Session.getActiveUser().getEmail();
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
-  if (!sheet) return null;
+  if (!sheet) {
+    debugLog("getCurrentUser", "noSheet");
+    return null;
+  }
 
   const data = sheet.getDataRange().getValues();
-  if (!data || data.length < 2) return null;
+  if (!data || data.length < 2) {
+    debugLog("getCurrentUser", "noRows");
+    return null;
+  }
   const headers = data[0];
   const emailCol = headers.indexOf("Email");
-  if (emailCol === -1) return null;
+  if (emailCol === -1) {
+    debugLog("getCurrentUser", "noEmailColumn");
+    return null;
+  }
 
   const row = data.slice(1).find(function (r) {
     return r[emailCol] === email;
   });
-  if (!row) return null;
+  if (!row) {
+    debugLog("getCurrentUser", "notFound", { email });
+    return null;
+  }
 
   const u = headers.reduce(function (user, header, i) {
     user[header] = row[i];
     return user;
   }, {});
+  debugLog("getCurrentUser", "resolved", {
+    email,
+    userId: u.User_Id,
+    role: u.Role_Id,
+  });
   return u;
 }
 
 function getRolePermissions(roleOrId) {
+  debugLog("getRolePermissions", "start", { roleOrId });
   const sh = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.ROLE_PERMS
   );
@@ -883,13 +1096,16 @@ function getRolePermissions(roleOrId) {
     h.indexOf("Role_Id") >= 0 ? h.indexOf("Role_Id") : h.indexOf("Role");
   if (iRole < 0) return [];
 
-  return data
+  const rows = data
     .slice(1)
     .filter((r) => r[iRole] === roleOrId)
     .map((row) => h.reduce((o, k, i) => ((o[k] = row[i]), o), {}));
+  debugLog("getRolePermissions", "resolved", { count: rows.length });
+  return rows;
 }
 
 function getUserById(userId) {
+  debugLog("getUserById", "start", { userId });
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
   if (!sh) return null;
   const data = sh.getDataRange().getValues();
@@ -898,12 +1114,25 @@ function getUserById(userId) {
   const i = h.indexOf("User_Id");
   if (i < 0) return null;
   const idx = data.slice(1).findIndex((r) => r[i] === userId);
-  if (idx < 0) return null;
+  if (idx < 0) {
+    debugLog("getUserById", "notFound", { userId });
+    return null;
+  }
   const row = data[idx + 1];
-  return h.reduce((o, col, i2) => ((o[col] = row[i2]), o), {});
+  const result = h.reduce((o, col, i2) => ((o[col] = row[i2]), o), {});
+  debugLog("getUserById", "resolved", {
+    userId: result.User_Id,
+    role: result.Role_Id,
+    isActive: result.IsActive,
+  });
+  return result;
 }
 
 function updateUser(userData) {
+  debugLog("updateUser", "start", {
+    userId: userData && userData.User_Id,
+    fields: Object.keys(userData || {}),
+  });
   if (!userData || !userData.User_Id) throw new Error("Missing User_Id");
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
@@ -924,13 +1153,16 @@ function updateUser(userData) {
     iUpdBy = h.indexOf("Updated_By");
   if (iUpdAt >= 0) sh.getRange(row, iUpdAt + 1).setValue(new Date());
   if (iUpdBy >= 0) sh.getRange(row, iUpdBy + 1).setValue("SYSTEM");
+  debugLog("updateUser", "success", { userId: userData.User_Id });
   logAuditEvent("UPDATE_USER", { userId: userData.User_Id });
   return { success: true };
 }
 
 /** ---- UTILITIES ---- */
 function generateUserId() {
-  return generateSequentialUserId_();
+  const id = generateSequentialUserId_();
+  debugLog("generateUserId", "generated", { userId: id });
+  return id;
 }
 
 function hashPassword(password) {
@@ -968,6 +1200,7 @@ function getActorEmail_() {
 }
 
 function upsertUserProperty_(userId, key, value) {
+  debugLog("upsertUserProperty_", "start", { userId, key });
   if (!userId || !key) return false;
   const sheet = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.USER_PROPERTIES
@@ -1014,10 +1247,12 @@ function upsertUserProperty_(userId, key, value) {
     if (idx.updatedBy >= 0) row[idx.updatedBy] = actor;
     sheet.appendRow(row);
   }
+  debugLog("upsertUserProperty_", "upserted", { userId, key });
   return true;
 }
 
 function generateSequentialUserId_() {
+  debugLog("generateSequentialUserId_", "start");
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
   if (!sh) return "USR_00001";
   const data = sh.getDataRange().getValues();
@@ -1030,20 +1265,28 @@ function generateSequentialUserId_() {
     if (m) max = Math.max(max, parseInt(m[1], 10));
   });
   const next = max + 1;
-  return "USR_" + String(next).padStart(5, "0");
+  const generated = "USR_" + String(next).padStart(5, "0");
+  debugLog("generateSequentialUserId_", "generated", { userId: generated });
+  return generated;
 }
 
 function getNextUserId() {
-  return generateSequentialUserId_();
+  const next = generateSequentialUserId_();
+  debugLog("getNextUserId", "resolved", { userId: next });
+  return next;
 }
 
 /** ---- SMALL HELPERS FOR CLIENT FILTERS ---- */
 function getDeptAndRoleFilters() {
+  debugLog("getDeptAndRoleFilters", "start");
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
   if (!sh) return { departments: [], roles: [], roleOptions: [] };
   const data = sh.getDataRange().getValues();
-  if (!data || data.length < 2)
-    return { departments: [], roles: [], roleOptions: getRoleOptions_() };
+  if (!data || data.length < 2) {
+    const fallback = { departments: [], roles: [], roleOptions: getRoleOptions_() };
+    debugLog("getDeptAndRoleFilters", "resolved", fallback);
+    return fallback;
+  }
   const h = data[0];
   const iDept = h.indexOf("Department");
   const iRole = h.indexOf("Role_Id");
@@ -1053,14 +1296,21 @@ function getDeptAndRoleFilters() {
     if (iDept >= 0 && r[iDept]) depts.add(String(r[iDept]));
     if (iRole >= 0 && r[iRole]) roles.add(String(r[iRole]));
   });
-  return {
+  const payload = {
     departments: Array.from(depts).sort(),
     roles: Array.from(roles).sort(),
     roleOptions: getRoleOptions_(),
   };
+  debugLog("getDeptAndRoleFilters", "resolved", {
+    departments: payload.departments.length,
+    roles: payload.roles.length,
+    roleOptions: payload.roleOptions.length,
+  });
+  return payload;
 }
 
 function getRoleOptions_() {
+  debugLog("getRoleOptions_", "start");
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.ROLES);
   if (!sh) return [];
   const data = sh.getDataRange().getValues();
@@ -1068,26 +1318,38 @@ function getRoleOptions_() {
   const headers = data[0];
   const idIdx = headers.indexOf("Role_Id");
   const titleIdx = headers.indexOf("Role_Title");
-  return data
+  const options = data
     .slice(1)
     .map((row) => ({
       value: idIdx >= 0 ? row[idIdx] : "",
       label: titleIdx >= 0 ? row[titleIdx] || row[idIdx] : row[idIdx],
     }))
     .filter((opt) => opt.value != null && opt.value !== "");
+  debugLog("getRoleOptions_", "resolved", { count: options.length });
+  return options;
 }
 
 function getRoleOptions() {
-  return getRoleOptions_();
+  const options = getRoleOptions_();
+  debugLog("getRoleOptions", "resolved", { count: options.length });
+  return options;
 }
 
 function assignUserRole(userId, roleId) {
+  debugLog("assignUserRole", "start", { userId, roleId });
   if (!userId) throw new Error("User_Id is required");
   if (!roleId) throw new Error("Role_Id is required");
-  return bulkAssignRole([userId], roleId);
+  const result = bulkAssignRole([userId], roleId);
+  debugLog("assignUserRole", "success", {
+    userId,
+    roleId,
+    updated: result ? result.updated : 0,
+  });
+  return result;
 }
 
 function softDeleteUser(userId, reason) {
+  debugLog("softDeleteUser", "start", { userId, reason });
   if (!userId) throw new Error("User_Id is required");
   const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
@@ -1128,10 +1390,12 @@ function softDeleteUser(userId, reason) {
   }
 
   logAuditEvent("DELETE_USER_SOFT", { userId, reason: reason || "" });
+  debugLog("softDeleteUser", "complete", { userId });
   return { success: true };
 }
 
 function startImpersonation(userId) {
+  debugLog("startImpersonation", "start", { userId });
   if (!userId) throw new Error("User_Id is required");
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.SESSIONS);
   if (!sheet) throw new Error("Sessions sheet not found");
@@ -1159,21 +1423,32 @@ function startImpersonation(userId) {
 
   sheet.appendRow(row);
   logAuditEvent("IMPERSONATE_START", { userId, sessionId });
+  debugLog("startImpersonation", "started", { userId, sessionId });
   return { success: true, sessionId };
 }
 
 function getUserProfile(userId) {
+  debugLog("getUserProfile", "start", { userId });
   if (!userId) throw new Error("User_Id is required");
-  return {
+  const payload = {
     user: getUserById(userId),
     properties: getUserProperties_(userId),
     documents: getUserDocuments_(userId),
     sessions: getUserSessions_(userId),
     audit: getUserAuditTrail_(userId),
   };
+  debugLog("getUserProfile", "resolved", {
+    hasUser: !!payload.user,
+    propertyCount: payload.properties.length,
+    documentCount: payload.documents.length,
+    sessionCount: payload.sessions.length,
+    auditCount: payload.audit.length,
+  });
+  return payload;
 }
 
 function getUserProperties_(userId) {
+  debugLog("getUserProperties_", "start", { userId });
   if (!userId) return [];
   const sheet = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.USER_PROPERTIES
@@ -1190,7 +1465,7 @@ function getUserProperties_(userId) {
     updatedBy: headers.indexOf("Updated_By"),
   };
   if (idx.user < 0) return [];
-  return data
+  const rows = data
     .slice(1)
     .filter((row) => String(row[idx.user]) === String(userId))
     .map((row) => ({
@@ -1202,9 +1477,12 @@ function getUserProperties_(userId) {
           : null,
       updatedBy: idx.updatedBy >= 0 ? row[idx.updatedBy] : "",
     }));
+  debugLog("getUserProperties_", "resolved", { count: rows.length });
+  return rows;
 }
 
 function getUserDocuments_(userId) {
+  debugLog("getUserDocuments_", "start", { userId });
   if (!userId) return [];
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.DOCUMENTS);
   if (!sheet) return [];
@@ -1221,7 +1499,7 @@ function getUserDocuments_(userId) {
     createdAt: headers.indexOf("Created_At"),
     uploadedBy: headers.indexOf("Uploaded_By"),
   };
-  return data
+  const rows = data
     .slice(1)
     .filter((row) => {
       const entityMatch = idx.entity < 0 || row[idx.entity] === "Users";
@@ -1239,9 +1517,12 @@ function getUserDocuments_(userId) {
           ? new Date(row[idx.createdAt])
           : null,
     }));
+  debugLog("getUserDocuments_", "resolved", { count: rows.length });
+  return rows;
 }
 
 function getUserSessions_(userId) {
+  debugLog("getUserSessions_", "start", { userId });
   if (!userId) return [];
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.SESSIONS);
   if (!sheet) return [];
@@ -1258,7 +1539,7 @@ function getUserSessions_(userId) {
     endedAt: headers.indexOf("Ended_At"),
   };
   if (idx.user < 0) return [];
-  return data
+  const rows = data
     .slice(1)
     .filter((row) => String(row[idx.user]) === String(userId))
     .map((row) => ({
@@ -1275,9 +1556,12 @@ function getUserSessions_(userId) {
           ? new Date(row[idx.endedAt])
           : null,
     }));
+  debugLog("getUserSessions_", "resolved", { count: rows.length });
+  return rows;
 }
 
 function getUserAuditTrail_(userId) {
+  debugLog("getUserAuditTrail_", "start", { userId });
   if (!userId) return [];
   const primarySheet = SpreadsheetApp.getActive().getSheetByName(
     CONFIG.SHEETS.AUDIT_REPORT
@@ -1298,7 +1582,7 @@ function getUserAuditTrail_(userId) {
     details: headers.indexOf("Details"),
     timestamp: headers.indexOf("Timestamp"),
   };
-  return data
+  const rows = data
     .slice(1)
     .filter((row) => {
       if (idx.userId < 0) return true;
@@ -1318,4 +1602,6 @@ function getUserAuditTrail_(userId) {
       const tb = b.timestamp ? b.timestamp.getTime() : 0;
       return tb - ta;
     });
+  debugLog("getUserAuditTrail_", "resolved", { count: rows.length });
+  return rows;
 }
