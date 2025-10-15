@@ -321,8 +321,10 @@ function getUserFormStructure(formId = "FORM_SYS_AddUser") {
     Field_Label: h.indexOf("Field_Label"),
     Field_Type: h.indexOf("Field_Type"),
     Source_Sheet: h.indexOf("Source_Sheet"),
-    Source_Key: h.indexOf("Source_Column/Key"),
+    Source_Range: h.indexOf("Source_Range"),
+    Dropdown_Key: h.indexOf("Dropdown_Key"),
     Mandatory: h.indexOf("Mandatory"),
+    Default_Value: h.indexOf("Default_Value"),
     Read_Only: h.indexOf("Read_Only"),
     Target_Sheet: h.indexOf("Target_Sheet"),
     Target_Column: h.indexOf("Target_Column"),
@@ -342,9 +344,15 @@ function getUserFormStructure(formId = "FORM_SYS_AddUser") {
       label: r[idx.Field_Label],
       type: String(r[idx.Field_Type] || "Text").toLowerCase(),
       sourceSheet: r[idx.Source_Sheet] || "",
-      sourceKey: r[idx.Source_Key] || "",
+      sourceRange: idx.Source_Range >= 0 ? r[idx.Source_Range] || "" : "",
+      sourceKey: idx.Dropdown_Key >= 0 ? r[idx.Dropdown_Key] || "" : "",
       required: String(r[idx.Mandatory] || "").toLowerCase() === "yes",
-      readOnly: r[idx.Read_Only] === true,
+      defaultValue: idx.Default_Value >= 0 ? r[idx.Default_Value] || "" : "",
+      readOnly:
+        idx.Read_Only >= 0
+          ? r[idx.Read_Only] === true ||
+            String(r[idx.Read_Only]).toLowerCase() === "yes"
+          : false,
       targetSheet: r[idx.Target_Sheet] || "",
       targetColumn: r[idx.Target_Column] || "",
       roleId: r[idx.Role_ID] || "",
@@ -562,11 +570,22 @@ function createUser(userData) {
     ? hashPassword(rawPassword)
     : userData.Password_Hash || "";
 
+  const normalizeBoolean = (value, truthyValues) => {
+    if (value === true) return true;
+    const text = String(value || "").toLowerCase();
+    if (!text) return false;
+    const truthy = truthyValues || ["true", "yes", "1", "enabled", "active", "نشط", "مفعل", "مُفعّل", "نعم"];
+    return truthy.includes(text);
+  };
+
   const row = new Array(headers.length).fill("");
   const set = (key, val) => {
     const c = getCol(key);
     if (c > 0) row[c - 1] = val;
   };
+
+  const actor = Session.getActiveUser()?.getEmail() || "SYSTEM";
+  const now = new Date();
 
   set("User_Id", userData.User_Id || generateSequentialUserId_());
   set("Full_Name", userData.Full_Name || "");
@@ -575,16 +594,24 @@ function createUser(userData) {
   set("Job_Title", userData.Job_Title || "");
   set("Department", userData.Department || "");
   set("Role_Id", userData.Role_Id || "");
-  set(
-    "IsActive",
-    userData.IsActive === true ||
-      String(userData.IsActive).toLowerCase() === "true"
-  );
+  set("IsActive", normalizeBoolean(userData.IsActive));
   set("Password_Hash", passwordHash);
-  set("MFA_Enabled", userData.MFA_Enabled === true);
+  set(
+    "MFA_Enabled",
+    normalizeBoolean(userData.MFA_Enabled, [
+      "true",
+      "yes",
+      "1",
+      "enabled",
+      "مفعل",
+      "مُفعّل",
+    ])
+  );
   set("Notes", userData.Notes || "");
-  set("Created_At", new Date());
-  set("Created_By", Session.getActiveUser()?.getEmail() || "SYSTEM");
+  set("Created_At", now);
+  set("Created_By", actor);
+  set("Updated_At", now);
+  set("Updated_By", actor);
 
   sh.appendRow(row);
   logAuditEvent("CREATE_USER", { userId: row[getCol("User_Id") - 1] });
