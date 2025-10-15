@@ -430,6 +430,108 @@
         border-radius: 10px;
         cursor: pointer;
       }
+      .btn-save,
+      .btn-cancel,
+      .btn-edit {
+        font-weight: 600;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: background-color 0.2s ease, border-color 0.2s ease,
+          color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .btn-save:not(.icon-btn),
+      .btn-cancel:not(.icon-btn),
+      .btn-edit:not(.icon-btn) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        padding: 0.55rem 1rem;
+        min-height: 40px;
+      }
+      .btn-save {
+        background: #1f9d55;
+        color: #ffffff;
+        border-color: #187741;
+      }
+      .btn-save:hover:not(:disabled),
+      .btn-save:focus-visible {
+        background: #187741;
+        border-color: #0f5132;
+        color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(24, 119, 65, 0.35);
+        outline: none;
+      }
+      .btn-save:disabled {
+        background: rgba(31, 157, 85, 0.45);
+        border-color: rgba(24, 119, 65, 0.4);
+        color: rgba(255, 255, 255, 0.65);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .btn-cancel {
+        background: #c0392b;
+        color: #ffffff;
+        border-color: #922b21;
+      }
+      .btn-cancel:hover:not(:disabled),
+      .btn-cancel:focus-visible {
+        background: #922b21;
+        border-color: #641e16;
+        color: #ffffff;
+        box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.35);
+        outline: none;
+      }
+      .btn-cancel:disabled {
+        background: rgba(192, 57, 43, 0.45);
+        border-color: rgba(146, 43, 33, 0.4);
+        color: rgba(255, 255, 255, 0.65);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .btn-edit {
+        background: #fd7e14;
+        color: #111111;
+        border-color: #e66a00;
+      }
+      .btn-edit:hover:not(:disabled),
+      .btn-edit:focus-visible {
+        background: #e66a00;
+        border-color: #c55f00;
+        color: #111111;
+        box-shadow: 0 0 0 3px rgba(253, 126, 20, 0.35);
+        outline: none;
+      }
+      .btn-edit:disabled {
+        background: rgba(253, 126, 20, 0.45);
+        border-color: rgba(229, 120, 14, 0.4);
+        color: rgba(17, 17, 17, 0.7);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .icon-btn.btn-edit {
+        background: rgba(253, 126, 20, 0.15);
+        border-color: rgba(253, 126, 20, 0.45);
+        color: #fd7e14;
+      }
+      .icon-btn.btn-edit svg {
+        stroke: #fd7e14;
+      }
+      .icon-btn.btn-edit:hover:not(:disabled),
+      .icon-btn.btn-edit:focus-visible {
+        background: rgba(253, 126, 20, 0.25);
+        border-color: rgba(253, 126, 20, 0.75);
+        box-shadow: 0 0 0 3px rgba(253, 126, 20, 0.2);
+        outline: none;
+      }
+      .icon-btn.btn-edit:disabled {
+        background: rgba(253, 126, 20, 0.1);
+        border-color: rgba(253, 126, 20, 0.2);
+        color: rgba(253, 126, 20, 0.6);
+        cursor: not-allowed;
+        box-shadow: none;
+      }
       .badge {
         display: inline-block;
         padding: 0.15rem 0.5rem;
@@ -1013,8 +1115,8 @@
       <form method="dialog" id="new-user-form">
         <div id="new-user-fields" class="form-grid"></div>
         <div class="actions">
-          <button type="submit" class="accent-button">حفظ</button>
-          <button type="button" id="btn-cancel-new" class="ghost-button">
+          <button type="submit" class="btn-save">حفظ</button>
+          <button type="button" id="btn-cancel-new" class="btn-cancel">
             إلغاء
           </button>
         </div>
@@ -1104,7 +1206,7 @@
         </section>
       </div>
       <div class="actions">
-        <button type="button" id="btn-close-profile" class="accent-button">
+        <button type="button" id="btn-close-profile" class="btn-cancel">
           إغلاق
         </button>
       </div>
@@ -1123,8 +1225,8 @@
           <div class="span-2 muted" id="assign-role-user-label"></div>
         </div>
         <div class="actions">
-          <button type="submit" class="accent-button">حفظ</button>
-          <button type="button" id="btn-cancel-assign" class="ghost-button">
+          <button type="submit" class="btn-save">حفظ</button>
+          <button type="button" id="btn-cancel-assign" class="btn-cancel">
             إلغاء
           </button>
         </div>
@@ -1151,8 +1253,8 @@
           </div>
         </div>
         <div class="actions">
-          <button type="submit" class="accent-button">تحديث</button>
-          <button type="button" id="btn-cancel-reset" class="ghost-button">
+          <button type="submit" class="btn-save">تحديث</button>
+          <button type="button" id="btn-cancel-reset" class="btn-cancel">
             إلغاء
           </button>
         </div>
@@ -1716,7 +1818,7 @@
                   }" title="عرض الملف" aria-label="عرض الملف">
                     <svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="edit" data-id="${
+                  <button class="icon-btn btn-edit" data-act="edit" data-id="${
                     escapeHtml(u.userId)
                   }" title="تعديل" aria-label="تعديل">
                     <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 4l2 2"/></svg>
