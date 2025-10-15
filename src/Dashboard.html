@@ -80,7 +80,7 @@
       #login-screen {
         display: grid;
         place-content: center;
-        background-image: url('data:image/svgxml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Cg fill-rule="evenodd"%3E%3Cg fill="%232a2a2a" fill-opacity="0.2"%3E%3Cpath opacity=".5" d="M96 95h4v1h-4v-1zm-7 5h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM54 95h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM9 95h1v4h-1v-4zm-7 0h1v4H2v-4zM95 0h1v4h-1V0zM2 0h1v4H2V0z"/%3E%3Cpath d="M6 95h4v1H6v-1zM4 95h1v4H4v-4zM95 6h1v4h-1V6zM95 4h1v1h-1V4z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+        background-image: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Cg fill-rule="evenodd"%3E%3Cg fill="%232a2a2a" fill-opacity="0.2"%3E%3Cpath opacity=".5" d="M96 95h4v1h-4v-1zm-7 5h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM54 95h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zm-7 0h1v4h-1v-4zM9 95h1v4h-1v-4zm-7 0h1v4H2v-4zM95 0h1v4h-1V0zM2 0h1v4H2V0z"/%3E%3Cpath d="M6 95h4v1H6v-1zM4 95h1v4H4v-4zM95 6h1v4h-1V6zM95 4h1v1h-1V4z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
       }
       .login-container {
         width: 400px;
@@ -422,36 +422,14 @@
         border-radius: 10px;
         cursor: pointer;
       }
-        .accent-button {
-    /* use the current workspace’s accent colour instead of the global accent */
-    background: var(--theme-accent);
-    color: #111;
-    border: 1px solid var(--theme-accent-24);
-    padding: 0.55rem 1rem;
-    border-radius: 10px;
-    cursor: pointer;
-  }
-      
-  /* save-button: use the global success colour for save actions */
-  .save-button {
-    background: var(--color-success);
-    color: #111;
-    border: 1px solid rgba(46, 204, 113, 0.3);
-  }
-
-  /* cancel-button: use the global danger colour for cancel/close actions */
-  .cancel-button {
-    background: var(--color-danger);
-    color: #111;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-  }
-
-  /* edit-button: orange for update/edit actions */
-  .edit-button {
-    background: #e67e22;
-    color: #111;
-    border: 1px solid rgba(230, 126, 34, 0.3);
-  }
+      .accent-button {
+        background: var(--color-accent);
+        color: #111;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 0.55rem 1rem;
+        border-radius: 10px;
+        cursor: pointer;
+      }
       .badge {
         display: inline-block;
         padding: 0.15rem 0.5rem;
@@ -944,7 +922,7 @@
             </p>
           </div>
 
-          <!-- المستخدمون: جدول  بحث ذكي  إنشاء مستخدم -->
+          <!-- المستخدمون: جدول + بحث ذكي + إنشاء مستخدم -->
           <div id="sys-users-pane" class="hidden">
             <div class="toolbar toolbar--filters">
               <input
@@ -1035,12 +1013,11 @@
       <form method="dialog" id="new-user-form">
         <div id="new-user-fields" class="form-grid"></div>
         <div class="actions">
-  <button type="submit" class="accent-button save-button">حفظ</button>
-  <button type="button" id="btn-cancel-new" class="ghost-button cancel-button">
-    إلغاء
-  </button>
-</div>
-
+          <button type="submit" class="accent-button">حفظ</button>
+          <button type="button" id="btn-cancel-new" class="ghost-button">
+            إلغاء
+          </button>
+        </div>
       </form>
     </dialog>
 
@@ -1126,12 +1103,11 @@
           </table>
         </section>
       </div>
-     <div class="actions">
-  <button type="button" id="btn-close-profile" class="accent-button cancel-button">
-    إغلاق
-  </button>
-</div>
-
+      <div class="actions">
+        <button type="button" id="btn-close-profile" class="accent-button">
+          إغلاق
+        </button>
+      </div>
     </dialog>
 
     <!-- تعيين دور -->
@@ -1147,12 +1123,11 @@
           <div class="span-2 muted" id="assign-role-user-label"></div>
         </div>
         <div class="actions">
-  <button type="submit" class="accent-button save-button">حفظ</button>
-  <button type="button" id="btn-cancel-assign" class="ghost-button cancel-button">
-    إلغاء
-  </button>
-</div>
-
+          <button type="submit" class="accent-button">حفظ</button>
+          <button type="button" id="btn-cancel-assign" class="ghost-button">
+            إلغاء
+          </button>
+        </div>
       </form>
     </dialog>
 
@@ -1176,12 +1151,11 @@
           </div>
         </div>
         <div class="actions">
-  <button type="submit" class="accent-button edit-button">تحديث</button>
-  <button type="button" id="btn-cancel-reset" class="ghost-button cancel-button">
-    إلغاء
-  </button>
-</div>
-
+          <button type="submit" class="accent-button">تحديث</button>
+          <button type="button" id="btn-cancel-reset" class="ghost-button">
+            إلغاء
+          </button>
+        </div>
       </form>
     </dialog>
 
@@ -1247,9 +1221,9 @@
         /* Basic nav */
         function updateUserContext(name) {
           const safe = name || "User";
-          userLabel.textContent = "User: "  safe;
+          userLabel.textContent = "User: " + safe;
           const welcome = document.getElementById("portal-welcome-message");
-          if (welcome) welcome.textContent = "Welcome, "  safe;
+          if (welcome) welcome.textContent = "Welcome, " + safe;
         }
         function switchView(id) {
           views.forEach((v) => v.classList.toggle("active", v.id === id));
@@ -1868,7 +1842,7 @@
             .withSuccessHandler((res) => {
               const count = res?.updated ?? ids.length;
               showToast(
-                "تم تحديث حالة "  count  " مستخدم.",
+                "تم تحديث حالة " + count + " مستخدم.",
                 "success",
                 "تم التحديث"
               );
@@ -1898,7 +1872,7 @@
             .withSuccessHandler((res) => {
               const count = res?.updated ?? ids.length;
               showToast(
-                "تم تعيين الدور لـ "  count  " مستخدم.",
+                "تم تعيين الدور لـ " + count + " مستخدم.",
                 "success",
                 "تم التعيين"
               );
@@ -1958,11 +1932,9 @@
         /* ---------- Runtime style overrides (visibility & RTL polish) ---------- */
         (function addRuntimeStyles() {
           const css = `
+            .workspace-nav .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
             .workspace-nav .nav-item{border:1px solid var(--theme-accent-24)}
-.workspace-nav .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
-.dyn-tabs .nav-item{border:1px solid var(--theme-accent-24)}
-.dyn-tabs .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
-
+            .dyn-tabs .nav-item.active{background:var(--theme-accent);color:#111}
             dialog .form-grid{direction:rtl}
             dialog .form-grid label{display:block;margin-bottom:.25rem}
             dialog .form-grid .span-2{grid-column:1 / span 2}
@@ -1987,12 +1959,12 @@
         function showToast(message, type = "info", title) {
           const toastContainer = ensureToastContainer();
           const t = document.createElement("div");
-          t.className = "toast "  type;
+          t.className = "toast " + type;
           t.innerHTML =
-            '<div class="toast__title">' 
-            (title || (type === "success" ? "تم بنجاح" : "إشعار")) 
-            '</div><div class="toast__msg">' 
-            message 
+            '<div class="toast__title">' +
+            (title || (type === "success" ? "تم بنجاح" : "إشعار")) +
+            '</div><div class="toast__msg">' +
+            message +
             "</div>";
           toastContainer.appendChild(t);
           const hide = () => {
@@ -2073,12 +2045,12 @@
                 const id = `nu_${(
                   f.targetColumn ||
                   f.fieldId ||
-                  tabKey  i
-                ).replace(/\s/g, "_")}`;
+                  tabKey + i
+                ).replace(/\s+/g, "_")}`;
                 const wrap = document.createElement("div");
                 const label = document.createElement("label");
                 label.textContent =
-                  f.label || f.targetColumn || f.fieldId || "حقل "  (i  1);
+                  f.label || f.targetColumn || f.fieldId || "حقل " + (i + 1);
                 label.setAttribute("for", id);
                 let el;
                 const t = String(f.type || "text").toLowerCase();
@@ -2150,7 +2122,7 @@
           tabKeys.forEach((k, idx) => {
             const b = document.createElement("button");
             b.type = "button";
-            b.className = "nav-item"  (idx === 0 ? " active" : "");
+            b.className = "nav-item" + (idx === 0 ? " active" : "");
             b.textContent = tabs[k].name || "تبويب";
             b.addEventListener("click", () => {
               tabBar
@@ -2209,7 +2181,7 @@
                 [d, r].forEach((arr, idx) => {
                   const sel = idx === 0 ? dSel : rSel;
                   sel.innerHTML =
-                    '<option value=""></option>' 
+                    '<option value=""></option>' +
                     (arr || [])
                       .map((v) => `<option value="${v}">${v}</option>`)
                       .join("");
