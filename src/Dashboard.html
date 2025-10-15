@@ -422,14 +422,36 @@
         border-radius: 10px;
         cursor: pointer;
       }
-      .accent-button {
-        background: var(--color-accent);
-        color: #111;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        padding: 0.55rem 1rem;
-        border-radius: 10px;
-        cursor: pointer;
-      }
+      +  .accent-button {
++    /* use the current workspace’s accent colour instead of the global accent */
++    background: var(--theme-accent);
++    color: #111;
++    border: 1px solid var(--theme-accent-24);
++    padding: 0.55rem 1rem;
++    border-radius: 10px;
++    cursor: pointer;
++  }
+      +
++  /* save-button: use the global success colour for save actions */
++  .save-button {
++    background: var(--color-success);
++    color: #111;
++    border: 1px solid rgba(46, 204, 113, 0.3);
++  }
++
++  /* cancel-button: use the global danger colour for cancel/close actions */
++  .cancel-button {
++    background: var(--color-danger);
++    color: #111;
++    border: 1px solid rgba(231, 76, 60, 0.3);
++  }
++
++  /* edit-button: orange for update/edit actions */
++  .edit-button {
++    background: #e67e22;
++    color: #111;
++    border: 1px solid rgba(230, 126, 34, 0.3);
++  }
       .badge {
         display: inline-block;
         padding: 0.15rem 0.5rem;
@@ -1013,11 +1035,12 @@
       <form method="dialog" id="new-user-form">
         <div id="new-user-fields" class="form-grid"></div>
         <div class="actions">
-          <button type="submit" class="accent-button">حفظ</button>
-          <button type="button" id="btn-cancel-new" class="ghost-button">
-            إلغاء
-          </button>
-        </div>
+  <button type="submit" class="accent-button save-button">حفظ</button>
+  <button type="button" id="btn-cancel-new" class="ghost-button cancel-button">
+    إلغاء
+  </button>
+</div>
+
       </form>
     </dialog>
 
@@ -1103,11 +1126,12 @@
           </table>
         </section>
       </div>
-      <div class="actions">
-        <button type="button" id="btn-close-profile" class="accent-button">
-          إغلاق
-        </button>
-      </div>
+     <div class="actions">
+  <button type="button" id="btn-close-profile" class="accent-button cancel-button">
+    إغلاق
+  </button>
+</div>
+
     </dialog>
 
     <!-- تعيين دور -->
@@ -1123,11 +1147,12 @@
           <div class="span-2 muted" id="assign-role-user-label"></div>
         </div>
         <div class="actions">
-          <button type="submit" class="accent-button">حفظ</button>
-          <button type="button" id="btn-cancel-assign" class="ghost-button">
-            إلغاء
-          </button>
-        </div>
+  <button type="submit" class="accent-button save-button">حفظ</button>
+  <button type="button" id="btn-cancel-assign" class="ghost-button cancel-button">
+    إلغاء
+  </button>
+</div>
+
       </form>
     </dialog>
 
@@ -1151,11 +1176,12 @@
           </div>
         </div>
         <div class="actions">
-          <button type="submit" class="accent-button">تحديث</button>
-          <button type="button" id="btn-cancel-reset" class="ghost-button">
-            إلغاء
-          </button>
-        </div>
+  <button type="submit" class="accent-button edit-button">تحديث</button>
+  <button type="button" id="btn-cancel-reset" class="ghost-button cancel-button">
+    إلغاء
+  </button>
+</div>
+
       </form>
     </dialog>
 
@@ -1932,9 +1958,11 @@
         /* ---------- Runtime style overrides (visibility & RTL polish) ---------- */
         (function addRuntimeStyles() {
           const css = `
-            .workspace-nav .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
             .workspace-nav .nav-item{border:1px solid var(--theme-accent-24)}
-            .dyn-tabs .nav-item.active{background:var(--theme-accent);color:#111}
+.workspace-nav .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
+.dyn-tabs .nav-item{border:1px solid var(--theme-accent-24)}
+.dyn-tabs .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
+
             dialog .form-grid{direction:rtl}
             dialog .form-grid label{display:block;margin-bottom:.25rem}
             dialog .form-grid .span-2{grid-column:1 / span 2}
