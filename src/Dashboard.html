@@ -328,6 +328,9 @@
         background: rgba(18, 18, 18, 0.9);
         padding: 1.25rem;
         overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
       }
       .workspace {
         --theme-accent: var(--color-accent);
@@ -380,19 +383,27 @@
         color: var(--theme-accent);
       }
 
-      .sys-overview {
-        display: flex;
+      .sys-pane {
+        display: none;
         flex-direction: column;
         gap: 1.5rem;
+      }
+      .sys-pane.active {
+        display: flex;
+      }
+      .sys-pane__header {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+      .pane-heading {
+        font-size: 1.1rem;
+        font-weight: 600;
       }
       .sys-overview__summary {
         display: flex;
         flex-direction: column;
-        gap: 0.75rem;
-      }
-      .sys-overview__directory {
-        display: flex;
-        flex-direction: column;
+        gap: 1rem;
       }
       .overview-cards {
         display: grid;
@@ -409,6 +420,11 @@
       .muted {
         color: var(--color-text-secondary);
         font-size: 0.95rem;
+      }
+      .error-text {
+        color: var(--color-danger);
+        font-size: 0.95rem;
+        text-align: center;
       }
       .table-wrapper {
         border: 1px solid var(--color-border);
@@ -965,9 +981,19 @@
         </header>
 
         <section class="workspace-content">
-          <!-- نظرة عامة: KPIs + دليل المستخدمين -->
-          <div id="sys-overview-pane" class="sys-overview">
-            <section class="sys-overview__summary">
+          <section
+            id="sys-overview-pane"
+            class="sys-pane sys-pane--overview active"
+            data-pane="overview"
+          >
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">نظرة عامة على النظام</h3>
+              <p class="muted">
+                تلخيص للحالة الحالية، يتم سحب بياناته من ‎SYS_Profile_View‎ عند
+                توفرها.
+              </p>
+            </div>
+            <div class="sys-overview__summary">
               <div class="overview-cards">
                 <div class="overview-card">
                   <div class="muted">إجمالي المستخدمين</div>
@@ -994,15 +1020,25 @@
                   <div id="kpi-pending-resets" class="kpi-value">—</div>
                 </div>
               </div>
+              <p class="muted" style="margin: 0">
+                يعرض القسم التالي دليل المستخدمين مع أدوات البحث والإجراءات
+                المجمّعة المطلوبة في نظرة عامة /sys طبقًا لـ PV_SYS_Users_Table.
+              </p>
             </div>
-            <p class="muted">
-              لوحة موجزة لقياسات النظام. يتم جلبها من ‎SYS_Profile_View‎ إن
-              وُجدت.
-            </p>
-          </div>
+          </section>
 
-          <!-- المستخدمون: جدول + بحث ذكي + إنشاء مستخدم -->
-          <div id="sys-users-pane" class="hidden">
+          <section
+            id="sys-users-pane"
+            class="sys-pane active"
+            data-pane="users"
+            data-stack-with="overview"
+          >
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">دليل المستخدمين</h3>
+              <p class="muted">
+                أدوات بحث وإجراءات مجمّعة لإدارة المستخدمين بجميع حالاتهم.
+              </p>
+            </div>
             <div class="toolbar toolbar--filters">
               <input
                 type="search"
@@ -1020,8 +1056,16 @@
                 <option value="true">نشط</option>
                 <option value="false">غير نشط</option>
               </select>
-              <input type="date" id="updated-from" aria-label="تاريخ التحديث من" />
-              <input type="date" id="updated-to" aria-label="تاريخ التحديث إلى" />
+              <input
+                type="date"
+                id="updated-from"
+                aria-label="تاريخ التحديث من"
+              />
+              <input
+                type="date"
+                id="updated-to"
+                aria-label="تاريخ التحديث إلى"
+              />
               <button id="btn-new-user" class="accent-button">
                 إنشاء مستخدم جديد
               </button>
@@ -1063,21 +1107,209 @@
                     <th>آخر تحديث</th>
                     <th>إجراءات</th>
                   </tr>
-                  </thead>
-                  <tbody id="users-tbody">
-                    <tr>
-                      <td colspan="11" class="muted">جاري التحميل…</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
+                </thead>
+                <tbody id="users-tbody">
+                  <tr>
+                    <td colspan="11" class="muted">جاري التحميل…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="sys-roles-pane" class="sys-pane" data-pane="roles">
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">سجل الأدوار</h3>
+              <p class="muted">
+                متابعة الأدوار المعرّفة في ‎SYS_Roles‎ وتحديد الأدوار النظامية.
+              </p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>معرّف الدور</th>
+                    <th>المسمى</th>
+                    <th>الوصف</th>
+                    <th>دور نظامي؟</th>
+                    <th>آخر تحديث</th>
+                  </tr>
+                </thead>
+                <tbody id="roles-tbody">
+                  <tr>
+                    <td colspan="5" class="muted">لم يتم تحميل البيانات بعد.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            id="sys-permissions-pane"
+            class="sys-pane"
+            data-pane="permissions"
+          >
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">سجل الأذونات</h3>
+              <p class="muted">
+                يعرض ‎SYS_Permissions‎ للتدقيق السريع والتصنيف حسب الفئات.
+              </p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>مفتاح الإذن</th>
+                    <th>البيان</th>
+                    <th>الفئة</th>
+                    <th>الوصف</th>
+                    <th>آخر تحديث</th>
+                  </tr>
+                </thead>
+                <tbody id="permissions-tbody">
+                  <tr>
+                    <td colspan="5" class="muted">لم يتم تحميل البيانات بعد.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            id="sys-role-perms-pane"
+            class="sys-pane"
+            data-pane="rolePerms"
+          >
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">تعيين أذونات الأدوار</h3>
+              <p class="muted">
+                خريطة الأذونات مع النطاق والحالة للمساعدة في مراجعة الصلاحيات.
+              </p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الدور</th>
+                    <th>الإذن</th>
+                    <th>النطاق</th>
+                    <th>مسموح؟</th>
+                    <th>آخر تحديث</th>
+                  </tr>
+                </thead>
+                <tbody id="role-perms-tbody">
+                  <tr>
+                    <td colspan="5" class="muted">لم يتم تحميل البيانات بعد.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            id="sys-properties-pane"
+            class="sys-pane"
+            data-pane="properties"
+          >
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">خصائص المستخدم</h3>
+              <p class="muted">
+                يعرض جدول ‎SYS_User_Properties‎ لتتبع السمات المخصصة.
+              </p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المستخدم</th>
+                    <th>المفتاح</th>
+                    <th>القيمة</th>
+                    <th>آخر تحديث</th>
+                    <th>المحدّث</th>
+                  </tr>
+                </thead>
+                <tbody id="properties-tbody">
+                  <tr>
+                    <td colspan="5" class="muted">لم يتم تحميل البيانات بعد.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            id="sys-sessions-pane"
+            class="sys-pane"
+            data-pane="sessions"
+          >
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">الجلسات النشطة والمغلقة</h3>
+              <p class="muted">
+                مراقبة سجلات ‎SYS_Sessions‎ بما في ذلك جلسات الانتحال.
+              </p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المعرّف</th>
+                    <th>المستخدم</th>
+                    <th>الممثل</th>
+                    <th>النوع</th>
+                    <th>الحالة</th>
+                    <th>البداية</th>
+                    <th>النهاية</th>
+                  </tr>
+                </thead>
+                <tbody id="sessions-tbody">
+                  <tr>
+                    <td colspan="7" class="muted">لم يتم تحميل البيانات بعد.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="sys-audit-pane" class="sys-pane" data-pane="audit">
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">سجل التدقيق</h3>
+              <p class="muted">
+                أحدث إجراءات النظام من ‎SYS_Audit_Log‎ أو ‎SYS_Audit_Report‎.
+              </p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الوقت</th>
+                    <th>المستخدم</th>
+                    <th>الإجراء</th>
+                    <th>التفاصيل</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-tbody">
+                  <tr>
+                    <td colspan="4" class="muted">لم يتم تحميل البيانات بعد.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
         </section>
 
-        <aside class="workspace-nav">
-          <button class="nav-item active">نظرة عامة</button>
-          <button class="nav-item" disabled>الأذونات</button>
+        <aside class="workspace-nav" id="sys-side-nav">
+          <button class="nav-item" data-pane="overview">نظرة عامة</button>
+          <button class="nav-item active" data-pane="users">المستخدمون</button>
+          <button class="nav-item" data-pane="roles">الأدوار</button>
+          <button class="nav-item" data-pane="permissions">الأذونات</button>
+          <button class="nav-item" data-pane="rolePerms">
+            تعيين أذونات الأدوار
+          </button>
+          <button class="nav-item" data-pane="properties">
+            خصائص المستخدم
+          </button>
+          <button class="nav-item" data-pane="sessions">الجلسات</button>
+          <button class="nav-item" data-pane="audit">التدقيق</button>
         </aside>
       </div>
     </div>
@@ -1294,6 +1526,20 @@
           "assign-role-user-label"
         );
         const btnCancelAssign = document.getElementById("btn-cancel-assign");
+        const sysView = document.getElementById("system-management-view");
+        const sysNav = document.getElementById("sys-side-nav");
+        const sysNavButtons = sysNav
+          ? Array.from(sysNav.querySelectorAll("[data-pane]"))
+          : [];
+        const sysPanes = sysView
+          ? Array.from(sysView.querySelectorAll(".sys-pane"))
+          : [];
+        const rolesTbody = document.getElementById("roles-tbody");
+        const permissionsTbody = document.getElementById("permissions-tbody");
+        const rolePermsTbody = document.getElementById("role-perms-tbody");
+        const propertiesTbody = document.getElementById("properties-tbody");
+        const sessionsTbody = document.getElementById("sessions-tbody");
+        const auditTbody = document.getElementById("audit-tbody");
         const NAV_VIEW_MAP = {
           SYS: "system-management-view",
           PRJ: "projects-workspace",
@@ -1307,6 +1553,14 @@
         let profileDataCache = null;
         let roleOptionsCache = null;
         let normalizedUsersCache = [];
+        let overviewLoaded = false;
+        let rolesLoaded = false;
+        let permissionsLoaded = false;
+        let rolePermsLoaded = false;
+        let propertiesLoaded = false;
+        let sessionsLoaded = false;
+        let auditLoaded = false;
+        let currentSysPane = "overview";
 
         /* Basic nav */
         function updateUserContext(name) {
@@ -1504,6 +1758,7 @@
               $("kpi-permission-count").textContent = k.permissionCount ?? "—";
               $("kpi-pending-resets").textContent =
                 k.pendingPasswordResets ?? "—";
+              overviewLoaded = true;
             })
             .getSystemKPIs();
         }
@@ -1520,7 +1775,7 @@
         }
 
         let usersReqTimer = null;
-        function loadUsers() {
+        function loadUsers({ force } = {}) {
           if (!(window.google && google.script && google.script.run)) {
             usersTbody.innerHTML =
               '<tr><td colspan="11" class="muted">غير متصل بالخادم.</td></tr>';
@@ -1528,6 +1783,11 @@
             syncSelectAllState();
             syncBulkActionsState();
             return;
+          }
+          if (force) {
+            selectedUsers.clear();
+            syncSelectAllState();
+            syncBulkActionsState();
           }
           usersTbody.innerHTML =
             '<tr><td colspan="11" class="muted">جاري التحميل…</td></tr>';
@@ -1722,6 +1982,34 @@
             .replace(/'/g, "&#039;");
         }
 
+        function setTableStatus(bodyEl, message, type = "muted") {
+          if (!bodyEl) return;
+          const colCount = bodyEl.parentElement
+            ? bodyEl.parentElement.querySelectorAll("thead th").length || 1
+            : 1;
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = colCount;
+          td.className = type === "error" ? "error-text" : "muted";
+          td.textContent = message;
+          tr.appendChild(td);
+          bodyEl.innerHTML = "";
+          bodyEl.appendChild(tr);
+        }
+
+        function renderBooleanBadge(value, yesLabel = "نعم", noLabel = "لا") {
+          const normalized = String(value).toLowerCase();
+          const truthy =
+            value === true ||
+            normalized === "true" ||
+            normalized === "yes" ||
+            normalized === "1" ||
+            normalized === "y";
+          return truthy
+            ? `<span class="badge badge--ok">${escapeHtml(yesLabel)}</span>`
+            : `<span class="badge badge--no">${escapeHtml(noLabel)}</span>`;
+        }
+
         function renderUsers(list) {
           usersTbody.innerHTML = "";
           if (!Array.isArray(list) || list.length === 0) {
@@ -1865,6 +2153,260 @@
           });
           syncSelectAllState();
           syncBulkActionsState();
+        }
+
+
+        function loadRoles({ force = false } = {}) {
+          if (!rolesTbody) return;
+          if (rolesLoaded && !force) return;
+          if (!(window.google && google.script && google.script.run)) {
+            setTableStatus(rolesTbody, "غير متصل بالخادم.", "error");
+            return;
+          }
+          setTableStatus(rolesTbody, "جاري التحميل…");
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              rolesLoaded = false;
+              setTableStatus(rolesTbody, "تعذر تحميل الأدوار.", "error");
+            })
+            .withSuccessHandler((rows) => {
+              rolesLoaded = true;
+              const list = Array.isArray(rows) ? rows : [];
+              renderTableRows(rolesTbody, list, (row) => {
+                return `
+                  <td>${escapeHtml(row.roleId || "")}</td>
+                  <td>${escapeHtml(row.title || "")}</td>
+                  <td>${escapeHtml(row.description || "")}</td>
+                  <td>${renderBooleanBadge(row.isSystem)}</td>
+                  <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
+                `;
+              });
+            })
+            .listRoles();
+        }
+
+        function loadPermissions({ force = false } = {}) {
+          if (!permissionsTbody) return;
+          if (permissionsLoaded && !force) return;
+          if (!(window.google && google.script && google.script.run)) {
+            setTableStatus(permissionsTbody, "غير متصل بالخادم.", "error");
+            return;
+          }
+          setTableStatus(permissionsTbody, "جاري التحميل…");
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              permissionsLoaded = false;
+              setTableStatus(
+                permissionsTbody,
+                "تعذر تحميل سجل الأذونات.",
+                "error"
+              );
+            })
+            .withSuccessHandler((rows) => {
+              permissionsLoaded = true;
+              const list = Array.isArray(rows) ? rows : [];
+              renderTableRows(permissionsTbody, list, (row) => {
+                return `
+                  <td>${escapeHtml(row.permissionKey || row.key || "")}</td>
+                  <td>${escapeHtml(row.label || "")}</td>
+                  <td>${escapeHtml(row.category || "")}</td>
+                  <td>${escapeHtml(row.description || "")}</td>
+                  <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
+                `;
+              });
+            })
+            .listPermissions();
+        }
+
+        function loadRolePermissions({ force = false } = {}) {
+          if (!rolePermsTbody) return;
+          if (rolePermsLoaded && !force) return;
+          if (!(window.google && google.script && google.script.run)) {
+            setTableStatus(rolePermsTbody, "غير متصل بالخادم.", "error");
+            return;
+          }
+          setTableStatus(rolePermsTbody, "جاري التحميل…");
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              rolePermsLoaded = false;
+              setTableStatus(
+                rolePermsTbody,
+                "تعذر تحميل أذونات الأدوار.",
+                "error"
+              );
+            })
+            .withSuccessHandler((rows) => {
+              rolePermsLoaded = true;
+              const list = Array.isArray(rows) ? rows : [];
+              renderTableRows(rolePermsTbody, list, (row) => {
+                return `
+                  <td>${escapeHtml(row.roleId || "")}</td>
+                  <td>${escapeHtml(row.permissionKey || "")}</td>
+                  <td>${escapeHtml(row.scope || "")}</td>
+                  <td>${renderBooleanBadge(row.allowed, "مسموح", "مرفوض")}</td>
+                  <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
+                `;
+              });
+            })
+            .listRolePermissions();
+        }
+
+        function loadProperties({ force = false } = {}) {
+          if (!propertiesTbody) return;
+          if (propertiesLoaded && !force) return;
+          if (!(window.google && google.script && google.script.run)) {
+            setTableStatus(propertiesTbody, "غير متصل بالخادم.", "error");
+            return;
+          }
+          setTableStatus(propertiesTbody, "جاري التحميل…");
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              propertiesLoaded = false;
+              setTableStatus(
+                propertiesTbody,
+                "تعذر تحميل خصائص المستخدمين.",
+                "error"
+              );
+            })
+            .withSuccessHandler((rows) => {
+              propertiesLoaded = true;
+              const list = Array.isArray(rows) ? rows : [];
+              renderTableRows(propertiesTbody, list, (row) => {
+                return `
+                  <td>${escapeHtml(row.userId || "")}</td>
+                  <td>${escapeHtml(row.key || "")}</td>
+                  <td>${escapeHtml(row.value || "")}</td>
+                  <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
+                  <td>${escapeHtml(row.updatedBy || "")}</td>
+                `;
+              });
+            })
+            .listUserProperties();
+        }
+
+        function loadSessions({ force = false } = {}) {
+          if (!sessionsTbody) return;
+          if (sessionsLoaded && !force) return;
+          if (!(window.google && google.script && google.script.run)) {
+            setTableStatus(sessionsTbody, "غير متصل بالخادم.", "error");
+            return;
+          }
+          setTableStatus(sessionsTbody, "جاري التحميل…");
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              sessionsLoaded = false;
+              setTableStatus(sessionsTbody, "تعذر تحميل الجلسات.", "error");
+            })
+            .withSuccessHandler((rows) => {
+              sessionsLoaded = true;
+              const list = Array.isArray(rows) ? rows : [];
+              renderTableRows(sessionsTbody, list, (row) => {
+                return `
+                  <td>${escapeHtml(row.sessionId || "")}</td>
+                  <td>${escapeHtml(row.userId || "")}</td>
+                  <td>${escapeHtml(row.actor || "")}</td>
+                  <td>${escapeHtml(row.type || "")}</td>
+                  <td>${escapeHtml(row.status || "")}</td>
+                  <td>${escapeHtml(formatDateTime(row.startedAt))}</td>
+                  <td>${escapeHtml(formatDateTime(row.endedAt))}</td>
+                `;
+              });
+            })
+            .listSessions();
+        }
+
+        function loadAuditLog({ force = false } = {}) {
+          if (!auditTbody) return;
+          if (auditLoaded && !force) return;
+          if (!(window.google && google.script && google.script.run)) {
+            setTableStatus(auditTbody, "غير متصل بالخادم.", "error");
+            return;
+          }
+          setTableStatus(auditTbody, "جاري التحميل…");
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              auditLoaded = false;
+              setTableStatus(auditTbody, "تعذر تحميل سجل التدقيق.", "error");
+            })
+            .withSuccessHandler((rows) => {
+              auditLoaded = true;
+              const list = Array.isArray(rows) ? rows : [];
+              renderTableRows(auditTbody, list, (row) => {
+                return `
+                  <td>${escapeHtml(formatDateTime(row.timestamp))}</td>
+                  <td>${escapeHtml(row.user || "")}</td>
+                  <td>${escapeHtml(row.action || "")}</td>
+                  <td><pre style="white-space:pre-wrap;margin:0;">${escapeHtml(
+                    parseDetails(row.details)
+                  )}</pre></td>
+                `;
+              });
+            })
+            .getAuditLog();
+        }
+
+        const sysPaneLoaders = {
+          overview: ({ force } = {}) => {
+            if (force) overviewLoaded = false;
+            if (!overviewLoaded) {
+              fetchKPIs();
+              overviewLoaded = true;
+            }
+          },
+          users: (options = {}) => loadUsers(options),
+          roles: (options = {}) => loadRoles(options),
+          permissions: (options = {}) => loadPermissions(options),
+          rolePerms: (options = {}) => loadRolePermissions(options),
+          properties: (options = {}) => loadProperties(options),
+          sessions: (options = {}) => loadSessions(options),
+          audit: (options = {}) => loadAuditLog(options),
+        };
+
+        function runPaneLoaders(paneName, options = {}) {
+          const loader = sysPaneLoaders[paneName];
+          if (loader) loader(options);
+          if (paneName === "overview" && sysPaneLoaders.users) {
+            sysPaneLoaders.users(options);
+          }
+        }
+
+        function setActiveSysPane(paneName, options = {}) {
+          if (!paneName || !sysPanes.length) return;
+          if (paneName === currentSysPane && !options.force) {
+            runPaneLoaders(paneName, options);
+            return;
+          }
+          currentSysPane = paneName;
+          sysPanes.forEach((pane) => {
+            const paneKey = pane.dataset.pane;
+            const stacksWith = (pane.dataset.stackWith || "")
+              .split(",")
+              .map((token) => token.trim())
+              .filter(Boolean);
+            const shouldShow =
+              paneKey === paneName || stacksWith.includes(paneName);
+            pane.classList.toggle("active", shouldShow);
+          });
+          sysNavButtons.forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.pane === paneName);
+          });
+          runPaneLoaders(paneName, options);
+        }
+
+        if (sysNav) {
+          sysNav.addEventListener("click", (evt) => {
+            const btn = evt.target.closest("button[data-pane]");
+            if (!btn) return;
+            evt.preventDefault();
+            const pane = btn.dataset.pane || "users";
+            setActiveSysPane(pane);
+          });
         }
 
         function syncSelectAllState() {
@@ -2733,6 +3275,7 @@
         });
 
         /* Init */
+        setActiveSysPane("overview", { force: true });
         renderNav();
         bootstrapApp();
       })();

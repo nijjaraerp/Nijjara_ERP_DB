@@ -383,6 +383,132 @@ function getDropdownOptions(key) {
     }));
 }
 
+function listRoles() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.ROLES);
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idx = {
+    id: headers.indexOf("Role_Id"),
+    title: headers.indexOf("Role_Title"),
+    desc: headers.indexOf("Description"),
+    isSystem: headers.indexOf("Is_System"),
+    updatedAt: headers.indexOf("Updated_At"),
+  };
+  const toBool = (value) =>
+    value === true || String(value).toLowerCase() === "true";
+  return data.slice(1).map((row) => ({
+    roleId: idx.id >= 0 ? row[idx.id] : "",
+    title: idx.title >= 0 ? row[idx.title] : "",
+    description: idx.desc >= 0 ? row[idx.desc] : "",
+    isSystem: idx.isSystem >= 0 ? toBool(row[idx.isSystem]) : false,
+    updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+  }));
+}
+
+function listPermissions() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.PERMS
+  );
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idx = {
+    key: headers.indexOf("Permission_Key"),
+    label: headers.indexOf("Permission_Label"),
+    desc: headers.indexOf("Description"),
+    category: headers.indexOf("Category"),
+    updatedAt: headers.indexOf("Updated_At"),
+  };
+  return data.slice(1).map((row) => ({
+    permissionKey: idx.key >= 0 ? row[idx.key] : "",
+    label: idx.label >= 0 ? row[idx.label] : "",
+    description: idx.desc >= 0 ? row[idx.desc] : "",
+    category: idx.category >= 0 ? row[idx.category] : "",
+    updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+  }));
+}
+
+function listRolePermissions() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.ROLE_PERMS
+  );
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idx = {
+    role: headers.indexOf("Role_Id"),
+    permission: headers.indexOf("Permission_Key"),
+    scope: headers.indexOf("Scope"),
+    allowed: headers.indexOf("Allowed"),
+    updatedAt: headers.indexOf("Updated_At"),
+  };
+  const toBool = (value) =>
+    value === true || String(value).toLowerCase() === "true";
+  return data.slice(1).map((row) => ({
+    roleId: idx.role >= 0 ? row[idx.role] : "",
+    permissionKey: idx.permission >= 0 ? row[idx.permission] : "",
+    scope: idx.scope >= 0 ? row[idx.scope] : "",
+    allowed: idx.allowed >= 0 ? toBool(row[idx.allowed]) : false,
+    updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+  }));
+}
+
+function listUserProperties() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.USER_PROPERTIES
+  );
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idx = {
+    user: headers.indexOf("User_Id"),
+    key: headers.indexOf("Property_Key"),
+    value: headers.indexOf("Property_Value"),
+    updatedAt: headers.indexOf("Updated_At"),
+    updatedBy: headers.indexOf("Updated_By"),
+  };
+  return data.slice(1).map((row) => ({
+    userId: idx.user >= 0 ? row[idx.user] : "",
+    key: idx.key >= 0 ? row[idx.key] : "",
+    value: idx.value >= 0 ? row[idx.value] : "",
+    updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+    updatedBy: idx.updatedBy >= 0 ? row[idx.updatedBy] : "",
+  }));
+}
+
+function listSessions() {
+  const sheet = SpreadsheetApp.getActive().getSheetByName(
+    CONFIG.SHEETS.SESSIONS
+  );
+  if (!sheet) return [];
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) return [];
+  const headers = data[0];
+  const idx = {
+    session: headers.indexOf("Session_Id"),
+    user: headers.indexOf("User_Id"),
+    actor: headers.indexOf("Actor_Email"),
+    type: headers.indexOf("Type"),
+    status: headers.indexOf("Status"),
+    started: headers.indexOf("Started_At"),
+    ended: headers.indexOf("Ended_At"),
+  };
+  return data.slice(1).map((row) => ({
+    sessionId: idx.session >= 0 ? row[idx.session] : "",
+    userId: idx.user >= 0 ? row[idx.user] : "",
+    actor: idx.actor >= 0 ? row[idx.actor] : "",
+    type: idx.type >= 0 ? row[idx.type] : "",
+    status: idx.status >= 0 ? row[idx.status] : "",
+    startedAt: idx.started >= 0 ? row[idx.started] : "",
+    endedAt: idx.ended >= 0 ? row[idx.ended] : "",
+  }));
+}
+
 function getFormWithOptions(formId = "FORM_SYS_AddUser") {
   const fields = getUserFormStructure(formId);
   return fields.map((f) => {
