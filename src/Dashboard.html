@@ -368,19 +368,26 @@
         gap: 0.5rem;
       }
       .nav-item {
-        background: 0 0;
-        border: none;
+        background: transparent;
+        border: 1px solid var(--theme-accent-24);
         color: var(--color-text-secondary);
         text-align: right;
         padding: 0.6rem 0.75rem;
         border-radius: 8px;
         cursor: pointer;
         transition: background 0.2s, color 0.2s, border-color 0.2s;
+        font-weight: 600;
       }
       .nav-item.active,
       .nav-item:hover {
-        background: var(--theme-accent-16);
-        color: var(--theme-accent);
+        background: var(--theme-accent);
+        border-color: var(--theme-accent);
+        color: #111;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+      }
+      .nav-item:focus-visible {
+        outline: 2px solid var(--theme-accent);
+        outline-offset: 2px;
       }
 
       .sys-pane {
@@ -447,44 +454,53 @@
       tbody tr:hover {
         background: rgba(255, 255, 255, 0.04);
       }
-      .ghost-button {
-        background: 0 0;
-        border: 1px solid var(--color-border);
-        color: var(--color-text-secondary);
+      .ghost-button,
+      .accent-button,
+      .action-button {
         padding: 0.55rem 1rem;
         border-radius: 10px;
         cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
       }
-        .accent-button {
-    /* use the current workspace’s accent colour instead of the global accent */
-    background: var(--theme-accent);
-    color: #111;
-    border: 1px solid var(--theme-accent-24);
-    padding: 0.55rem 1rem;
-    border-radius: 10px;
-    cursor: pointer;
-  }
-      
-  /* save-button: use the global success colour for save actions */
-  .save-button {
-    background: var(--color-success);
-    color: #111;
-    border: 1px solid rgba(46, 204, 113, 0.3);
-  }
-
-  /* cancel-button: use the global danger colour for cancel/close actions */
-  .cancel-button {
-    background: var(--color-danger);
-    color: #111;
-    border: 1px solid rgba(231, 76, 60, 0.3);
-  }
-
-  /* edit-button: orange for update/edit actions */
-  .edit-button {
-    background: #e67e22;
-    color: #111;
-    border: 1px solid rgba(230, 126, 34, 0.3);
-  }
+      .ghost-button {
+        background: transparent;
+        border: 1px solid var(--color-border);
+        color: var(--color-text-secondary);
+      }
+      .ghost-button:hover {
+        color: var(--color-text-primary);
+        border-color: var(--theme-accent-24);
+      }
+      .accent-button {
+        background: var(--theme-accent);
+        color: #111;
+        border: 1px solid var(--theme-accent-24);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+      }
+      .accent-button:hover {
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3);
+      }
+      .action-button {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid transparent;
+        color: #111;
+      }
+      .save-button {
+        background: var(--color-success);
+        border-color: rgba(46, 204, 113, 0.4);
+        color: #111;
+      }
+      .cancel-button {
+        background: var(--color-danger);
+        border-color: rgba(231, 76, 60, 0.4);
+        color: #fff;
+      }
+      .edit-button {
+        background: #e67e22;
+        border-color: rgba(230, 126, 34, 0.4);
+        color: #111;
+      }
       .badge {
         display: inline-block;
         padding: 0.15rem 0.5rem;
@@ -614,7 +630,7 @@
       }
 
       /* Toasts (under login button) */
-      .toast-container {
+      #login-screen .toast-container {
         position: absolute;
         top: 100%;
         inset-inline-start: 50%;
@@ -624,6 +640,19 @@
         flex-direction: column;
         gap: 0.6rem;
         z-index: 1000;
+      }
+      /* Toasts (app views) */
+      body > .toast-container {
+        position: fixed;
+        top: 16px;
+        inset-inline-end: 16px;
+        inset-inline-start: auto;
+        transform: none;
+        margin-top: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        z-index: 10000;
       }
       .toast {
         min-width: 260px;
@@ -753,8 +782,11 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.8rem;
+        direction: rtl;
       }
       dialog .form-grid label {
+        display: block;
+        margin-bottom: 0.25rem;
         font-size: 0.9rem;
         color: var(--color-text-secondary);
       }
@@ -767,6 +799,9 @@
         border-radius: 8px;
         background: rgba(0, 0, 0, 0.25);
         color: var(--color-text-primary);
+      }
+      dialog .form-grid .span-2 {
+        grid-column: 1 / span 2;
       }
       dialog .actions {
         display: flex;
@@ -796,6 +831,14 @@
         width: 100%;
         text-align: right;
         padding: 0.55rem 0.8rem;
+        border-color: var(--color-border);
+        background: rgba(0, 0, 0, 0.12);
+        color: var(--color-text-secondary);
+      }
+      .dyn-tabs .nav-item.active {
+        background: var(--theme-accent);
+        border-color: var(--theme-accent);
+        color: #111;
       }
       .dyn-pages {
         flex: 1;
@@ -1320,11 +1363,11 @@
       <form method="dialog" id="new-user-form">
         <div id="new-user-fields" class="form-grid"></div>
         <div class="actions">
-  <button type="submit" class="accent-button save-button">حفظ</button>
-  <button type="button" id="btn-cancel-new" class="ghost-button cancel-button">
-    إلغاء
-  </button>
-</div>
+          <button type="submit" class="action-button save-button">حفظ</button>
+          <button type="button" id="btn-cancel-new" class="action-button cancel-button">
+            إلغاء
+          </button>
+        </div>
 
       </form>
     </dialog>
@@ -1409,11 +1452,11 @@
           </table>
         </section>
       </div>
-     <div class="actions">
-  <button type="button" id="btn-close-profile" class="accent-button cancel-button">
-    إغلاق
-  </button>
-</div>
+      <div class="actions">
+        <button type="button" id="btn-close-profile" class="action-button cancel-button">
+          إغلاق
+        </button>
+      </div>
 
     </dialog>
 
@@ -1430,11 +1473,11 @@
           <div class="span-2 muted" id="assign-role-user-label"></div>
         </div>
         <div class="actions">
-  <button type="submit" class="accent-button save-button">حفظ</button>
-  <button type="button" id="btn-cancel-assign" class="ghost-button cancel-button">
-    إلغاء
-  </button>
-</div>
+          <button type="submit" class="action-button save-button">حفظ</button>
+          <button type="button" id="btn-cancel-assign" class="action-button cancel-button">
+            إلغاء
+          </button>
+        </div>
 
       </form>
     </dialog>
@@ -1446,7 +1489,13 @@
         <div class="form-grid">
           <div class="span-2">
             <label for="reset_pass">كلمة المرور الجديدة</label
-            ><input type="password" id="reset_pass" name="password" required />
+            ><input
+              type="password"
+              id="reset_pass"
+              name="password"
+              autocomplete="new-password"
+              required
+            />
           </div>
           <div class="span-2">
             <label for="reset_confirm">تأكيد كلمة المرور</label
@@ -1454,16 +1503,17 @@
               type="password"
               id="reset_confirm"
               name="confirm"
+              autocomplete="new-password"
               required
             />
           </div>
         </div>
         <div class="actions">
-  <button type="submit" class="accent-button edit-button">تحديث</button>
-  <button type="button" id="btn-cancel-reset" class="ghost-button cancel-button">
-    إلغاء
-  </button>
-</div>
+          <button type="submit" class="action-button edit-button">تحديث</button>
+          <button type="button" id="btn-cancel-reset" class="action-button cancel-button">
+            إلغاء
+          </button>
+        </div>
 
       </form>
     </dialog>
@@ -1579,6 +1629,9 @@
                 (id === "portal-view" && target === "portal-view")
             );
           });
+          if (id === "system-management-view") {
+            setActiveSysPane(currentSysPane || "overview");
+          }
         }
         function createNavButton(label, target) {
           const btn = document.createElement("button");
@@ -2544,30 +2597,23 @@
             .exportUsers(filters, "csv");
         }
 
-        /* ---------- Create New User ---------- */
-        /* ---------- Runtime style overrides (visibility & RTL polish) ---------- */
-        (function addRuntimeStyles() {
-          const css = `
-            .workspace-nav .nav-item.active{background:var(--theme-accent);color:#111;border:1px solid rgba(0,0,0,.25)}
-            .workspace-nav .nav-item{border:1px solid var(--theme-accent-24)}
-            .dyn-tabs .nav-item.active{background:var(--theme-accent);color:#111}
-            dialog .form-grid{direction:rtl}
-            dialog .form-grid label{display:block;margin-bottom:.25rem}
-            dialog .form-grid .span-2{grid-column:1 / span 2}
-            .toast-container{position:fixed;top:16px;inset-inline-end:16px;inset-inline-start:auto;transform:none;margin-top:0;z-index:10000}
-          `;
-          const el = document.createElement("style");
-          el.textContent = css;
-          document.head.appendChild(el);
-        })();
-
         /* ---------- Global Toast (usable anywhere) ---------- */
         function ensureToastContainer() {
           let c = document.getElementById("toast-container");
+          const loginScreen = document.getElementById("login-screen");
+          const loginVisible =
+            loginScreen && loginScreen.classList.contains("active");
+          if (c && c.parentElement && c.parentElement !== document.body && !loginVisible) {
+            c.id = "login-toast-container";
+            c.classList.add("toast-container--login");
+            c = null;
+          }
           if (!c) {
             c = document.createElement("div");
             c.id = "toast-container";
             c.className = "toast-container";
+            c.setAttribute("aria-live", "polite");
+            c.setAttribute("aria-atomic", "true");
             document.body.appendChild(c);
           }
           return c;
@@ -2633,6 +2679,7 @@
           layout.className = "dyn-layout";
           const tabBar = document.createElement("div");
           tabBar.className = "dyn-tabs";
+          tabBar.setAttribute("role", "tablist");
           const pages = document.createElement("div");
           pages.className = "dyn-pages";
           layout.appendChild(tabBar);
@@ -2649,9 +2696,15 @@
             tabs[tab].sections[sec].push(f);
           });
 
-          function makePage(tabKey, tab) {
+          function makePage(tabKey, tab, index) {
             const page = document.createElement("div");
+            const safeKey = String(tabKey || "tab")
+              .replace(/[^a-zA-Z0-9_-]+/g, "_")
+              .toLowerCase();
             page.className = "form-grid hidden";
+            page.id = `dyn-tab-${index}-${safeKey}`;
+            page.setAttribute("role", "tabpanel");
+            page.setAttribute("aria-hidden", "true");
             Object.keys(tab.sections).forEach((sec) => {
               if (sec) {
                 const h = document.createElement("div");
@@ -2698,13 +2751,17 @@
                 } else if (t === "password" || isPassword) {
                   el = document.createElement("input");
                   el.type = "password";
+                  el.autocomplete = initialData ? "current-password" : "new-password";
                 } else {
                   el = document.createElement("input");
                   el.type = t === "email" ? "email" : "text";
                 }
                 el.name = f.targetColumn || f.fieldId || id;
                 el.id = id;
-                if (f.readOnly) el.readOnly = true;
+                if (f.readOnly) {
+                  el.readOnly = true;
+                  el.setAttribute("aria-readonly", "true");
+                }
                 if (f.required && !el.readOnly) el.required = true;
                 if (initialData) {
                   const k = f.targetColumn || f.fieldId;
@@ -2746,26 +2803,48 @@
           }
 
           const tabKeys = Object.keys(tabs);
-          const pagesEls = tabKeys.map((k) => makePage(k, tabs[k]));
+          const pagesEls = tabKeys.map((k, idx) => makePage(k, tabs[k], idx));
           pagesEls.forEach((p) => pages.appendChild(p));
-
+          const tabButtons = [];
           const activateTab = (targetIdx) => {
-            const buttons = tabBar.querySelectorAll(".nav-item");
-            buttons.forEach((btn, idx) => {
-              btn.classList.toggle("active", idx === targetIdx);
-            });
             pagesEls.forEach((page, idx) => {
-              page.classList.toggle("hidden", idx !== targetIdx);
+              const isActive = idx === targetIdx;
+              page.classList.toggle("hidden", !isActive);
+              page.setAttribute("aria-hidden", isActive ? "false" : "true");
+            });
+            tabButtons.forEach((btn, idx) => {
+              const isActive = idx === targetIdx;
+              btn.classList.toggle("active", isActive);
+              btn.setAttribute("aria-selected", isActive ? "true" : "false");
+              btn.tabIndex = isActive ? 0 : -1;
             });
           };
 
           tabKeys.forEach((k, idx) => {
             const b = document.createElement("button");
             b.type = "button";
-            b.className = "nav-item"  (idx === 0 ? " active" : "");
+            b.className = "nav-item" + (idx === 0 ? " active" : "");
             b.textContent = tabs[k].name || "تبويب";
+            b.setAttribute("role", "tab");
+            b.setAttribute("aria-selected", idx === 0 ? "true" : "false");
+            b.setAttribute("aria-controls", pagesEls[idx].id);
+            b.tabIndex = idx === 0 ? 0 : -1;
             b.addEventListener("click", () => activateTab(idx));
+            b.addEventListener("keydown", (evt) => {
+              if (evt.key === "ArrowLeft" || evt.key === "ArrowUp") {
+                evt.preventDefault();
+                const prev = (idx - 1 + tabButtons.length) % tabButtons.length;
+                activateTab(prev);
+                tabButtons[prev].focus();
+              } else if (evt.key === "ArrowRight" || evt.key === "ArrowDown") {
+                evt.preventDefault();
+                const next = (idx + 1) % tabButtons.length;
+                activateTab(next);
+                tabButtons[next].focus();
+              }
+            });
             tabBar.appendChild(b);
+            tabButtons.push(b);
           });
 
           if (tabKeys.length) {
@@ -2781,7 +2860,7 @@
           grid.innerHTML = `
             <div><label>رقم المستخدم</label><input id="nu_uid" name="User_Id" type="text" ${
               isEdit ? "" : "readonly"
-            } placeholder="AutoGenerate" /></div>
+            } autocomplete="off" placeholder="AutoGenerate" /></div>
             <div><label>الاسم الكامل</label><input name="Full_Name" type="text" required /></div>
             <div><label>اسم المستخدم</label><input name="Username" type="text" required /></div>
             <div><label>البريد الإلكتروني</label><input name="Email" type="email" /></div>
@@ -2792,7 +2871,7 @@
             ${
               isEdit
                 ? ""
-                : '<div><label>كلمة المرور</label><input name="password" type="password" required /></div>'
+                : '<div><label>كلمة المرور</label><input name="password" type="password" autocomplete="new-password" required /></div>'
             }`;
           fieldsHost.appendChild(grid);
           // next id & filters
