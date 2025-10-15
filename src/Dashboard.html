@@ -18,6 +18,9 @@
         --color-text-primary: #f0f0f0;
         --color-text-secondary: #a0a0a0;
         --color-accent: #d4af37;
+        --theme-accent: var(--color-accent);
+        --theme-accent-16: rgba(212, 175, 55, 0.16);
+        --theme-accent-24: rgba(212, 175, 55, 0.24);
         --color-success: #2ecc71;
         --color-danger: #e74c3c;
         --font-family-arabic: "Cairo", sans-serif;
@@ -2262,23 +2265,29 @@
           const tabKeys = Object.keys(tabs);
           const pagesEls = tabKeys.map((k) => makePage(k, tabs[k]));
           pagesEls.forEach((p) => pages.appendChild(p));
+
+          const activateTab = (targetIdx) => {
+            const buttons = tabBar.querySelectorAll(".nav-item");
+            buttons.forEach((btn, idx) => {
+              btn.classList.toggle("active", idx === targetIdx);
+            });
+            pagesEls.forEach((page, idx) => {
+              page.classList.toggle("hidden", idx !== targetIdx);
+            });
+          };
+
           tabKeys.forEach((k, idx) => {
             const b = document.createElement("button");
             b.type = "button";
-            b.className = "nav-item" + (idx === 0 ? " active" : "");
+            b.className = "nav-item";
             b.textContent = tabs[k].name || "تبويب";
-            b.addEventListener("click", () => {
-              tabBar
-                .querySelectorAll(".nav-item")
-                .forEach((x) => x.classList.remove("active"));
-              b.classList.add("active");
-              pagesEls.forEach((p, i) =>
-                p.classList.toggle("hidden", i !== tabKeys.indexOf(k))
-              );
-            });
+            b.addEventListener("click", () => activateTab(idx));
             tabBar.appendChild(b);
           });
-          if (pagesEls[0]) pagesEls[0].classList.remove("hidden");
+
+          if (tabKeys.length) {
+            activateTab(0);
+          }
         }
 
         function buildMinimalUserForm(initialData = null) {
