@@ -206,6 +206,18 @@ function getSheetSchemas() {
       "Updated_At",
       "Updated_By",
     ],
+    PV_SYS_Users_Table: [
+      "User_Id",
+      "Full_Name",
+      "Username",
+      "Email",
+      "Department",
+      "Role_Id",
+      "IsActive",
+      "Job_Title",
+      "Last_Login",
+      "Updated_At",
+    ],
     SYS_PubHolidays: ["Pub_Holiday_Date", "Pub_Holiday_Name"],
 
     // ================== HR MODULE ==================
@@ -1315,6 +1327,156 @@ function seedAdminUser(ss) {
   appendRowsIfEmpty(sh, [adminUser]);
   Logger.log("✅ Admin user seeded successfully.");
 }
+
+function seedSysUsersView(ss) {
+  const src = ss.getSheetByName("SYS_Users");
+  const view = ss.getSheetByName("PV_SYS_Users_Table");
+  if (!src || !view) return;
+  const data = src.getDataRange().getValues();
+  if (!data || data.length < 2) return;
+  const headers = data[0];
+  const idx = {
+    id: headers.indexOf("User_Id"),
+    fullName: headers.indexOf("Full_Name"),
+    username: headers.indexOf("Username"),
+    email: headers.indexOf("Email"),
+    dept: headers.indexOf("Department"),
+    role: headers.indexOf("Role_Id"),
+    active: headers.indexOf("IsActive"),
+    jobTitle: headers.indexOf("Job_Title"),
+    lastLogin: headers.indexOf("Last_Login"),
+    updatedAt: headers.indexOf("Updated_At"),
+  };
+  const rows = data.slice(1).map((row) => [
+    row[idx.id] || "",
+    row[idx.fullName] || "",
+    row[idx.username] || "",
+    row[idx.email] || "",
+    row[idx.dept] || "",
+    row[idx.role] || "",
+    row[idx.active] || "",
+    row[idx.jobTitle] || "",
+    row[idx.lastLogin] || "",
+    row[idx.updatedAt] || "",
+  ]);
+  if (!rows.length) return;
+  appendRowsIfEmpty(view, rows);
+  Logger.log("✅ PV_SYS_Users_Table seeded successfully.");
+}
+
+function seedSysUserProperties(ss) {
+  const sh = ss.getSheetByName("SYS_User_Properties");
+  if (!sh) return;
+  const nowIso = ensureISODate(new Date());
+  const rows = [
+    [
+      "USR_00001",
+      "Preferred_Language",
+      "ar-EG",
+      nowIso,
+      SYSTEM_USER,
+      nowIso,
+      SYSTEM_USER,
+    ],
+    [
+      "USR_00001",
+      "Timezone",
+      "Africa/Cairo",
+      nowIso,
+      SYSTEM_USER,
+      nowIso,
+      SYSTEM_USER,
+    ],
+  ];
+  appendRowsIfEmpty(sh, rows);
+  Logger.log("✅ SYS_User_Properties seeded successfully.");
+}
+
+function seedSysDocuments(ss) {
+  const sh = ss.getSheetByName("SYS_Documents");
+  if (!sh) return;
+  const nowIso = new Date().toISOString();
+  const rows = [
+    [
+      "DOC_00001",
+      "Users",
+      "USR_00001",
+      "Admin_Profile.pdf",
+      "Resume",
+      "drive-file-id-001",
+      "https://drive.google.com/file/d/drive-file-id-001/view",
+      "SYSTEM",
+      nowIso,
+    ],
+  ];
+  appendRowsIfEmpty(sh, rows);
+  Logger.log("✅ SYS_Documents seeded successfully.");
+}
+
+function seedSysSessions(ss) {
+  const sh = ss.getSheetByName("SYS_Sessions");
+  if (!sh) return;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const rows = [
+    [
+      "SESS-0001",
+      "USR_00001",
+      "m.elkhoraiby@gmail.com",
+      "USR_00001",
+      "LOGIN",
+      "ACTIVE",
+      "Chrome on Windows",
+      "102.45.12.1",
+      "",
+      nowIso,
+      "",
+      nowIso,
+      SYSTEM_USER,
+      nowIso,
+      "",
+      "",
+      JSON.stringify({ ipGeolocation: "Cairo, EG" }),
+    ],
+  ];
+  appendRowsIfEmpty(sh, rows);
+  Logger.log("✅ SYS_Sessions seeded successfully.");
+}
+
+function seedSysAuditLog(ss) {
+  const sh = ss.getSheetByName("SYS_Audit_Log");
+  if (!sh) return;
+  const nowIso = new Date().toISOString();
+  const rows = [
+    [
+      nowIso,
+      "mkhoraiby",
+      "LOGIN",
+      "User authenticated via demo portal.",
+      "User",
+      "USR_00001",
+      "SYSTEM",
+      "SYS_Users",
+      "USR_00001",
+      "SYSTEM",
+    ],
+    [
+      nowIso,
+      "mkhoraiby",
+      "VIEW",
+      "Viewed system management dashboard.",
+      "Dashboard",
+      "SYSTEM_OVERVIEW",
+      "SYSTEM",
+      "Portal",
+      "DASHBOARD",
+      "SYSTEM",
+    ],
+  ];
+  appendRowsIfEmpty(sh, rows);
+  Logger.log("✅ SYS_Audit_Log seeded successfully.");
+}
+
 /** ---------- Seed System Permissions ---------- **/
 function seedSysPermissions(ss) {
   const sh = ss.getSheetByName("SYS_Permissions");
@@ -1558,6 +1720,11 @@ function seedCoreData() {
   seedSysPermissions(ss);
   seedSysRolePermissions(ss);
   seedAdminUser(ss);
+  seedSysUsersView(ss);
+  seedSysUserProperties(ss);
+  seedSysDocuments(ss);
+  seedSysSessions(ss);
+  seedSysAuditLog(ss);
   seedHrDepartments(ss);
   Logger.log("✅ Core SYS + Admin seeding completed.");
 }

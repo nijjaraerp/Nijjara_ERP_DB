@@ -20,6 +20,7 @@ const CONFIG = {
     DYNAMIC_FORMS: "SYS_Dynamic_Forms",
     PROFILE_VIEW: "SYS_Profile_View",
     USER_PROPERTIES: "SYS_User_Properties",
+    USERS_VIEW: "PV_SYS_Users_Table",
 
     // Projects
     PRJ_MAIN: "PRJ_Main",
@@ -179,6 +180,15 @@ function getSheet_(name) {
     }
   }
   return sheet;
+}
+
+function getSheetWithFallback_(...names) {
+  for (const name of names) {
+    if (!name) continue;
+    const sheet = getSheet_(name);
+    if (sheet) return sheet;
+  }
+  return null;
 }
 
 function findHeaderIndex_(headers, ...candidates) {
@@ -399,13 +409,26 @@ function getSystemKPIs() {
 // Enhanced user search with dynamic filtering
 function searchUsers(filters = {}) {
   debugLog("searchUsers", "start", { filters });
-  const sheet = getSheet_(CONFIG.SHEETS.USERS);
-  if (!sheet) return [];
+  const sheet = getSheetWithFallback_(
+    CONFIG.SHEETS.USERS,
+    CONFIG.SHEETS.USERS_VIEW,
+    "PV_SYS_Users_Table"
+  );
+  if (!sheet) {
+    debugLog("searchUsers", "sheetNotFound", {
+      tried: [
+        CONFIG.SHEETS.USERS,
+        CONFIG.SHEETS.USERS_VIEW,
+        "PV_SYS_Users_Table",
+      ],
+    });
+    return [];
+  }
 
   try {
     const data = sheet.getDataRange().getValues();
     if (!data || data.length < 2) {
-      debugLog("searchUsers", "noData");
+      debugLog("searchUsers", "noData", { sheet: sheet.getName() });
       return [];
     }
     const headers = data[0];
@@ -413,46 +436,154 @@ function searchUsers(filters = {}) {
     const idFilterSet = Array.isArray(filters.userIds)
       ? new Set(filters.userIds.map((id) => String(id)))
       : null;
-    const getIndex = (name) => headers.indexOf(name);
     const idx = {
-      id: getIndex("User_Id"),
-      fullName: getIndex("Full_Name"),
-      username: getIndex("Username"),
-      email: getIndex("Email"),
-      department: getIndex("Department"),
-      role: getIndex("Role_Id"),
-      isActive: getIndex("IsActive"),
-      lastLogin: getIndex("Last_Login"),
-      updatedAt: getIndex("Updated_At"),
+      id: findHeaderIndex_(
+        headers,
+        "User_Id",
+        "User ID",
+        "UserId",
+        "Id",
+        "ID",
+        "معرف المستخدم",
+        "معرّف المستخدم"
+      ),
+      fullName: findHeaderIndex_(
+        headers,
+        "Full_Name",
+        "Full Name",
+        "Name",
+        "الاسم الكامل",
+        "اسم كامل"
+      ),
+      username: findHeaderIndex_(
+        headers,
+        "Username",
+        "User_Name",
+        "Login",
+        "User",
+        "اسم المستخدم",
+        "مستخدم"
+      ),
+      email: findHeaderIndex_(
+        headers,
+        "Email",
+        "Email_Address",
+        "E-mail",
+        "البريد الإلكتروني",
+        "البريد الالكتروني"
+      ),
+      department: findHeaderIndex_(
+        headers,
+        "Department",
+        "Dept",
+        "Division",
+        "القسم",
+        "قسم"
+      ),
+      role: findHeaderIndex_(
+        headers,
+        "Role_Id",
+        "Role",
+        "RoleID",
+        "Role Id",
+        "الدور",
+        "الدور الوظيفي"
+      ),
+      isActive: findHeaderIndex_(
+        headers,
+        "IsActive",
+        "Is_Active",
+        "Active",
+        "Status",
+        "الحالة",
+        "نشط"
+      ),
+      jobTitle: findHeaderIndex_(
+        headers,
+        "Job_Title",
+        "Job Title",
+        "Title",
+        "المسمى الوظيفي",
+        "الوظيفة"
+      ),
+      lastLogin: findHeaderIndex_(
+        headers,
+        "Last_Login",
+        "LastLogin",
+        "Last Login",
+        "آخر تسجيل دخول",
+        "اخر تسجيل دخول",
+        "Last_SignIn",
+        "Last_Signin"
+      ),
+      updatedAt: findHeaderIndex_(
+        headers,
+        "Updated_At",
+        "UpdatedAt",
+        "LastUpdated",
+        "Last Updated",
+        "آخر تحديث",
+        "اخر تحديث"
+      ),
     };
 
-    const normDate = (value) => {
-      if (!value) return null;
-      if (value instanceof Date) return value;
-      const maybe = new Date(value);
-      return isNaN(maybe.getTime()) ? null : maybe;
-    };
-
-    const fromDate = normDate(filters.updatedFrom);
-    const toDate = normDate(filters.updatedTo);
-    const toString = (value) => {
+    const readValue = (row, index) => (index >= 0 ? row[index] : "");
+    const readString = (row, index) => {
+      const value = readValue(row, index);
       if (value == null) return "";
       if (value instanceof Date) return value.toISOString();
-      return String(value);
+      return String(value).trim();
+    };
+    const readDate = (row, index) => coerceDate_(readValue(row, index));
+
+    const fromDate = coerceDate_(filters.updatedFrom);
+    const toDateRaw = coerceDate_(filters.updatedTo);
+    const toDate =
+      toDateRaw != null
+        ? new Date(
+            toDateRaw.getFullYear(),
+            toDateRaw.getMonth(),
+            toDateRaw.getDate(),
+            23,
+            59,
+            59,
+            999
+          )
+        : null;
+    const desiredDepartment = (filters.department || "").trim();
+    const desiredRole = (filters.role || "").trim();
+    const desiredStatus =
+      filters.status !== undefined && filters.status !== null
+        ? String(filters.status).trim().toLowerCase()
+        : "";
+    const normalizeSearchValue = (value) => {
+      if (value == null) return "";
+      if (value instanceof Date) return value.toISOString().toLowerCase();
+      return String(value).trim().toLowerCase();
     };
 
+    const normalizedDeptFilter = normalizeSearchValue(desiredDepartment);
+    const normalizedRoleFilter = normalizeSearchValue(desiredRole);
+
     const result = data.slice(1).map((row) => {
-      const updatedRaw = idx.updatedAt >= 0 ? row[idx.updatedAt] : "";
+      const updatedDate = readDate(row, idx.updatedAt);
+      const lastLoginDate = readDate(row, idx.lastLogin);
+      const jobTitle = readString(row, idx.jobTitle);
       return {
-        User_Id: idx.id >= 0 ? row[idx.id] : "",
-        Full_Name: idx.fullName >= 0 ? row[idx.fullName] : "",
-        Username: idx.username >= 0 ? row[idx.username] : "",
-        Email: idx.email >= 0 ? row[idx.email] : "",
-        Department: idx.department >= 0 ? row[idx.department] : "",
-        Role_Id: idx.role >= 0 ? row[idx.role] : "",
+        User_Id: readString(row, idx.id),
+        Full_Name: readString(row, idx.fullName),
+        Username: readString(row, idx.username),
+        Email: readString(row, idx.email),
+        Department: readString(row, idx.department),
+        Role_Id: readString(row, idx.role),
         IsActive: idx.isActive >= 0 ? isTruthyFlag_(row[idx.isActive]) : false,
-        Last_Login: idx.lastLogin >= 0 ? row[idx.lastLogin] : "",
-        Updated_At: updatedRaw,
+        jobTitle,
+        Last_Login:
+          lastLoginDate ||
+          (idx.lastLogin >= 0 ? readValue(row, idx.lastLogin) : ""),
+        Updated_At:
+          updatedDate ||
+          (idx.updatedAt >= 0 ? readValue(row, idx.updatedAt) : ""),
       };
     });
 
@@ -462,7 +593,7 @@ function searchUsers(filters = {}) {
       }
 
       if (filters.search) {
-        const q = String(filters.search).toLowerCase();
+        const q = normalizeSearchValue(filters.search);
         const searchable = [
           user.User_Id,
           user.Full_Name,
@@ -470,30 +601,33 @@ function searchUsers(filters = {}) {
           user.Email,
           user.Department,
           user.Role_Id,
+          user.jobTitle,
         ]
-          .map(toString)
-          .join("||")
-          .toLowerCase();
+          .map(normalizeSearchValue)
+          .join("||");
         if (!searchable.includes(q)) return false;
       }
 
-      if (filters.department && user.Department !== filters.department) {
+      const rowDept = normalizeSearchValue(user.Department);
+      if (normalizedDeptFilter && rowDept !== normalizedDeptFilter) {
         return false;
       }
 
-      if (filters.role && user.Role_Id !== filters.role) {
+      const rowRole = normalizeSearchValue(user.Role_Id);
+      if (normalizedRoleFilter && rowRole !== normalizedRoleFilter) {
         return false;
       }
 
-      if (filters.status !== undefined && filters.status !== "") {
-        const desired = String(filters.status).toLowerCase();
+      if (desiredStatus) {
         const active = user.IsActive === true;
-        if (desired === "true" && !active) return false;
-        if (desired === "false" && active) return false;
+        if (desiredStatus === "true" && !active) return false;
+        if (desiredStatus === "false" && active) return false;
+        if (desiredStatus === "inactive" && active) return false;
+        if (desiredStatus === "active" && !active) return false;
       }
 
       if (fromDate || toDate) {
-        const updated = normDate(user.Updated_At);
+        const updated = coerceDate_(user.Updated_At);
         if (!updated) return false;
         if (fromDate && updated < fromDate) return false;
         if (toDate && updated > toDate) return false;
@@ -503,6 +637,7 @@ function searchUsers(filters = {}) {
     });
 
     debugLog("searchUsers", "result", {
+      sheet: sheet.getName(),
       totalRows: result.length,
       filteredCount: filtered.length,
     });
@@ -1526,7 +1661,11 @@ function getNextUserId() {
 /** ---- SMALL HELPERS FOR CLIENT FILTERS ---- */
 function getDeptAndRoleFilters() {
   debugLog("getDeptAndRoleFilters", "start");
-  const sh = getSheet_(CONFIG.SHEETS.USERS);
+  const sh = getSheetWithFallback_(
+    CONFIG.SHEETS.USERS,
+    CONFIG.SHEETS.USERS_VIEW,
+    "PV_SYS_Users_Table"
+  );
   if (!sh) return { departments: [], roles: [], roleOptions: [] };
   const data = sh.getDataRange().getValues();
   if (!data || data.length < 2) {
@@ -1535,13 +1674,32 @@ function getDeptAndRoleFilters() {
     return fallback;
   }
   const h = data[0];
-  const iDept = h.indexOf("Department");
-  const iRole = h.indexOf("Role_Id");
+  const iDept = findHeaderIndex_(
+    h,
+    "Department",
+    "Dept",
+    "Division",
+    "القسم",
+    "قسم"
+  );
+  const iRole = findHeaderIndex_(
+    h,
+    "Role_Id",
+    "Role",
+    "RoleID",
+    "Role Id",
+    "الدور",
+    "الدور الوظيفي"
+  );
   const depts = new Set();
   const roles = new Set();
   data.slice(1).forEach((r) => {
-    if (iDept >= 0 && r[iDept]) depts.add(String(r[iDept]));
-    if (iRole >= 0 && r[iRole]) roles.add(String(r[iRole]));
+    if (iDept >= 0 && r[iDept] != null && r[iDept] !== "") {
+      depts.add(String(r[iDept]).trim());
+    }
+    if (iRole >= 0 && r[iRole] != null && r[iRole] !== "") {
+      roles.add(String(r[iRole]).trim());
+    }
   });
   const payload = {
     departments: Array.from(depts).sort(),

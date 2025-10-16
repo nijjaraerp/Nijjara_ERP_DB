@@ -1706,7 +1706,11 @@
           renderNav(data?.nav || []);
           const displayName =
             data?.user?.Full_Name || data?.user?.Username || "User";
-          updateUserContext(displayName);
+          if (data?.user) {
+            updateUserContext(data.user);
+          } else {
+            updateUserContext(displayName);
+          }
           // Fill filter selects if server sent lists
           if (data?.filters) {
             fillSelect(selDept, data.filters.departments);
@@ -3388,8 +3392,10 @@
           let display = "User";
           let uname = "";
           if (typeof nameOrObj === "object" && nameOrObj) {
-            display = nameOrObj.Full_Name || nameOrObj.Username || "User";
-            uname = nameOrObj.Username ? ` (${nameOrObj.Username})` : "";
+            const username = nameOrObj.Username || "";
+            display = nameOrObj.Full_Name || username || "User";
+            uname =
+              username && username !== display ? ` (${username})` : "";
           } else if (typeof nameOrObj === "string") {
             display = nameOrObj;
           }
