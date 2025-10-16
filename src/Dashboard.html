@@ -1100,17 +1100,17 @@
                 </div>
               </div>
               <p class="muted" style="margin: 0">
-                يعرض القسم التالي دليل المستخدمين مع أدوات البحث والإجراءات
-                المجمّعة المطلوبة في نظرة عامة /sys طبقًا لـ PV_SYS_Users_Table.
+                استعرض الأرقام المجمّعة هنا، ثم انتقل إلى تبويب
+                <strong>المستخدمون</strong> لإدارة دليل المستخدمين بالكامل طبقًا
+                لـ PV_SYS_Users_Table.
               </p>
             </div>
           </section>
 
           <section
             id="sys-users-pane"
-            class="sys-pane active"
+            class="sys-pane"
             data-pane="users"
-            data-stack-with="overview"
           >
             <div class="sys-pane__header">
               <h3 class="pane-heading">دليل المستخدمين</h3>
@@ -2331,9 +2331,17 @@
               rolePermsLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(rolePermsTbody, list, (row) => {
+                const roleDisplay = row.roleTitle && row.roleId
+                  ? `${escapeHtml(row.roleTitle)} (${escapeHtml(row.roleId)})`
+                  : escapeHtml(row.roleTitle || row.roleId || "");
+                const permDisplay = row.permissionLabel && row.permissionKey
+                  ? `${escapeHtml(row.permissionLabel)} (${escapeHtml(
+                      row.permissionKey
+                    )})`
+                  : escapeHtml(row.permissionLabel || row.permissionKey || "");
                 return `
-                  <td>${escapeHtml(row.roleId || "")}</td>
-                  <td>${escapeHtml(row.permissionKey || "")}</td>
+                  <td>${roleDisplay}</td>
+                  <td>${permDisplay}</td>
                   <td>${escapeHtml(row.scope || "")}</td>
                   <td>${renderBooleanBadge(row.allowed, "مسموح", "مرفوض")}</td>
                   <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
@@ -2460,9 +2468,6 @@
         function runPaneLoaders(paneName, options = {}) {
           const loader = sysPaneLoaders[paneName];
           if (loader) loader(options);
-          if (paneName === "overview" && sysPaneLoaders.users) {
-            sysPaneLoaders.users(options);
-          }
         }
 
         function setActiveSysPane(paneName, options = {}) {

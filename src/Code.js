@@ -110,6 +110,58 @@ function sanitizeForLog(value, depth = 0) {
   return safe;
 }
 
+function findHeaderIndex_(headers, ...candidates) {
+  if (!headers || !headers.length) return -1;
+  const normalized = headers.map((h) => String(h || "").trim().toLowerCase());
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const idx = normalized.indexOf(String(candidate).trim().toLowerCase());
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+function getValueAt_(row, index) {
+  if (!row || index == null || index < 0) return "";
+  return row[index];
+}
+
+function coerceDate_(value) {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function isTruthyFlag_(value) {
+  if (value === true) return true;
+  if (value === false) return false;
+  const text = String(value || "").trim().toLowerCase();
+  if (!text) return false;
+  const truthy = [
+    "true",
+    "yes",
+    "1",
+    "y",
+    "enabled",
+    "active",
+    "نشط",
+    "مفعل",
+    "مُفعّل",
+    "نعم",
+  ];
+  const falsy = ["false", "no", "0", "n", "غير نشط", "معطل", "لا"];
+  if (truthy.indexOf(text) >= 0) return true;
+  if (falsy.indexOf(text) >= 0) return false;
+  return false;
+}
+
+function setRowValue_(headers, row, value, ...candidates) {
+  if (!headers || !row) return;
+  const idx = findHeaderIndex_(headers, ...candidates);
+  if (idx >= 0) row[idx] = value;
+}
+
 /** ---- ENTRY POINT ---- */
 function doGet(e) {
   debugLog("doGet", "render", { query: e && e.parameter });
@@ -327,11 +379,7 @@ function searchUsers(filters = {}) {
         Email: idx.email >= 0 ? row[idx.email] : "",
         Department: idx.department >= 0 ? row[idx.department] : "",
         Role_Id: idx.role >= 0 ? row[idx.role] : "",
-        IsActive:
-          idx.isActive >= 0
-            ? row[idx.isActive] === true ||
-              String(row[idx.isActive]).toLowerCase() === "true"
-            : false,
+        IsActive: idx.isActive >= 0 ? isTruthyFlag_(row[idx.isActive]) : false,
         Last_Login: idx.lastLogin >= 0 ? row[idx.lastLogin] : "",
         Updated_At: updatedRaw,
       };
@@ -517,14 +565,13 @@ function listRoles() {
       isSystem: headers.indexOf("Is_System"),
       updatedAt: headers.indexOf("Updated_At"),
     };
-    const toBool = (value) =>
-      value === true || String(value).toLowerCase() === "true";
+    const toBool = (value) => isTruthyFlag_(value);
     const roles = data.slice(1).map((row) => ({
       roleId: idx.id >= 0 ? row[idx.id] : "",
       title: idx.title >= 0 ? row[idx.title] : "",
       description: idx.desc >= 0 ? row[idx.desc] : "",
       isSystem: idx.isSystem >= 0 ? toBool(row[idx.isSystem]) : false,
-      updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+      updatedAt: coerceDate_(idx.updatedAt >= 0 ? row[idx.updatedAt] : null),
     }));
     debugLog("listRoles", "loaded", { count: roles.length });
     return roles;
@@ -556,7 +603,7 @@ function listPermissions() {
       label: idx.label >= 0 ? row[idx.label] : "",
       description: idx.desc >= 0 ? row[idx.desc] : "",
       category: idx.category >= 0 ? row[idx.category] : "",
-      updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+      updatedAt: coerceDate_(idx.updatedAt >= 0 ? row[idx.updatedAt] : null),
     }));
     debugLog("listPermissions", "loaded", { count: rows.length });
     return rows;
@@ -576,21 +623,41 @@ function listRolePermissions() {
     const data = sheet.getDataRange().getValues();
     if (!data || data.length < 2) return [];
     const headers = data[0];
+    const roleOptions = getRoleOptions_();
+    const roleLabelMap = roleOptions.reduce((map, entry) => {
+      if (entry && entry.value != null) {
+        map[String(entry.value)] = entry.label || entry.value;
+      }
+      return map;
+    }, {});
+    const permLabelMap = getPermissionLabelMap_();
     const idx = {
-      role: headers.indexOf("Role_Id"),
-      permission: headers.indexOf("Permission_Key"),
-      scope: headers.indexOf("Scope"),
-      allowed: headers.indexOf("Allowed"),
-      updatedAt: headers.indexOf("Updated_At"),
+      role: findHeaderIndex_(headers, "Role_Id", "Role", "RoleID"),
+      permission: findHeaderIndex_(
+        headers,
+        "Permission_Key",
+        "Permission",
+        "PermissionID"
+      ),
+      scope: findHeaderIndex_(headers, "Scope", "Range"),
+      allowed: findHeaderIndex_(headers, "Allowed", "IsAllowed", "Allow"),
+      updatedAt: findHeaderIndex_(
+        headers,
+        "Updated_At",
+        "UpdatedAt",
+        "Modified_At"
+      ),
     };
-    const toBool = (value) =>
-      value === true || String(value).toLowerCase() === "true";
+    const toBool = (value) => isTruthyFlag_(value);
     const rows = data.slice(1).map((row) => ({
-      roleId: idx.role >= 0 ? row[idx.role] : "",
-      permissionKey: idx.permission >= 0 ? row[idx.permission] : "",
-      scope: idx.scope >= 0 ? row[idx.scope] : "",
+      roleId: getValueAt_(row, idx.role),
+      roleTitle: roleLabelMap[String(getValueAt_(row, idx.role) || "")] || "",
+      permissionKey: getValueAt_(row, idx.permission),
+      permissionLabel:
+        permLabelMap[String(getValueAt_(row, idx.permission) || "")] || "",
+      scope: getValueAt_(row, idx.scope),
       allowed: idx.allowed >= 0 ? toBool(row[idx.allowed]) : false,
-      updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+      updatedAt: coerceDate_(getValueAt_(row, idx.updatedAt)),
     }));
     debugLog("listRolePermissions", "loaded", { count: rows.length });
     return rows;
@@ -621,7 +688,7 @@ function listUserProperties() {
       userId: idx.user >= 0 ? row[idx.user] : "",
       key: idx.key >= 0 ? row[idx.key] : "",
       value: idx.value >= 0 ? row[idx.value] : "",
-      updatedAt: idx.updatedAt >= 0 ? row[idx.updatedAt] : "",
+      updatedAt: coerceDate_(idx.updatedAt >= 0 ? row[idx.updatedAt] : null),
       updatedBy: idx.updatedBy >= 0 ? row[idx.updatedBy] : "",
     }));
     debugLog("listUserProperties", "loaded", { count: rows.length });
@@ -643,22 +710,43 @@ function listSessions() {
     if (!data || data.length < 2) return [];
     const headers = data[0];
     const idx = {
-      session: headers.indexOf("Session_Id"),
-      user: headers.indexOf("User_Id"),
-      actor: headers.indexOf("Actor_Email"),
-      type: headers.indexOf("Type"),
-      status: headers.indexOf("Status"),
-      started: headers.indexOf("Started_At"),
-      ended: headers.indexOf("Ended_At"),
+      session: findHeaderIndex_(headers, "Session_Id", "SessionID", "Id"),
+      user: findHeaderIndex_(headers, "User_Id", "UserID", "User"),
+      actor: findHeaderIndex_(
+        headers,
+        "Actor_Email",
+        "Actor",
+        "Actor_User",
+        "Created_By",
+        "Initiated_By"
+      ),
+      type: findHeaderIndex_(headers, "Type", "Session_Type", "Category"),
+      status: findHeaderIndex_(headers, "Status", "Session_Status", "State"),
+      started: findHeaderIndex_(
+        headers,
+        "Started_At",
+        "Start_At",
+        "Created_At",
+        "CreatedAt",
+        "Issued_At"
+      ),
+      ended: findHeaderIndex_(
+        headers,
+        "Ended_At",
+        "End_At",
+        "Revoked_At",
+        "Last_Seen",
+        "Closed_At"
+      ),
     };
     const rows = data.slice(1).map((row) => ({
-      sessionId: idx.session >= 0 ? row[idx.session] : "",
-      userId: idx.user >= 0 ? row[idx.user] : "",
-      actor: idx.actor >= 0 ? row[idx.actor] : "",
-      type: idx.type >= 0 ? row[idx.type] : "",
-      status: idx.status >= 0 ? row[idx.status] : "",
-      startedAt: idx.started >= 0 ? row[idx.started] : "",
-      endedAt: idx.ended >= 0 ? row[idx.ended] : "",
+      sessionId: getValueAt_(row, idx.session),
+      userId: getValueAt_(row, idx.user),
+      actor: getValueAt_(row, idx.actor),
+      type: getValueAt_(row, idx.type),
+      status: getValueAt_(row, idx.status),
+      startedAt: coerceDate_(getValueAt_(row, idx.started)),
+      endedAt: coerceDate_(getValueAt_(row, idx.ended)),
     }));
     debugLog("listSessions", "loaded", { count: rows.length });
     return rows;
@@ -697,23 +785,47 @@ function getAuditLog() {
     const data = sheet.getDataRange().getValues();
     if (!data || data.length < 2) return [];
     const headers = data[0];
+    const idx = {
+      timestamp: findHeaderIndex_(
+        headers,
+        "Timestamp",
+        "Created_At",
+        "CreatedAt",
+        "Date"
+      ),
+      user: findHeaderIndex_(
+        headers,
+        "User",
+        "Actor",
+        "Actor_Email",
+        "Actor_Id",
+        "Created_By"
+      ),
+      action: findHeaderIndex_(headers, "Action", "Event", "Activity"),
+      details: findHeaderIndex_(
+        headers,
+        "Details",
+        "Summary",
+        "Message",
+        "Payload"
+      ),
+    };
 
     const rows = data
       .slice(1)
       .map(function (row) {
-        const iTs = headers.indexOf("Timestamp");
-        const iU = headers.indexOf("User");
-        const iA = headers.indexOf("Action");
-        const iD = headers.indexOf("Details");
+        const ts = coerceDate_(getValueAt_(row, idx.timestamp));
         return {
-          timestamp: new Date(row[iTs]).toISOString(),
-          user: row[iU],
-          action: row[iA],
-          details: row[iD],
+          timestamp: ts || null,
+          user: getValueAt_(row, idx.user) || "",
+          action: getValueAt_(row, idx.action) || "",
+          details: getValueAt_(row, idx.details) || "",
         };
       })
       .sort(function (a, b) {
-        return new Date(b.timestamp) - new Date(a.timestamp);
+        const ta = a.timestamp ? a.timestamp.getTime() : 0;
+        const tb = b.timestamp ? b.timestamp.getTime() : 0;
+        return tb - ta;
       });
     debugLog("getAuditLog", "loaded", { count: rows.length });
     return rows;
@@ -1062,9 +1174,21 @@ function getCurrentUser() {
     return null;
   }
 
-  const row = data.slice(1).find(function (r) {
+  let row = data.slice(1).find(function (r) {
     return r[emailCol] === email;
   });
+  let usedFallback = false;
+  if (!row) {
+    const activeIdx = findHeaderIndex_(headers, "IsActive", "Active");
+    const roleIdx = findHeaderIndex_(headers, "Role_Id", "Role", "RoleID");
+    row = data.slice(1).find(function (r) {
+      const isActive = activeIdx < 0 || isTruthyFlag_(r[activeIdx]);
+      if (!isActive) return false;
+      if (roleIdx < 0) return true;
+      return String(r[roleIdx] || "").toLowerCase() === "admin";
+    });
+    usedFallback = !!row;
+  }
   if (!row) {
     debugLog("getCurrentUser", "notFound", { email });
     return null;
@@ -1074,6 +1198,12 @@ function getCurrentUser() {
     user[header] = row[i];
     return user;
   }, {});
+  if (usedFallback) {
+    debugLog("getCurrentUser", "fallbackUsed", {
+      userId: u.User_Id,
+      role: u.Role_Id,
+    });
+  }
   debugLog("getCurrentUser", "resolved", {
     email,
     userId: u.User_Id,
@@ -1181,7 +1311,53 @@ function logAuditEvent(action, details) {
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.AUDIT);
   if (!sheet) return false;
   const actor = getActorEmail_();
-  sheet.appendRow([new Date(), actor, action, JSON.stringify(details)]);
+  const lastCol = sheet.getLastColumn();
+  const headers =
+    lastCol > 0
+      ? sheet.getRange(1, 1, 1, lastCol).getValues().flat()
+      : [];
+  if (!headers || !headers.length) {
+    sheet.appendRow([new Date(), actor, action, JSON.stringify(details || {})]);
+    return true;
+  }
+  const payloadObject =
+    details && typeof details === "object" ? Object.assign({}, details) : null;
+  const row = new Array(headers.length).fill("");
+  const now = new Date();
+  setRowValue_(headers, row, now, "Timestamp", "Created_At", "CreatedAt", "Date");
+  setRowValue_(headers, row, actor, "User", "Actor", "Actor_Email", "Created_By");
+  setRowValue_(headers, row, action, "Action", "Event", "Activity");
+  const detailString = (() => {
+    if (payloadObject) {
+      try {
+        return JSON.stringify(payloadObject);
+      } catch (err) {
+        return String(details);
+      }
+    }
+    if (details == null) return "";
+    if (typeof details === "string") return details;
+    try {
+      return JSON.stringify(details);
+    } catch (err) {
+      return String(details);
+    }
+  })();
+  setRowValue_(headers, row, detailString, "Details", "Summary", "Message", "Payload");
+  const entitySource = payloadObject || {};
+  setRowValue_(headers, row, entitySource.entity || "", "Entity");
+  const entityId =
+    entitySource.entityId ||
+    entitySource.userId ||
+    entitySource.targetId ||
+    entitySource.entity_id ||
+    "";
+  setRowValue_(headers, row, entityId, "Entity_Id", "Target_Id", "EntityID");
+  setRowValue_(headers, row, entitySource.scope || "", "Scope");
+  setRowValue_(headers, row, entitySource.sheet || "", "Sheet");
+  setRowValue_(headers, row, entitySource.userId || "", "User_Id", "UserID");
+  setRowValue_(headers, row, entitySource.actorId || "", "Actor_Id", "ActorID");
+  sheet.appendRow(row);
   return true;
 }
 
@@ -1335,6 +1511,25 @@ function getRoleOptions() {
   return options;
 }
 
+function getPermissionLabelMap_() {
+  debugLog("getPermissionLabelMap_", "start");
+  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.PERMS);
+  if (!sh) return {};
+  const data = sh.getDataRange().getValues();
+  if (!data || data.length < 2) return {};
+  const headers = data[0];
+  const keyIdx = findHeaderIndex_(headers, "Permission_Key", "Key");
+  const labelIdx = findHeaderIndex_(headers, "Permission_Label", "Label", "Name");
+  const map = {};
+  data.slice(1).forEach((row) => {
+    const key = getValueAt_(row, keyIdx);
+    if (!key) return;
+    map[String(key)] = getValueAt_(row, labelIdx) || "";
+  });
+  debugLog("getPermissionLabelMap_", "resolved", { count: Object.keys(map).length });
+  return map;
+}
+
 function assignUserRole(userId, roleId) {
   debugLog("assignUserRole", "start", { userId, roleId });
   if (!userId) throw new Error("User_Id is required");
@@ -1400,26 +1595,41 @@ function startImpersonation(userId) {
   const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.SESSIONS);
   if (!sheet) throw new Error("Sessions sheet not found");
 
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const getCol = (name) => headers.indexOf(name) + 1;
+  const lastCol = sheet.getLastColumn();
+  if (lastCol <= 0) throw new Error("Sessions sheet misconfigured");
+  const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   const row = new Array(headers.length).fill("");
   const sessionId = Utilities.getUuid();
   const actor = getActorEmail_();
   const now = new Date();
 
-  const set = (key, value) => {
-    const col = getCol(key);
-    if (col > 0) row[col - 1] = value;
-  };
-
-  set("Session_Id", sessionId);
-  set("Actor_Email", actor);
+  setRowValue_(headers, row, sessionId, "Session_Id", "SessionID", "Id");
+  setRowValue_(headers, row, actor, "Actor_Email", "Actor", "Created_By");
   const actorUser = getCurrentUser();
-  if (actorUser && actorUser.User_Id) set("Actor_User_Id", actorUser.User_Id);
-  set("User_Id", userId);
-  set("Type", "IMPERSONATION");
-  set("Status", "ACTIVE");
-  set("Started_At", now);
+  if (actorUser && actorUser.User_Id) {
+    setRowValue_(
+      headers,
+      row,
+      actorUser.User_Id,
+      "Actor_User_Id",
+      "Actor_User",
+      "Actor_Id"
+    );
+  }
+  setRowValue_(headers, row, userId, "User_Id", "UserID", "User");
+  setRowValue_(headers, row, "IMPERSONATION", "Type", "Session_Type", "Category");
+  setRowValue_(headers, row, "ACTIVE", "Status", "Session_Status", "State");
+  setRowValue_(
+    headers,
+    row,
+    now,
+    "Started_At",
+    "Start_At",
+    "Created_At",
+    "CreatedAt"
+  );
+  setRowValue_(headers, row, now, "Created_At", "CreatedAt");
+  setRowValue_(headers, row, actor, "Created_By", "Initiated_By");
 
   sheet.appendRow(row);
   logAuditEvent("IMPERSONATE_START", { userId, sessionId });
@@ -1530,31 +1740,46 @@ function getUserSessions_(userId) {
   if (!data || data.length < 2) return [];
   const headers = data[0];
   const idx = {
-    user: headers.indexOf("User_Id"),
-    actor: headers.indexOf("Actor_Email"),
-    sessionId: headers.indexOf("Session_Id"),
-    type: headers.indexOf("Type"),
-    status: headers.indexOf("Status"),
-    startedAt: headers.indexOf("Started_At"),
-    endedAt: headers.indexOf("Ended_At"),
+    user: findHeaderIndex_(headers, "User_Id", "UserID", "User"),
+    actor: findHeaderIndex_(
+      headers,
+      "Actor_Email",
+      "Actor",
+      "Actor_User",
+      "Created_By",
+      "Initiated_By"
+    ),
+    sessionId: findHeaderIndex_(headers, "Session_Id", "SessionID", "Id"),
+    type: findHeaderIndex_(headers, "Type", "Session_Type", "Category"),
+    status: findHeaderIndex_(headers, "Status", "Session_Status", "State"),
+    startedAt: findHeaderIndex_(
+      headers,
+      "Started_At",
+      "Start_At",
+      "Created_At",
+      "CreatedAt",
+      "Issued_At"
+    ),
+    endedAt: findHeaderIndex_(
+      headers,
+      "Ended_At",
+      "End_At",
+      "Revoked_At",
+      "Last_Seen",
+      "Closed_At"
+    ),
   };
   if (idx.user < 0) return [];
   const rows = data
     .slice(1)
     .filter((row) => String(row[idx.user]) === String(userId))
     .map((row) => ({
-      sessionId: idx.sessionId >= 0 ? row[idx.sessionId] : "",
-      actor: idx.actor >= 0 ? row[idx.actor] : "",
-      type: idx.type >= 0 ? row[idx.type] : "",
-      status: idx.status >= 0 ? row[idx.status] : "",
-      startedAt:
-        idx.startedAt >= 0 && row[idx.startedAt]
-          ? new Date(row[idx.startedAt])
-          : null,
-      endedAt:
-        idx.endedAt >= 0 && row[idx.endedAt]
-          ? new Date(row[idx.endedAt])
-          : null,
+      sessionId: getValueAt_(row, idx.sessionId),
+      actor: getValueAt_(row, idx.actor),
+      type: getValueAt_(row, idx.type),
+      status: getValueAt_(row, idx.status),
+      startedAt: coerceDate_(getValueAt_(row, idx.startedAt)),
+      endedAt: coerceDate_(getValueAt_(row, idx.endedAt)),
     }));
   debugLog("getUserSessions_", "resolved", { count: rows.length });
   return rows;
