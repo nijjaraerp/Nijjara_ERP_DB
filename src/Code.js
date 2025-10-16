@@ -3,6 +3,8 @@
 /** ---- GLOBAL CONFIG ---- */
 const CONFIG = {
   APP_NAME: "Nijjara ERP",
+  SPREADSHEET_ID: "", // optional fallback when script is standalone
+  SPREADSHEET_URL: "", // optional Spreadsheet URL fallback
   // Core sheet names
   SHEETS: {
     USERS: "SYS_Users",
@@ -110,6 +112,75 @@ function sanitizeForLog(value, depth = 0) {
   return safe;
 }
 
+let cachedSpreadsheet_ = null;
+let cachedSpreadsheetId_ = "";
+const missingSheetsLogged_ = new Set();
+
+function extractSpreadsheetId_(value) {
+  if (!value) return "";
+  const match = String(value).match(/[-\w]{25,}/);
+  return match ? match[0] : "";
+}
+
+function resolveSpreadsheetId_() {
+  if (cachedSpreadsheetId_) return cachedSpreadsheetId_;
+  const candidates = [];
+  if (CONFIG.SPREADSHEET_ID) candidates.push(CONFIG.SPREADSHEET_ID);
+  if (CONFIG.SPREADSHEET_URL) {
+    const idFromUrl = extractSpreadsheetId_(CONFIG.SPREADSHEET_URL);
+    if (idFromUrl) candidates.push(idFromUrl);
+  }
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const propId = props ? props.getProperty("SPREADSHEET_ID") : "";
+    if (propId) candidates.push(propId);
+  } catch (err) {
+    debugError("resolveSpreadsheetId_", err);
+  }
+  cachedSpreadsheetId_ = candidates.find((id) => !!id) || "";
+  return cachedSpreadsheetId_;
+}
+
+function getSpreadsheet_() {
+  if (cachedSpreadsheet_) return cachedSpreadsheet_;
+  try {
+    const active = SpreadsheetApp.getActive();
+    if (active) {
+      cachedSpreadsheet_ = active;
+      return cachedSpreadsheet_;
+    }
+  } catch (err) {
+    debugError("getSpreadsheet_", err, { stage: "getActive" });
+  }
+  const id = resolveSpreadsheetId_();
+  if (id) {
+    try {
+      cachedSpreadsheet_ = SpreadsheetApp.openById(id);
+      return cachedSpreadsheet_;
+    } catch (err) {
+      debugError("getSpreadsheet_", err, { stage: "openById", id });
+      throw err;
+    }
+  }
+  throw new Error(
+    "Spreadsheet context not found. Set CONFIG.SPREADSHEET_ID or script property SPREADSHEET_ID."
+  );
+}
+
+function getSheet_(name) {
+  if (!name) return null;
+  const ss = getSpreadsheet_();
+  if (!ss) return null;
+  const sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    if (!missingSheetsLogged_.has(name)) {
+      missingSheetsLogged_.add(name);
+      debugLog("getSheet_", "missingSheet", { name });
+    }
+  }
+  return sheet;
+}
+
 function findHeaderIndex_(headers, ...candidates) {
   if (!headers || !headers.length) return -1;
   const normalized = headers.map((h) => String(h || "").trim().toLowerCase());
@@ -208,7 +279,7 @@ function getSystemKPIs() {
     pendingPasswordResets: 0,
   };
 
-  const sheet = SpreadsheetApp.getActive().getSheetByName(
+  const sheet = getSheet_(
     CONFIG.SHEETS.PROFILE_VIEW
   );
 
@@ -246,7 +317,7 @@ function getSystemKPIs() {
   }
 
   // Fallback to direct sheet computations
-  const usersSheet = SpreadsheetApp.getActive().getSheetByName(
+  const usersSheet = getSheet_(
     CONFIG.SHEETS.USERS
   );
   if (usersSheet) {
@@ -273,7 +344,7 @@ function getSystemKPIs() {
     }
   }
 
-  const rolesSheet = SpreadsheetApp.getActive().getSheetByName(
+  const rolesSheet = getSheet_(
     CONFIG.SHEETS.ROLES
   );
   if (rolesSheet) {
@@ -283,7 +354,7 @@ function getSystemKPIs() {
     }
   }
 
-  const permsSheet = SpreadsheetApp.getActive().getSheetByName(
+  const permsSheet = getSheet_(
     CONFIG.SHEETS.PERMS
   );
   if (permsSheet) {
@@ -293,7 +364,7 @@ function getSystemKPIs() {
     }
   }
 
-  const propsSheet = SpreadsheetApp.getActive().getSheetByName(
+  const propsSheet = getSheet_(
     CONFIG.SHEETS.USER_PROPERTIES
   );
   if (propsSheet) {
@@ -328,7 +399,7 @@ function getSystemKPIs() {
 // Enhanced user search with dynamic filtering
 function searchUsers(filters = {}) {
   debugLog("searchUsers", "start", { filters });
-  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sheet = getSheet_(CONFIG.SHEETS.USERS);
   if (!sheet) return [];
 
   try {
@@ -444,7 +515,7 @@ function searchUsers(filters = {}) {
 
 function getUserFormStructure(formId = "FORM_SYS_AddUser") {
   debugLog("getUserFormStructure", "start", { formId });
-  const sh = SpreadsheetApp.getActive().getSheetByName(
+  const sh = getSheet_(
     CONFIG.SHEETS.DYNAMIC_FORMS
   );
   if (!sh) return [];
@@ -513,7 +584,7 @@ function getUserFormStructure(formId = "FORM_SYS_AddUser") {
 function getDropdownOptions(key) {
   debugLog("getDropdownOptions", "start", { key });
   if (!key) return [];
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.DROPDOWNS);
+  const sh = getSheet_(CONFIG.SHEETS.DROPDOWNS);
   if (!sh) return [];
 
   try {
@@ -552,7 +623,7 @@ function getDropdownOptions(key) {
 
 function listRoles() {
   debugLog("listRoles", "start");
-  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.ROLES);
+  const sheet = getSheet_(CONFIG.SHEETS.ROLES);
   if (!sheet) return [];
   try {
     const data = sheet.getDataRange().getValues();
@@ -583,7 +654,7 @@ function listRoles() {
 
 function listPermissions() {
   debugLog("listPermissions", "start");
-  const sheet = SpreadsheetApp.getActive().getSheetByName(
+  const sheet = getSheet_(
     CONFIG.SHEETS.PERMS
   );
   if (!sheet) return [];
@@ -615,7 +686,7 @@ function listPermissions() {
 
 function listRolePermissions() {
   debugLog("listRolePermissions", "start");
-  const sheet = SpreadsheetApp.getActive().getSheetByName(
+  const sheet = getSheet_(
     CONFIG.SHEETS.ROLE_PERMS
   );
   if (!sheet) return [];
@@ -669,7 +740,7 @@ function listRolePermissions() {
 
 function listUserProperties() {
   debugLog("listUserProperties", "start");
-  const sheet = SpreadsheetApp.getActive().getSheetByName(
+  const sheet = getSheet_(
     CONFIG.SHEETS.USER_PROPERTIES
   );
   if (!sheet) return [];
@@ -701,7 +772,7 @@ function listUserProperties() {
 
 function listSessions() {
   debugLog("listSessions", "start");
-  const sheet = SpreadsheetApp.getActive().getSheetByName(
+  const sheet = getSheet_(
     CONFIG.SHEETS.SESSIONS
   );
   if (!sheet) return [];
@@ -778,7 +849,7 @@ function getFormWithOptions(formId = "FORM_SYS_AddUser") {
 
 function getAuditLog() {
   debugLog("getAuditLog", "start");
-  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.AUDIT);
+  const sheet = getSheet_(CONFIG.SHEETS.AUDIT);
   if (!sheet) return [];
 
   try {
@@ -846,7 +917,7 @@ function createUser(userData) {
       IsActive: userData?.IsActive,
     }),
   });
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
   const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
   const getCol = (n) => headers.indexOf(n) + 1;
@@ -910,7 +981,7 @@ function createUser(userData) {
 function updateUserPassword(userId, newPassword) {
   debugLog("updateUserPassword", "start", { userId });
   if (!userId || !newPassword) throw new Error("Missing userId/password");
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
 
   const data = sh.getDataRange().getValues();
@@ -940,7 +1011,7 @@ function updateUserPassword(userId, newPassword) {
 function toggleUserActive(userId) {
   debugLog("toggleUserActive", "start", { userId });
   if (!userId) throw new Error("Missing userId");
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
 
   const data = sh.getDataRange().getValues();
@@ -985,7 +1056,7 @@ function bulkUpdateUserStatus(userIds = [], makeActive = true) {
     return { success: false, message: "No users supplied" };
   }
 
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
 
   const data = sh.getDataRange().getValues();
@@ -1058,7 +1129,7 @@ function bulkAssignRole(userIds = [], roleId) {
     throw new Error("Role_Id is required");
   }
 
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
 
   const data = sh.getDataRange().getValues();
@@ -1156,7 +1227,7 @@ function exportUsers(filters = {}, format = "csv") {
 function getCurrentUser() {
   debugLog("getCurrentUser", "start");
   const email = Session.getActiveUser().getEmail();
-  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sheet = getSheet_(CONFIG.SHEETS.USERS);
   if (!sheet) {
     debugLog("getCurrentUser", "noSheet");
     return null;
@@ -1214,7 +1285,7 @@ function getCurrentUser() {
 
 function getRolePermissions(roleOrId) {
   debugLog("getRolePermissions", "start", { roleOrId });
-  const sh = SpreadsheetApp.getActive().getSheetByName(
+  const sh = getSheet_(
     CONFIG.SHEETS.ROLE_PERMS
   );
   if (!sh) return [];
@@ -1236,7 +1307,7 @@ function getRolePermissions(roleOrId) {
 
 function getUserById(userId) {
   debugLog("getUserById", "start", { userId });
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) return null;
   const data = sh.getDataRange().getValues();
   if (!data || data.length < 2) return null;
@@ -1264,7 +1335,7 @@ function updateUser(userData) {
     fields: Object.keys(userData || {}),
   });
   if (!userData || !userData.User_Id) throw new Error("Missing User_Id");
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
   const data = sh.getDataRange().getValues();
   const h = data[0];
@@ -1308,7 +1379,7 @@ function hashPassword(password) {
 }
 
 function logAuditEvent(action, details) {
-  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.AUDIT);
+  const sheet = getSheet_(CONFIG.SHEETS.AUDIT);
   if (!sheet) return false;
   const actor = getActorEmail_();
   const lastCol = sheet.getLastColumn();
@@ -1378,7 +1449,7 @@ function getActorEmail_() {
 function upsertUserProperty_(userId, key, value) {
   debugLog("upsertUserProperty_", "start", { userId, key });
   if (!userId || !key) return false;
-  const sheet = SpreadsheetApp.getActive().getSheetByName(
+  const sheet = getSheet_(
     CONFIG.SHEETS.USER_PROPERTIES
   );
   if (!sheet) return false;
@@ -1429,7 +1500,7 @@ function upsertUserProperty_(userId, key, value) {
 
 function generateSequentialUserId_() {
   debugLog("generateSequentialUserId_", "start");
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) return "USR_00001";
   const data = sh.getDataRange().getValues();
   if (!data || data.length < 2) return "USR_00001";
@@ -1455,7 +1526,7 @@ function getNextUserId() {
 /** ---- SMALL HELPERS FOR CLIENT FILTERS ---- */
 function getDeptAndRoleFilters() {
   debugLog("getDeptAndRoleFilters", "start");
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) return { departments: [], roles: [], roleOptions: [] };
   const data = sh.getDataRange().getValues();
   if (!data || data.length < 2) {
@@ -1487,7 +1558,7 @@ function getDeptAndRoleFilters() {
 
 function getRoleOptions_() {
   debugLog("getRoleOptions_", "start");
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.ROLES);
+  const sh = getSheet_(CONFIG.SHEETS.ROLES);
   if (!sh) return [];
   const data = sh.getDataRange().getValues();
   if (!data || data.length < 2) return [];
@@ -1513,7 +1584,7 @@ function getRoleOptions() {
 
 function getPermissionLabelMap_() {
   debugLog("getPermissionLabelMap_", "start");
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.PERMS);
+  const sh = getSheet_(CONFIG.SHEETS.PERMS);
   if (!sh) return {};
   const data = sh.getDataRange().getValues();
   if (!data || data.length < 2) return {};
@@ -1546,7 +1617,7 @@ function assignUserRole(userId, roleId) {
 function softDeleteUser(userId, reason) {
   debugLog("softDeleteUser", "start", { userId, reason });
   if (!userId) throw new Error("User_Id is required");
-  const sh = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.USERS);
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
   if (!sh) throw new Error("Users sheet not found");
 
   const data = sh.getDataRange().getValues();
@@ -1592,7 +1663,7 @@ function softDeleteUser(userId, reason) {
 function startImpersonation(userId) {
   debugLog("startImpersonation", "start", { userId });
   if (!userId) throw new Error("User_Id is required");
-  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.SESSIONS);
+  const sheet = getSheet_(CONFIG.SHEETS.SESSIONS);
   if (!sheet) throw new Error("Sessions sheet not found");
 
   const lastCol = sheet.getLastColumn();
@@ -1660,7 +1731,7 @@ function getUserProfile(userId) {
 function getUserProperties_(userId) {
   debugLog("getUserProperties_", "start", { userId });
   if (!userId) return [];
-  const sheet = SpreadsheetApp.getActive().getSheetByName(
+  const sheet = getSheet_(
     CONFIG.SHEETS.USER_PROPERTIES
   );
   if (!sheet) return [];
@@ -1694,7 +1765,7 @@ function getUserProperties_(userId) {
 function getUserDocuments_(userId) {
   debugLog("getUserDocuments_", "start", { userId });
   if (!userId) return [];
-  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.DOCUMENTS);
+  const sheet = getSheet_(CONFIG.SHEETS.DOCUMENTS);
   if (!sheet) return [];
   const data = sheet.getDataRange().getValues();
   if (!data || data.length < 2) return [];
@@ -1734,7 +1805,7 @@ function getUserDocuments_(userId) {
 function getUserSessions_(userId) {
   debugLog("getUserSessions_", "start", { userId });
   if (!userId) return [];
-  const sheet = SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.SESSIONS);
+  const sheet = getSheet_(CONFIG.SHEETS.SESSIONS);
   if (!sheet) return [];
   const data = sheet.getDataRange().getValues();
   if (!data || data.length < 2) return [];
@@ -1788,11 +1859,11 @@ function getUserSessions_(userId) {
 function getUserAuditTrail_(userId) {
   debugLog("getUserAuditTrail_", "start", { userId });
   if (!userId) return [];
-  const primarySheet = SpreadsheetApp.getActive().getSheetByName(
+  const primarySheet = getSheet_(
     CONFIG.SHEETS.AUDIT_REPORT
   );
   const sheet =
-    primarySheet || SpreadsheetApp.getActive().getSheetByName(CONFIG.SHEETS.AUDIT);
+    primarySheet || getSheet_(CONFIG.SHEETS.AUDIT);
   if (!sheet) return [];
   const data = sheet.getDataRange().getValues();
   if (!data || data.length < 2) return [];
