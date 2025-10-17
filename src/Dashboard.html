@@ -1888,7 +1888,9 @@
 
         let usersReqTimer = null;
         function loadUsers({ force } = {}) {
+          console.log("[CLIENT] loadUsers called with force:", force);
           if (!(window.google && google.script && google.script.run)) {
+            console.error("[CLIENT] Apps Script runtime not available");
             usersTbody.innerHTML =
               '<tr><td colspan="11" class="muted">غير متصل بالخادم.</td></tr>';
             selectedUsers.clear();
@@ -1903,14 +1905,18 @@
           }
           usersTbody.innerHTML =
             '<tr><td colspan="11" class="muted">جاري التحميل…</td></tr>';
+          const filters = currentFilters();
+          console.log("[CLIENT] Requesting users with filters:", filters);
           // watchdog in case server throws silently
           clearTimeout(usersReqTimer);
           usersReqTimer = setTimeout(() => {
             const stillLoading =
               usersTbody.textContent.includes("جاري التحميل");
-            if (stillLoading)
+            if (stillLoading) {
+              console.warn("[CLIENT] User loading timeout after 8s");
               usersTbody.innerHTML =
                 '<tr><td colspan="11" class="muted">تعذر التحميل.</td></tr>';
+            }
             if (stillLoading) {
               selectedUsers.clear();
               syncSelectAllState();
@@ -1920,19 +1926,25 @@
           google.script.run
             .withFailureHandler((err) => {
               clearTimeout(usersReqTimer);
+              console.error("[CLIENT] searchUsers failed:", err);
               usersTbody.innerHTML =
-                '<tr><td colspan="11" class="muted">تعذر التحميل.</td></tr>';
-              console.error(err);
+                '<tr><td colspan="11" class="error-text">خطأ: ' +
+                (err.message || err) +
+                "</td></tr>";
               selectedUsers.clear();
               syncSelectAllState();
               syncBulkActionsState();
             })
             .withSuccessHandler((list) => {
-              console.log("User list received:", list);
               clearTimeout(usersReqTimer);
+              console.log(
+                "[CLIENT] User list received, count:",
+                Array.isArray(list) ? list.length : 0
+              );
+              console.log("[CLIENT] User list data:", list);
               renderUsers(list);
             })
-            .searchUsers(currentFilters());
+            .searchUsers(filters);
         }
 
         // تفويض أحداث الجدول
@@ -2273,19 +2285,29 @@
         function loadRoles({ force = false } = {}) {
           if (!rolesTbody) return;
           if (rolesLoaded && !force) return;
+          console.log("[CLIENT] loadRoles called with force:", force);
           if (!(window.google && google.script && google.script.run)) {
+            console.error("[CLIENT] Apps Script runtime not available");
             setTableStatus(rolesTbody, "غير متصل بالخادم.", "error");
             return;
           }
           setTableStatus(rolesTbody, "جاري التحميل…");
           google.script.run
             .withFailureHandler((err) => {
-              console.error(err);
+              console.error("[CLIENT] listRoles failed:", err);
               rolesLoaded = false;
-              setTableStatus(rolesTbody, "تعذر تحميل الأدوار.", "error");
+              setTableStatus(
+                rolesTbody,
+                "خطأ: " + (err.message || err),
+                "error"
+              );
             })
             .withSuccessHandler((rows) => {
-              console.log("Roles data received:", rows);
+              console.log(
+                "[CLIENT] Roles data received, count:",
+                Array.isArray(rows) ? rows.length : 0
+              );
+              console.log("[CLIENT] Roles data:", rows);
               rolesLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(rolesTbody, list, (row) => {
@@ -2304,23 +2326,29 @@
         function loadPermissions({ force = false } = {}) {
           if (!permissionsTbody) return;
           if (permissionsLoaded && !force) return;
+          console.log("[CLIENT] loadPermissions called with force:", force);
           if (!(window.google && google.script && google.script.run)) {
+            console.error("[CLIENT] Apps Script runtime not available");
             setTableStatus(permissionsTbody, "غير متصل بالخادم.", "error");
             return;
           }
           setTableStatus(permissionsTbody, "جاري التحميل…");
           google.script.run
             .withFailureHandler((err) => {
-              console.error(err);
+              console.error("[CLIENT] listPermissions failed:", err);
               permissionsLoaded = false;
               setTableStatus(
                 permissionsTbody,
-                "تعذر تحميل سجل الأذونات.",
+                "خطأ: " + (err.message || err),
                 "error"
               );
             })
             .withSuccessHandler((rows) => {
-              console.log("Permissions data received:", rows);
+              console.log(
+                "[CLIENT] Permissions data received, count:",
+                Array.isArray(rows) ? rows.length : 0
+              );
+              console.log("[CLIENT] Permissions data:", rows);
               permissionsLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(permissionsTbody, list, (row) => {
@@ -2339,23 +2367,29 @@
         function loadRolePermissions({ force = false } = {}) {
           if (!rolePermsTbody) return;
           if (rolePermsLoaded && !force) return;
+          console.log("[CLIENT] loadRolePermissions called with force:", force);
           if (!(window.google && google.script && google.script.run)) {
+            console.error("[CLIENT] Apps Script runtime not available");
             setTableStatus(rolePermsTbody, "غير متصل بالخادم.", "error");
             return;
           }
           setTableStatus(rolePermsTbody, "جاري التحميل…");
           google.script.run
             .withFailureHandler((err) => {
-              console.error(err);
+              console.error("[CLIENT] listRolePermissions failed:", err);
               rolePermsLoaded = false;
               setTableStatus(
                 rolePermsTbody,
-                "تعذر تحميل أذونات الأدوار.",
+                "خطأ: " + (err.message || err),
                 "error"
               );
             })
             .withSuccessHandler((rows) => {
-              console.log("Role permissions data received:", rows);
+              console.log(
+                "[CLIENT] Role permissions data received, count:",
+                Array.isArray(rows) ? rows.length : 0
+              );
+              console.log("[CLIENT] Role permissions data:", rows);
               rolePermsLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(rolePermsTbody, list, (row) => {
@@ -2386,23 +2420,29 @@
         function loadProperties({ force = false } = {}) {
           if (!propertiesTbody) return;
           if (propertiesLoaded && !force) return;
+          console.log("[CLIENT] loadProperties called with force:", force);
           if (!(window.google && google.script && google.script.run)) {
+            console.error("[CLIENT] Apps Script runtime not available");
             setTableStatus(propertiesTbody, "غير متصل بالخادم.", "error");
             return;
           }
           setTableStatus(propertiesTbody, "جاري التحميل…");
           google.script.run
             .withFailureHandler((err) => {
-              console.error(err);
+              console.error("[CLIENT] listUserProperties failed:", err);
               propertiesLoaded = false;
               setTableStatus(
                 propertiesTbody,
-                "تعذر تحميل خصائص المستخدمين.",
+                "خطأ: " + (err.message || err),
                 "error"
               );
             })
             .withSuccessHandler((rows) => {
-              console.log("User properties data received:", rows);
+              console.log(
+                "[CLIENT] User properties data received, count:",
+                Array.isArray(rows) ? rows.length : 0
+              );
+              console.log("[CLIENT] User properties data:", rows);
               propertiesLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(propertiesTbody, list, (row) => {
@@ -2421,19 +2461,29 @@
         function loadSessions({ force = false } = {}) {
           if (!sessionsTbody) return;
           if (sessionsLoaded && !force) return;
+          console.log("[CLIENT] loadSessions called with force:", force);
           if (!(window.google && google.script && google.script.run)) {
+            console.error("[CLIENT] Apps Script runtime not available");
             setTableStatus(sessionsTbody, "غير متصل بالخادم.", "error");
             return;
           }
           setTableStatus(sessionsTbody, "جاري التحميل…");
           google.script.run
             .withFailureHandler((err) => {
-              console.error(err);
+              console.error("[CLIENT] listSessions failed:", err);
               sessionsLoaded = false;
-              setTableStatus(sessionsTbody, "تعذر تحميل الجلسات.", "error");
+              setTableStatus(
+                sessionsTbody,
+                "خطأ: " + (err.message || err),
+                "error"
+              );
             })
             .withSuccessHandler((rows) => {
-              console.log("Sessions data received:", rows);
+              console.log(
+                "[CLIENT] Sessions data received, count:",
+                Array.isArray(rows) ? rows.length : 0
+              );
+              console.log("[CLIENT] Sessions data:", rows);
               sessionsLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(sessionsTbody, list, (row) => {
@@ -2454,19 +2504,29 @@
         function loadAuditLog({ force = false } = {}) {
           if (!auditTbody) return;
           if (auditLoaded && !force) return;
+          console.log("[CLIENT] loadAuditLog called with force:", force);
           if (!(window.google && google.script && google.script.run)) {
+            console.error("[CLIENT] Apps Script runtime not available");
             setTableStatus(auditTbody, "غير متصل بالخادم.", "error");
             return;
           }
           setTableStatus(auditTbody, "جاري التحميل…");
           google.script.run
             .withFailureHandler((err) => {
-              console.error(err);
+              console.error("[CLIENT] getAuditLog failed:", err);
               auditLoaded = false;
-              setTableStatus(auditTbody, "تعذر تحميل سجل التدقيق.", "error");
+              setTableStatus(
+                auditTbody,
+                "خطأ: " + (err.message || err),
+                "error"
+              );
             })
             .withSuccessHandler((rows) => {
-              console.log("Audit log data received:", rows);
+              console.log(
+                "[CLIENT] Audit log data received, count:",
+                Array.isArray(rows) ? rows.length : 0
+              );
+              console.log("[CLIENT] Audit log data:", rows);
               auditLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(auditTbody, list, (row) => {
