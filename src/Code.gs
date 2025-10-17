@@ -81,6 +81,122 @@ function debugError(context, error, data) {
   debugLog(context, "error", payload);
 }
 
+function withErrorHandling(fn, context, metadata) {
+  try {
+    return fn();
+  } catch (err) {
+    const name = context || "unknown";
+    const message = err && err.message ? err.message : String(err);
+    const stack = err && err.stack ? err.stack : "<no stack>";
+    if (metadata !== undefined) {
+      try {
+        Logger.log(
+          "[%s] metadata: %s",
+          name,
+          safeStringify_(sanitizeForLog(metadata))
+        );
+      } catch (metaErr) {
+        Logger.log(
+          "[%s] metadata logging failed: %s",
+          name,
+          metaErr && metaErr.message ? metaErr.message : String(metaErr)
+        );
+      }
+    }
+    Logger.log("[%s] Error: %s", name, message);
+    Logger.log("[%s] Stack: %s", name, stack);
+    return { error: true, message };
+  }
+}
+
+function safeStringify_(value) {
+  if (value === undefined) return "undefined";
+  if (value === null) return "null";
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  if (value && typeof value === "object") {
+    if (typeof value.getContent === "function" && typeof value.setTitle === "function") {
+      return "[HtmlOutput]";
+    }
+
+    const seen = new WeakSet();
+    try {
+      const sanitized = sanitizeForLog(value);
+      return JSON.stringify(sanitized, function (key, val) {
+        if (typeof val === "function") {
+          return `[Function ${val.name || "anonymous"}]`;
+        }
+        if (val && typeof val === "object") {
+          if (seen.has(val)) return "[Circular]";
+          seen.add(val);
+        }
+        return val;
+      });
+    } catch (err) {
+      try {
+        return JSON.stringify(value);
+      } catch (innerErr) {
+        try {
+          return String(value);
+        } catch (stringErr) {
+          return "[Unserializable]";
+        }
+      }
+    }
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch (err) {
+    try {
+      return String(value);
+    } catch (stringErr) {
+      return "[Unserializable]";
+    }
+  }
+}
+
+function wrapFunctionWithErrorHandling_(name, fn) {
+  return function wrappedWithErrorHandling() {
+    const args = Array.prototype.slice.call(arguments || []);
+    try {
+      Logger.log("[%s] called with args: %s", name, safeStringify_(args));
+    } catch (err) {
+      Logger.log(
+        "[%s] failed to log args: %s",
+        name,
+        err && err.message ? err.message : String(err)
+      );
+    }
+
+    return withErrorHandling(
+      () => {
+        const result = fn.apply(this, args);
+        try {
+          Logger.log(
+            "[%s] returning: %s",
+            name,
+            safeStringify_(result)
+          );
+        } catch (err) {
+          Logger.log(
+            "[%s] failed to log result: %s",
+            name,
+            err && err.message ? err.message : String(err)
+          );
+        }
+        return result;
+      },
+      name,
+      { args }
+    );
+  };
+}
+
 function sanitizeForLog(value, depth = 0) {
   if (value == null) return value;
   if (typeof value === "string") {
@@ -253,13 +369,36 @@ function setRowValue_(headers, row, value, ...candidates) {
 
 /** ---- ENTRY POINT ---- */
 function doGet(e) {
-  debugLog("doGet", "render", { query: e && e.parameter });
-  const t = HtmlService.createTemplateFromFile("Dashboard");
-  t.appName = CONFIG.APP_NAME;
-  return t
-    .evaluate()
-    .setTitle(CONFIG.APP_NAME + " - Demo Portal")
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  Logger.log("[doGet] invoked with params: %s", safeStringify_(e));
+  const result = withErrorHandling(
+    function () {
+      debugLog("doGet", "render", { query: e && e.parameter });
+      const t = HtmlService.createTemplateFromFile("Dashboard");
+      t.appName = CONFIG.APP_NAME;
+      const output = t
+        .evaluate()
+        .setTitle(CONFIG.APP_NAME + " - Demo Portal")
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+      Logger.log("[doGet] returning HtmlOutput");
+      return output;
+    },
+    "doGet",
+    { query: e && e.parameter }
+  );
+
+  if (result && result.error) {
+    Logger.log("[doGet] returning error Html due to: %s", result.message);
+    const html = HtmlService.createHtmlOutput(
+      Utilities.formatString(
+        "<p><strong>Application Error:</strong> %s</p>",
+        result.message
+      )
+    );
+    html.setTitle("Application Error");
+    return html;
+  }
+
+  return result;
 }
 
 /** ---- DATA ACCESS ---- */
@@ -2226,3 +2365,49 @@ function getUserAuditTrail_(userId) {
   debugLog("getUserAuditTrail_", "resolved", { count: rows.length });
   return rows;
 }
+
+function applyGlobalErrorHandling_() {
+  const globalRef = typeof globalThis !== "undefined" ? globalThis : this;
+  if (!globalRef) return;
+
+  const skip = new Set([
+    "applyGlobalErrorHandling_",
+    "debugLog",
+    "debugError",
+    "sanitizeForLog",
+    "extractSpreadsheetId_",
+    "resolveSpreadsheetId_",
+    "getSpreadsheet_",
+    "getSheet_",
+    "getSheetWithFallback_",
+    "findHeaderIndex_",
+    "getValueAt_",
+    "coerceDate_",
+    "isTruthyFlag_",
+    "setRowValue_",
+    "withErrorHandling",
+    "safeStringify_",
+    "wrapFunctionWithErrorHandling_",
+    "getActorEmail_",
+    "upsertUserProperty_",
+    "generateSequentialUserId_",
+    "hashPassword",
+    "logAuditEvent",
+    "include",
+    "generateUserId",
+    "doGet",
+  ]);
+
+  Object.keys(globalRef).forEach(function (key) {
+    if (skip.has(key)) return;
+    if (key.endsWith("_")) return;
+    const value = globalRef[key];
+    if (typeof value !== "function") return;
+    if (value && value.__errorWrapped) return;
+    const wrapped = wrapFunctionWithErrorHandling_(key, value);
+    wrapped.__errorWrapped = true;
+    globalRef[key] = wrapped;
+  });
+}
+
+applyGlobalErrorHandling_();
