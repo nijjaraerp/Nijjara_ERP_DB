@@ -1774,6 +1774,17 @@
             selectEl.appendChild(option);
           });
         }
+        function handleServerResponse(result, onSuccess) {
+          if (result && typeof result === "object" && result.error) {
+            console.error("Backend error:", result.message);
+            alert("Error: " + (result.message || "Unknown error"));
+            return;
+          }
+          if (typeof onSuccess === "function") {
+            onSuccess(result);
+          }
+        }
+
         function bootstrapApp() {
           if (!(window.google && google.script && google.script.run)) {
             console.warn("Apps Script runtime not available.");
@@ -1935,14 +1946,17 @@
               syncSelectAllState();
               syncBulkActionsState();
             })
-            .withSuccessHandler((list) => {
+            .withSuccessHandler((result) => {
               clearTimeout(usersReqTimer);
-              console.log(
-                "[CLIENT] User list received, count:",
-                Array.isArray(list) ? list.length : 0
-              );
-              console.log("[CLIENT] User list data:", list);
-              renderUsers(list);
+              handleServerResponse(result, (users) => {
+                console.log("Users received from server:", users);
+                console.log(
+                  "[CLIENT] User list received, count:",
+                  Array.isArray(users) ? users.length : 0
+                );
+                console.log("[CLIENT] User list data:", users);
+                renderUsers(users);
+              });
             })
             .searchUsers(filters);
         }
