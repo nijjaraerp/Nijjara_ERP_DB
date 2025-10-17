@@ -1107,11 +1107,7 @@
             </div>
           </section>
 
-          <section
-            id="sys-users-pane"
-            class="sys-pane"
-            data-pane="users"
-          >
+          <section id="sys-users-pane" class="sys-pane" data-pane="users">
             <div class="sys-pane__header">
               <h3 class="pane-heading">دليل المستخدمين</h3>
               <p class="muted">
@@ -1216,7 +1212,9 @@
                 </thead>
                 <tbody id="roles-tbody">
                   <tr>
-                    <td colspan="5" class="muted">لم يتم تحميل البيانات بعد.</td>
+                    <td colspan="5" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -1247,7 +1245,9 @@
                 </thead>
                 <tbody id="permissions-tbody">
                   <tr>
-                    <td colspan="5" class="muted">لم يتم تحميل البيانات بعد.</td>
+                    <td colspan="5" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -1278,7 +1278,9 @@
                 </thead>
                 <tbody id="role-perms-tbody">
                   <tr>
-                    <td colspan="5" class="muted">لم يتم تحميل البيانات بعد.</td>
+                    <td colspan="5" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -1309,18 +1311,16 @@
                 </thead>
                 <tbody id="properties-tbody">
                   <tr>
-                    <td colspan="5" class="muted">لم يتم تحميل البيانات بعد.</td>
+                    <td colspan="5" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </section>
 
-          <section
-            id="sys-sessions-pane"
-            class="sys-pane"
-            data-pane="sessions"
-          >
+          <section id="sys-sessions-pane" class="sys-pane" data-pane="sessions">
             <div class="sys-pane__header">
               <h3 class="pane-heading">الجلسات النشطة والمغلقة</h3>
               <p class="muted">
@@ -1342,7 +1342,9 @@
                 </thead>
                 <tbody id="sessions-tbody">
                   <tr>
-                    <td colspan="7" class="muted">لم يتم تحميل البيانات بعد.</td>
+                    <td colspan="7" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -1368,7 +1370,9 @@
                 </thead>
                 <tbody id="audit-tbody">
                   <tr>
-                    <td colspan="4" class="muted">لم يتم تحميل البيانات بعد.</td>
+                    <td colspan="4" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -1400,11 +1404,14 @@
         <div id="new-user-fields" class="dialog-body"></div>
         <div class="actions">
           <button type="submit" class="action-button save-button">حفظ</button>
-          <button type="button" id="btn-cancel-new" class="action-button cancel-button">
+          <button
+            type="button"
+            id="btn-cancel-new"
+            class="action-button cancel-button"
+          >
             إلغاء
           </button>
         </div>
-
       </form>
     </dialog>
 
@@ -1489,11 +1496,14 @@
         </section>
       </div>
       <div class="actions">
-        <button type="button" id="btn-close-profile" class="action-button cancel-button">
+        <button
+          type="button"
+          id="btn-close-profile"
+          class="action-button cancel-button"
+        >
           إغلاق
         </button>
       </div>
-
     </dialog>
 
     <!-- تعيين دور -->
@@ -1510,11 +1520,14 @@
         </div>
         <div class="actions">
           <button type="submit" class="action-button save-button">حفظ</button>
-          <button type="button" id="btn-cancel-assign" class="action-button cancel-button">
+          <button
+            type="button"
+            id="btn-cancel-assign"
+            class="action-button cancel-button"
+          >
             إلغاء
           </button>
         </div>
-
       </form>
     </dialog>
 
@@ -1546,11 +1559,14 @@
         </div>
         <div class="actions">
           <button type="submit" class="action-button edit-button">تحديث</button>
-          <button type="button" id="btn-cancel-reset" class="action-button cancel-button">
+          <button
+            type="button"
+            id="btn-cancel-reset"
+            class="action-button cancel-button"
+          >
             إلغاء
           </button>
         </div>
-
       </form>
     </dialog>
 
@@ -2171,9 +2187,9 @@
                   )}" title="عرض الملف" aria-label="عرض الملف">
                     <svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
                   </button>
-                  <button class="icon-btn" data-act="edit" data-id="${
-                    escapeHtml(u.userId)
-                  }" title="تعديل" aria-label="تعديل">
+                  <button class="icon-btn" data-act="edit" data-id="${escapeHtml(
+                    u.userId
+                  )}" title="تعديل" aria-label="تعديل">
                     <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 4l2 2"/></svg>
                   </button>
                   <button class="icon-btn" data-act="assign" data-id="${escapeHtml(
@@ -2247,7 +2263,6 @@
           syncSelectAllState();
           syncBulkActionsState();
         }
-
 
         function loadRoles({ force = false } = {}) {
           if (!rolesTbody) return;
@@ -2335,14 +2350,18 @@
               rolePermsLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(rolePermsTbody, list, (row) => {
-                const roleDisplay = row.roleTitle && row.roleId
-                  ? `${escapeHtml(row.roleTitle)} (${escapeHtml(row.roleId)})`
-                  : escapeHtml(row.roleTitle || row.roleId || "");
-                const permDisplay = row.permissionLabel && row.permissionKey
-                  ? `${escapeHtml(row.permissionLabel)} (${escapeHtml(
-                      row.permissionKey
-                    )})`
-                  : escapeHtml(row.permissionLabel || row.permissionKey || "");
+                const roleDisplay =
+                  row.roleTitle && row.roleId
+                    ? `${escapeHtml(row.roleTitle)} (${escapeHtml(row.roleId)})`
+                    : escapeHtml(row.roleTitle || row.roleId || "");
+                const permDisplay =
+                  row.permissionLabel && row.permissionKey
+                    ? `${escapeHtml(row.permissionLabel)} (${escapeHtml(
+                        row.permissionKey
+                      )})`
+                    : escapeHtml(
+                        row.permissionLabel || row.permissionKey || ""
+                      );
                 return `
                   <td>${roleDisplay}</td>
                   <td>${permDisplay}</td>
@@ -2648,7 +2667,12 @@
           const loginScreen = document.getElementById("login-screen");
           const loginVisible =
             loginScreen && loginScreen.classList.contains("active");
-          if (c && c.parentElement && c.parentElement !== document.body && !loginVisible) {
+          if (
+            c &&
+            c.parentElement &&
+            c.parentElement !== document.body &&
+            !loginVisible
+          ) {
             c.id = "login-toast-container";
             c.classList.add("toast-container--login");
             c = null;
@@ -2797,7 +2821,9 @@
                 } else if (t === "password" || isPassword) {
                   el = document.createElement("input");
                   el.type = "password";
-                  el.autocomplete = initialData ? "current-password" : "new-password";
+                  el.autocomplete = initialData
+                    ? "current-password"
+                    : "new-password";
                 } else {
                   el = document.createElement("input");
                   el.type = t === "email" ? "email" : "text";
@@ -3394,14 +3420,24 @@
           if (typeof nameOrObj === "object" && nameOrObj) {
             const username = nameOrObj.Username || "";
             display = nameOrObj.Full_Name || username || "User";
-            uname =
-              username && username !== display ? ` (${username})` : "";
+            uname = username && username !== display ? ` (${username})` : "";
           } else if (typeof nameOrObj === "string") {
             display = nameOrObj;
           }
           userLabel.textContent = `User: ${display}${uname}`;
           const welcome = document.getElementById("portal-welcome-message");
           if (welcome) welcome.textContent = `Welcome, ${display}${uname}`;
+        }
+
+        // Set up sys nav event handlers
+        if (sysNav) {
+          sysNav.addEventListener("click", (e) => {
+            const btn = e.target.closest("[data-pane]");
+            if (btn) {
+              const pane = btn.dataset.pane;
+              setActiveSysPane(pane);
+            }
+          });
         }
 
         // On login, immediately show typed username; server bootstrap will refine with Full_Name
