@@ -308,6 +308,49 @@ function getSheetWithFallback_(...names) {
   return null;
 }
 
+function loadSheetData_(...names) {
+  const sheet = getSheetWithFallback_(...names);
+  if (!sheet) {
+    debugLog("loadSheetData_", "noSheet", { names });
+    return { sheet: null, headers: [], rows: [] };
+  }
+
+  try {
+    const range = sheet.getDataRange();
+    if (!range) {
+      debugLog("loadSheetData_", "noRange", { sheet: sheet.getName() });
+      return { sheet, headers: [], rows: [] };
+    }
+    const values = range.getValues();
+    if (!values || !values.length) {
+      debugLog("loadSheetData_", "noValues", { sheet: sheet.getName() });
+      return { sheet, headers: [], rows: [] };
+    }
+
+    const [headerRow, ...dataRows] = values;
+    const headers = headerRow.map((header, index) => {
+      if (header == null || header === "") {
+        return `Column_${index + 1}`;
+      }
+      return header;
+    });
+
+    const rows = dataRows.filter((row) =>
+      row.some((cell) => cell !== "" && cell !== null && cell !== undefined)
+    );
+
+    debugLog("loadSheetData_", "resolved", {
+      sheet: sheet.getName(),
+      headers: headers.length,
+      rows: rows.length,
+    });
+    return { sheet, headers, rows };
+  } catch (err) {
+    debugError("loadSheetData_", err, { names });
+    return { sheet, headers: [], rows: [] };
+  }
+}
+
 function findHeaderIndex_(headers, ...candidates) {
   if (!headers || !headers.length) return -1;
   const normalized = headers.map((h) =>
@@ -333,6 +376,21 @@ function coerceDate_(value) {
   if (value instanceof Date) return value;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function normalizeDateOutput_(value) {
+  const date = coerceDate_(value);
+  if (!date) return "";
+  try {
+    return date.toISOString();
+  } catch (err) {
+    try {
+      return new Date(date).toISOString();
+    } catch (innerErr) {
+      debugError("normalizeDateOutput_", innerErr);
+      return "";
+    }
+  }
 }
 
 function isTruthyFlag_(value) {
@@ -558,11 +616,12 @@ function getSystemKPIs() {
 // Enhanced user search with dynamic filtering
 function searchUsers(filters = {}) {
   debugLog("searchUsers", "start", { filters });
-  const sheet = getSheetWithFallback_(
+  const { sheet, headers, rows } = loadSheetData_(
     CONFIG.SHEETS.USERS,
     CONFIG.SHEETS.USERS_VIEW,
     "PV_SYS_Users_Table"
   );
+
   if (!sheet) {
     debugLog("searchUsers", "sheetNotFound", {
       tried: [
@@ -574,22 +633,22 @@ function searchUsers(filters = {}) {
     return [];
   }
 
+  if (!rows.length) {
+    debugLog("searchUsers", "noRows", { sheet: sheet.getName() });
+    return [];
+  }
+
   try {
-    const data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) {
-      debugLog("searchUsers", "noData", { sheet: sheet.getName() });
-      return [];
-    }
-    const headers = data[0];
     debugLog("searchUsers", "sheetInfo", {
       sheet: sheet.getName(),
-      rows: data.length,
+      rows: rows.length,
       columns: headers.length,
     });
 
     const idFilterSet = Array.isArray(filters.userIds)
       ? new Set(filters.userIds.map((id) => String(id)))
       : null;
+
     const idx = {
       id: findHeaderIndex_(
         headers,
@@ -690,7 +749,6 @@ function searchUsers(filters = {}) {
       if (value instanceof Date) return value.toISOString();
       return String(value).trim();
     };
-    const readDate = (row, index) => coerceDate_(readValue(row, index));
 
     const fromDate = coerceDate_(filters.updatedFrom);
     const toDateRaw = coerceDate_(filters.updatedTo);
@@ -712,6 +770,7 @@ function searchUsers(filters = {}) {
       filters.status !== undefined && filters.status !== null
         ? String(filters.status).trim().toLowerCase()
         : "";
+
     const normalizeSearchValue = (value) => {
       if (value == null) return "";
       if (value instanceof Date) return value.toISOString().toLowerCase();
@@ -721,11 +780,19 @@ function searchUsers(filters = {}) {
     const normalizedDeptFilter = normalizeSearchValue(desiredDepartment);
     const normalizedRoleFilter = normalizeSearchValue(desiredRole);
 
-    const result = data.slice(1).map((row) => {
-      const updatedDate = readDate(row, idx.updatedAt);
-      const lastLoginDate = readDate(row, idx.lastLogin);
-      const jobTitle = readString(row, idx.jobTitle);
-      return {
+    const filtered = [];
+
+    rows.forEach((row) => {
+      const updatedRaw = readValue(row, idx.updatedAt);
+      const updatedDate = coerceDate_(updatedRaw);
+      const lastLoginRaw = readValue(row, idx.lastLogin);
+      const lastLoginDate = coerceDate_(lastLoginRaw);
+      const lastLoginValue = normalizeDateOutput_(
+        lastLoginDate || lastLoginRaw
+      );
+      const updatedValue = normalizeDateOutput_(updatedDate || updatedRaw);
+
+      const record = {
         User_Id: readString(row, idx.id),
         Full_Name: readString(row, idx.fullName),
         Username: readString(row, idx.username),
@@ -733,68 +800,66 @@ function searchUsers(filters = {}) {
         Department: readString(row, idx.department),
         Role_Id: readString(row, idx.role),
         IsActive: idx.isActive >= 0 ? isTruthyFlag_(row[idx.isActive]) : false,
-        jobTitle,
+        Job_Title: readString(row, idx.jobTitle),
         Last_Login:
-          lastLoginDate ||
-          (idx.lastLogin >= 0 ? readValue(row, idx.lastLogin) : ""),
-        Updated_At:
-          updatedDate ||
-          (idx.updatedAt >= 0 ? readValue(row, idx.updatedAt) : ""),
+          lastLoginValue || readString(row, idx.lastLogin) || "",
+        Updated_At: updatedValue || readString(row, idx.updatedAt) || "",
       };
-    });
 
-    const filtered = result.filter((user) => {
-      if (idFilterSet && !idFilterSet.has(String(user.User_Id || ""))) {
-        return false;
+      if (idFilterSet && !idFilterSet.has(String(record.User_Id || ""))) {
+        return;
       }
 
       if (filters.search) {
         const q = normalizeSearchValue(filters.search);
         const searchable = [
-          user.User_Id,
-          user.Full_Name,
-          user.Username,
-          user.Email,
-          user.Department,
-          user.Role_Id,
-          user.jobTitle,
+          record.User_Id,
+          record.Full_Name,
+          record.Username,
+          record.Email,
+          record.Department,
+          record.Role_Id,
+          record.Job_Title,
         ]
           .map(normalizeSearchValue)
           .join("||");
-        if (!searchable.includes(q)) return false;
+        if (!searchable.includes(q)) {
+          return;
+        }
       }
 
-      const rowDept = normalizeSearchValue(user.Department);
+      const rowDept = normalizeSearchValue(record.Department);
       if (normalizedDeptFilter && rowDept !== normalizedDeptFilter) {
-        return false;
+        return;
       }
 
-      const rowRole = normalizeSearchValue(user.Role_Id);
+      const rowRole = normalizeSearchValue(record.Role_Id);
       if (normalizedRoleFilter && rowRole !== normalizedRoleFilter) {
-        return false;
+        return;
       }
 
       if (desiredStatus) {
-        const active = user.IsActive === true;
-        if (desiredStatus === "true" && !active) return false;
-        if (desiredStatus === "false" && active) return false;
-        if (desiredStatus === "inactive" && active) return false;
-        if (desiredStatus === "active" && !active) return false;
+        const active = record.IsActive === true;
+        if (desiredStatus === "true" && !active) return;
+        if (desiredStatus === "false" && active) return;
+        if (desiredStatus === "inactive" && active) return;
+        if (desiredStatus === "active" && !active) return;
       }
 
       if (fromDate || toDate) {
-        const updated = coerceDate_(user.Updated_At);
-        if (!updated) return false;
-        if (fromDate && updated < fromDate) return false;
-        if (toDate && updated > toDate) return false;
+        const updated =
+          updatedDate || coerceDate_(record.Updated_At) || coerceDate_(updatedRaw);
+        if (!updated) return;
+        if (fromDate && updated < fromDate) return;
+        if (toDate && updated > toDate) return;
       }
 
-      return true;
+      filtered.push(record);
     });
 
     debugLog("searchUsers", "result", {
       sheet: sheet.getName(),
-      totalRows: result.length,
+      totalRows: rows.length,
       filteredCount: filtered.length,
     });
     return filtered;
@@ -1959,14 +2024,15 @@ function getNextUserId() {
 /** ---- SMALL HELPERS FOR CLIENT FILTERS ---- */
 function getDeptAndRoleFilters() {
   debugLog("getDeptAndRoleFilters", "start");
-  const sh = getSheetWithFallback_(
+  const { sheet, headers, rows } = loadSheetData_(
     CONFIG.SHEETS.USERS,
     CONFIG.SHEETS.USERS_VIEW,
     "PV_SYS_Users_Table"
   );
-  if (!sh) return { departments: [], roles: [], roleOptions: [] };
-  const data = sh.getDataRange().getValues();
-  if (!data || data.length < 2) {
+  if (!sheet) {
+    return { departments: [], roles: [], roleOptions: [] };
+  }
+  if (!rows.length) {
     const fallback = {
       departments: [],
       roles: [],
@@ -1975,7 +2041,7 @@ function getDeptAndRoleFilters() {
     debugLog("getDeptAndRoleFilters", "resolved", fallback);
     return fallback;
   }
-  const h = data[0];
+  const h = headers;
   const iDept = findHeaderIndex_(
     h,
     "Department",
@@ -1995,7 +2061,7 @@ function getDeptAndRoleFilters() {
   );
   const depts = new Set();
   const roles = new Set();
-  data.slice(1).forEach((r) => {
+  rows.forEach((r) => {
     if (iDept >= 0 && r[iDept] != null && r[iDept] !== "") {
       depts.add(String(r[iDept]).trim());
     }
