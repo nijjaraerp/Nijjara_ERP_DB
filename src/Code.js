@@ -308,6 +308,167 @@ function getSheetWithFallback_(...names) {
   return null;
 }
 
+function resolveDataSourceFromCandidate_(ss, candidate) {
+  if (!candidate) return null;
+
+  const trySheet = (name) => {
+    if (!name) return null;
+    const sheet = ss.getSheetByName(name);
+    if (!sheet) return null;
+    return {
+      sheet,
+      range: sheet.getDataRange(),
+      sourceName: sheet.getName(),
+      sourceType: "sheet",
+    };
+  };
+
+  const tryNamedRange = (name) => {
+    if (!name) return null;
+    try {
+      const range = ss.getRangeByName(name);
+      if (!range) return null;
+      const sheet = range.getSheet();
+      return {
+        sheet,
+        range,
+        sourceName: name,
+        sourceType: "namedRange",
+      };
+    } catch (err) {
+      debugError("resolveDataSourceFromCandidate_", err, {
+        stage: "namedRange",
+        name,
+      });
+      return null;
+    }
+  };
+
+  const trySheetRange = (sheetName, a1Notation) => {
+    if (!sheetName || !a1Notation) return null;
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return null;
+    try {
+      const range = sheet.getRange(a1Notation);
+      return {
+        sheet,
+        range,
+        sourceName: `${sheetName}!${a1Notation}`,
+        sourceType: "range",
+      };
+    } catch (err) {
+      debugError("resolveDataSourceFromCandidate_", err, {
+        stage: "sheetRange",
+        sheet: sheetName,
+        range: a1Notation,
+      });
+      return null;
+    }
+  };
+
+  const normaliseString = (value) =>
+    typeof value === "string" ? value.trim() : "";
+
+  if (typeof candidate === "string") {
+    const name = normaliseString(candidate);
+    if (!name) return null;
+    let resolved = trySheet(name) || tryNamedRange(name);
+    if (!resolved && name.indexOf("!") >= 0) {
+      const parts = name.split("!");
+      const sheetName = normaliseString(parts[0]);
+      const a1Notation = normaliseString(parts.slice(1).join("!"));
+      resolved = trySheetRange(sheetName, a1Notation);
+    }
+    return resolved;
+  }
+
+  if (candidate && typeof candidate === "object") {
+    const sheetName = normaliseString(candidate.sheet || candidate.sheetName);
+    const rangeNotation = normaliseString(
+      candidate.range || candidate.rangeA1 || candidate.a1
+    );
+    const named = normaliseString(candidate.name || candidate.namedRange);
+
+    let resolved = null;
+    if (named) {
+      resolved = tryNamedRange(named) || trySheet(named);
+    }
+    if (!resolved && sheetName && rangeNotation) {
+      resolved = trySheetRange(sheetName, rangeNotation);
+    }
+    if (!resolved && sheetName) {
+      resolved = trySheet(sheetName);
+    }
+    if (!resolved && rangeNotation) {
+      if (rangeNotation.indexOf("!") >= 0) {
+        const parts = rangeNotation.split("!");
+        resolved = trySheetRange(parts[0], parts.slice(1).join("!"));
+      } else {
+        resolved = tryNamedRange(rangeNotation) || trySheet(rangeNotation);
+      }
+    }
+    return resolved;
+  }
+
+  return null;
+}
+
+function loadSheetData_(...names) {
+  let ss;
+  try {
+    ss = getSpreadsheet_();
+  } catch (err) {
+    debugError("loadSheetData_", err, { stage: "getSpreadsheet", names });
+    return { sheet: null, headers: [], rows: [], sourceName: "" };
+  }
+
+  let resolved = null;
+  for (const candidate of names) {
+    resolved = resolveDataSourceFromCandidate_(ss, candidate);
+    if (resolved && resolved.range) {
+      break;
+    }
+  }
+
+  if (!resolved || !resolved.range) {
+    debugLog("loadSheetData_", "noSource", { names });
+    return { sheet: null, headers: [], rows: [], sourceName: "" };
+  }
+
+  const { sheet, range, sourceName, sourceType } = resolved;
+
+  try {
+    const values = range.getValues();
+    if (!values || !values.length) {
+      debugLog("loadSheetData_", "noValues", { sourceName, sourceType });
+      return { sheet, headers: [], rows: [], sourceName };
+    }
+
+    const [headerRow, ...dataRows] = values;
+    const headers = headerRow.map((header, index) => {
+      if (header == null || header === "") {
+        return `Column_${index + 1}`;
+      }
+      return header;
+    });
+
+    const rows = dataRows.filter((row) =>
+      row.some((cell) => cell !== "" && cell !== null && cell !== undefined)
+    );
+
+    debugLog("loadSheetData_", "resolved", {
+      sourceName,
+      sourceType,
+      headers: headers.length,
+      rows: rows.length,
+    });
+    return { sheet, headers, rows, sourceName, sourceType };
+  } catch (err) {
+    debugError("loadSheetData_", err, { names, sourceName, sourceType });
+    return { sheet, headers: [], rows: [], sourceName };
+  }
+}
+
 function findHeaderIndex_(headers, ...candidates) {
   if (!headers || !headers.length) return -1;
   const normalized = headers.map((h) =>
@@ -333,6 +494,21 @@ function coerceDate_(value) {
   if (value instanceof Date) return value;
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function normalizeDateOutput_(value) {
+  const date = coerceDate_(value);
+  if (!date) return "";
+  try {
+    return date.toISOString();
+  } catch (err) {
+    try {
+      return new Date(date).toISOString();
+    } catch (innerErr) {
+      debugError("normalizeDateOutput_", innerErr);
+      return "";
+    }
+  }
 }
 
 function isTruthyFlag_(value) {
@@ -558,12 +734,13 @@ function getSystemKPIs() {
 // Enhanced user search with dynamic filtering
 function searchUsers(filters = {}) {
   debugLog("searchUsers", "start", { filters });
-  const sheet = getSheetWithFallback_(
+  const { sheet, headers, rows, sourceName } = loadSheetData_(
     CONFIG.SHEETS.USERS,
     CONFIG.SHEETS.USERS_VIEW,
     "PV_SYS_Users_Table"
   );
-  if (!sheet) {
+
+  if (!sheet && !rows.length) {
     debugLog("searchUsers", "sheetNotFound", {
       tried: [
         CONFIG.SHEETS.USERS,
@@ -574,22 +751,22 @@ function searchUsers(filters = {}) {
     return [];
   }
 
+  if (!rows.length) {
+    debugLog("searchUsers", "noRows", { source: sourceName || "<none>" });
+    return [];
+  }
+
   try {
-    const data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) {
-      debugLog("searchUsers", "noData", { sheet: sheet.getName() });
-      return [];
-    }
-    const headers = data[0];
     debugLog("searchUsers", "sheetInfo", {
-      sheet: sheet.getName(),
-      rows: data.length,
+      source: sheet ? sheet.getName() : sourceName || "<unknown>",
+      rows: rows.length,
       columns: headers.length,
     });
 
     const idFilterSet = Array.isArray(filters.userIds)
       ? new Set(filters.userIds.map((id) => String(id)))
       : null;
+
     const idx = {
       id: findHeaderIndex_(
         headers,
@@ -690,7 +867,6 @@ function searchUsers(filters = {}) {
       if (value instanceof Date) return value.toISOString();
       return String(value).trim();
     };
-    const readDate = (row, index) => coerceDate_(readValue(row, index));
 
     const fromDate = coerceDate_(filters.updatedFrom);
     const toDateRaw = coerceDate_(filters.updatedTo);
@@ -712,6 +888,7 @@ function searchUsers(filters = {}) {
       filters.status !== undefined && filters.status !== null
         ? String(filters.status).trim().toLowerCase()
         : "";
+
     const normalizeSearchValue = (value) => {
       if (value == null) return "";
       if (value instanceof Date) return value.toISOString().toLowerCase();
@@ -721,11 +898,19 @@ function searchUsers(filters = {}) {
     const normalizedDeptFilter = normalizeSearchValue(desiredDepartment);
     const normalizedRoleFilter = normalizeSearchValue(desiredRole);
 
-    const result = data.slice(1).map((row) => {
-      const updatedDate = readDate(row, idx.updatedAt);
-      const lastLoginDate = readDate(row, idx.lastLogin);
-      const jobTitle = readString(row, idx.jobTitle);
-      return {
+    const filtered = [];
+
+    rows.forEach((row) => {
+      const updatedRaw = readValue(row, idx.updatedAt);
+      const updatedDate = coerceDate_(updatedRaw);
+      const lastLoginRaw = readValue(row, idx.lastLogin);
+      const lastLoginDate = coerceDate_(lastLoginRaw);
+      const lastLoginValue = normalizeDateOutput_(
+        lastLoginDate || lastLoginRaw
+      );
+      const updatedValue = normalizeDateOutput_(updatedDate || updatedRaw);
+
+      const record = {
         User_Id: readString(row, idx.id),
         Full_Name: readString(row, idx.fullName),
         Username: readString(row, idx.username),
@@ -733,68 +918,66 @@ function searchUsers(filters = {}) {
         Department: readString(row, idx.department),
         Role_Id: readString(row, idx.role),
         IsActive: idx.isActive >= 0 ? isTruthyFlag_(row[idx.isActive]) : false,
-        jobTitle,
+        Job_Title: readString(row, idx.jobTitle),
         Last_Login:
-          lastLoginDate ||
-          (idx.lastLogin >= 0 ? readValue(row, idx.lastLogin) : ""),
-        Updated_At:
-          updatedDate ||
-          (idx.updatedAt >= 0 ? readValue(row, idx.updatedAt) : ""),
+          lastLoginValue || readString(row, idx.lastLogin) || "",
+        Updated_At: updatedValue || readString(row, idx.updatedAt) || "",
       };
-    });
 
-    const filtered = result.filter((user) => {
-      if (idFilterSet && !idFilterSet.has(String(user.User_Id || ""))) {
-        return false;
+      if (idFilterSet && !idFilterSet.has(String(record.User_Id || ""))) {
+        return;
       }
 
       if (filters.search) {
         const q = normalizeSearchValue(filters.search);
         const searchable = [
-          user.User_Id,
-          user.Full_Name,
-          user.Username,
-          user.Email,
-          user.Department,
-          user.Role_Id,
-          user.jobTitle,
+          record.User_Id,
+          record.Full_Name,
+          record.Username,
+          record.Email,
+          record.Department,
+          record.Role_Id,
+          record.Job_Title,
         ]
           .map(normalizeSearchValue)
           .join("||");
-        if (!searchable.includes(q)) return false;
+        if (!searchable.includes(q)) {
+          return;
+        }
       }
 
-      const rowDept = normalizeSearchValue(user.Department);
+      const rowDept = normalizeSearchValue(record.Department);
       if (normalizedDeptFilter && rowDept !== normalizedDeptFilter) {
-        return false;
+        return;
       }
 
-      const rowRole = normalizeSearchValue(user.Role_Id);
+      const rowRole = normalizeSearchValue(record.Role_Id);
       if (normalizedRoleFilter && rowRole !== normalizedRoleFilter) {
-        return false;
+        return;
       }
 
       if (desiredStatus) {
-        const active = user.IsActive === true;
-        if (desiredStatus === "true" && !active) return false;
-        if (desiredStatus === "false" && active) return false;
-        if (desiredStatus === "inactive" && active) return false;
-        if (desiredStatus === "active" && !active) return false;
+        const active = record.IsActive === true;
+        if (desiredStatus === "true" && !active) return;
+        if (desiredStatus === "false" && active) return;
+        if (desiredStatus === "inactive" && active) return;
+        if (desiredStatus === "active" && !active) return;
       }
 
       if (fromDate || toDate) {
-        const updated = coerceDate_(user.Updated_At);
-        if (!updated) return false;
-        if (fromDate && updated < fromDate) return false;
-        if (toDate && updated > toDate) return false;
+        const updated =
+          updatedDate || coerceDate_(record.Updated_At) || coerceDate_(updatedRaw);
+        if (!updated) return;
+        if (fromDate && updated < fromDate) return;
+        if (toDate && updated > toDate) return;
       }
 
-      return true;
+      filtered.push(record);
     });
 
     debugLog("searchUsers", "result", {
-      sheet: sheet.getName(),
-      totalRows: result.length,
+      source: sheet ? sheet.getName() : sourceName || "<unknown>",
+      totalRows: rows.length,
       filteredCount: filtered.length,
     });
     return filtered;
@@ -913,21 +1096,20 @@ function getDropdownOptions(key) {
 function listRoles() {
   const FNAME = "listRoles";
   debugLog(FNAME, "start");
-  const sheet = getSheet_(CONFIG.SHEETS.ROLES);
-  if (!sheet) {
-    debugLog(FNAME, "sheetNotFound", { name: CONFIG.SHEETS.ROLES });
+  const { headers, rows, sheet, sourceName } = loadSheetData_(
+    CONFIG.SHEETS.ROLES
+  );
+  if (!rows.length) {
+    debugLog(FNAME, "noData", {
+      source: sheet ? sheet.getName() : sourceName || "<none>",
+      rows: rows.length,
+    });
     return [];
   }
   try {
-    const data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) {
-      debugLog(FNAME, "noData", { sheet: sheet.getName(), rows: data.length });
-      return [];
-    }
-    const headers = data[0];
     debugLog(FNAME, "sheetInfo", {
-      sheet: sheet.getName(),
-      rows: data.length,
+      sheet: sheet ? sheet.getName() : sourceName || "<unknown>",
+      rows: rows.length,
       columns: headers.length,
     });
 
@@ -946,7 +1128,7 @@ function listRoles() {
     }
 
     const toBool = (value) => isTruthyFlag_(value);
-    const roles = data.slice(1).map((row) => ({
+    const roles = rows.map((row) => ({
       roleId: getValueAt_(row, idx.id),
       title: getValueAt_(row, idx.title),
       description: getValueAt_(row, idx.desc),
@@ -964,21 +1146,20 @@ function listRoles() {
 function listPermissions() {
   const FNAME = "listPermissions";
   debugLog(FNAME, "start");
-  const sheet = getSheet_(CONFIG.SHEETS.PERMS);
-  if (!sheet) {
-    debugLog(FNAME, "sheetNotFound", { name: CONFIG.SHEETS.PERMS });
+  const { headers, rows, sheet, sourceName } = loadSheetData_(
+    CONFIG.SHEETS.PERMS
+  );
+  if (!rows.length) {
+    debugLog(FNAME, "noData", {
+      source: sheet ? sheet.getName() : sourceName || "<none>",
+      rows: rows.length,
+    });
     return [];
   }
   try {
-    const data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) {
-      debugLog(FNAME, "noData", { sheet: sheet.getName(), rows: data.length });
-      return [];
-    }
-    const headers = data[0];
     debugLog(FNAME, "sheetInfo", {
-      sheet: sheet.getName(),
-      rows: data.length,
+      sheet: sheet ? sheet.getName() : sourceName || "<unknown>",
+      rows: rows.length,
       columns: headers.length,
     });
 
@@ -996,15 +1177,15 @@ function listPermissions() {
       return [];
     }
 
-    const rows = data.slice(1).map((row) => ({
+    const mapped = rows.map((row) => ({
       permissionKey: getValueAt_(row, idx.key),
       label: getValueAt_(row, idx.label),
       description: getValueAt_(row, idx.desc),
       category: getValueAt_(row, idx.category),
       updatedAt: coerceDate_(getValueAt_(row, idx.updatedAt)),
     }));
-    debugLog(FNAME, "loaded", { count: rows.length });
-    return rows;
+    debugLog(FNAME, "loaded", { count: mapped.length });
+    return mapped;
   } catch (err) {
     debugError(FNAME, err);
     throw err;
@@ -1014,21 +1195,20 @@ function listPermissions() {
 function listRolePermissions() {
   const FNAME = "listRolePermissions";
   debugLog(FNAME, "start");
-  const sheet = getSheet_(CONFIG.SHEETS.ROLE_PERMS);
-  if (!sheet) {
-    debugLog(FNAME, "sheetNotFound", { name: CONFIG.SHEETS.ROLE_PERMS });
+  const { headers, rows, sheet, sourceName } = loadSheetData_(
+    CONFIG.SHEETS.ROLE_PERMS
+  );
+  if (!rows.length) {
+    debugLog(FNAME, "noData", {
+      source: sheet ? sheet.getName() : sourceName || "<none>",
+      rows: rows.length,
+    });
     return [];
   }
   try {
-    const data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) {
-      debugLog(FNAME, "noData", { sheet: sheet.getName(), rows: data.length });
-      return [];
-    }
-    const headers = data[0];
     debugLog(FNAME, "sheetInfo", {
-      sheet: sheet.getName(),
-      rows: data.length,
+      sheet: sheet ? sheet.getName() : sourceName || "<unknown>",
+      rows: rows.length,
       columns: headers.length,
     });
 
@@ -1066,7 +1246,7 @@ function listRolePermissions() {
     }
 
     const toBool = (value) => isTruthyFlag_(value);
-    const rows = data.slice(1).map((row) => ({
+    const mapped = rows.map((row) => ({
       roleId: getValueAt_(row, idx.role),
       roleTitle: roleLabelMap[String(getValueAt_(row, idx.role) || "")] || "",
       permissionKey: getValueAt_(row, idx.permission),
@@ -1076,8 +1256,8 @@ function listRolePermissions() {
       allowed: idx.allowed >= 0 ? toBool(row[idx.allowed]) : false,
       updatedAt: coerceDate_(getValueAt_(row, idx.updatedAt)),
     }));
-    debugLog(FNAME, "loaded", { count: rows.length });
-    return rows;
+    debugLog(FNAME, "loaded", { count: mapped.length });
+    return mapped;
   } catch (err) {
     debugError(FNAME, err);
     throw err;
@@ -1087,21 +1267,20 @@ function listRolePermissions() {
 function listUserProperties() {
   const FNAME = "listUserProperties";
   debugLog(FNAME, "start");
-  const sheet = getSheet_(CONFIG.SHEETS.USER_PROPERTIES);
-  if (!sheet) {
-    debugLog(FNAME, "sheetNotFound", { name: CONFIG.SHEETS.USER_PROPERTIES });
+  const { headers, rows, sheet, sourceName } = loadSheetData_(
+    CONFIG.SHEETS.USER_PROPERTIES
+  );
+  if (!rows.length) {
+    debugLog(FNAME, "noData", {
+      source: sheet ? sheet.getName() : sourceName || "<none>",
+      rows: rows.length,
+    });
     return [];
   }
   try {
-    const data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) {
-      debugLog(FNAME, "noData", { sheet: sheet.getName(), rows: data.length });
-      return [];
-    }
-    const headers = data[0];
     debugLog(FNAME, "sheetInfo", {
-      sheet: sheet.getName(),
-      rows: data.length,
+      sheet: sheet ? sheet.getName() : sourceName || "<unknown>",
+      rows: rows.length,
       columns: headers.length,
     });
 
@@ -1121,15 +1300,15 @@ function listUserProperties() {
       return [];
     }
 
-    const rows = data.slice(1).map((row) => ({
+    const mapped = rows.map((row) => ({
       userId: getValueAt_(row, idx.user),
       key: getValueAt_(row, idx.key),
       value: getValueAt_(row, idx.value),
       updatedAt: coerceDate_(getValueAt_(row, idx.updatedAt)),
       updatedBy: getValueAt_(row, idx.updatedBy),
     }));
-    debugLog(FNAME, "loaded", { count: rows.length });
-    return rows;
+    debugLog(FNAME, "loaded", { count: mapped.length });
+    return mapped;
   } catch (err) {
     debugError(FNAME, err);
     throw err;
@@ -1959,23 +2138,29 @@ function getNextUserId() {
 /** ---- SMALL HELPERS FOR CLIENT FILTERS ---- */
 function getDeptAndRoleFilters() {
   debugLog("getDeptAndRoleFilters", "start");
-  const sh = getSheetWithFallback_(
+  const { sheet, headers, rows, sourceName } = loadSheetData_(
     CONFIG.SHEETS.USERS,
     CONFIG.SHEETS.USERS_VIEW,
     "PV_SYS_Users_Table"
   );
-  if (!sh) return { departments: [], roles: [], roleOptions: [] };
-  const data = sh.getDataRange().getValues();
-  if (!data || data.length < 2) {
+  if (!sheet && !rows.length) {
+    return { departments: [], roles: [], roleOptions: [] };
+  }
+  if (!rows.length) {
     const fallback = {
       departments: [],
       roles: [],
       roleOptions: getRoleOptions_(),
     };
-    debugLog("getDeptAndRoleFilters", "resolved", fallback);
+    debugLog("getDeptAndRoleFilters", "resolved", {
+      departments: fallback.departments.length,
+      roles: fallback.roles.length,
+      roleOptions: fallback.roleOptions.length,
+      source: sourceName || "<none>",
+    });
     return fallback;
   }
-  const h = data[0];
+  const h = headers;
   const iDept = findHeaderIndex_(
     h,
     "Department",
@@ -1995,7 +2180,7 @@ function getDeptAndRoleFilters() {
   );
   const depts = new Set();
   const roles = new Set();
-  data.slice(1).forEach((r) => {
+  rows.forEach((r) => {
     if (iDept >= 0 && r[iDept] != null && r[iDept] !== "") {
       depts.add(String(r[iDept]).trim());
     }
@@ -2012,21 +2197,25 @@ function getDeptAndRoleFilters() {
     departments: payload.departments.length,
     roles: payload.roles.length,
     roleOptions: payload.roleOptions.length,
+    source: sheet ? sheet.getName() : sourceName || "<unknown>",
   });
   return payload;
 }
 
 function getRoleOptions_() {
   debugLog("getRoleOptions_", "start");
-  const sh = getSheet_(CONFIG.SHEETS.ROLES);
-  if (!sh) return [];
-  const data = sh.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const headers = data[0];
+  const { headers, rows, sheet, sourceName } = loadSheetData_(
+    CONFIG.SHEETS.ROLES
+  );
+  if (!rows.length) {
+    debugLog("getRoleOptions_", "noRows", {
+      source: sheet ? sheet.getName() : sourceName || "<none>",
+    });
+    return [];
+  }
   const idIdx = headers.indexOf("Role_Id");
   const titleIdx = headers.indexOf("Role_Title");
-  const options = data
-    .slice(1)
+  const options = rows
     .map((row) => ({
       value: idIdx >= 0 ? row[idIdx] : "",
       label: titleIdx >= 0 ? row[titleIdx] || row[idIdx] : row[idIdx],
