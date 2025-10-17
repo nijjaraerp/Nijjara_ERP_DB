@@ -119,7 +119,10 @@ function safeStringify_(value) {
   }
 
   if (value && typeof value === "object") {
-    if (typeof value.getContent === "function" && typeof value.setTitle === "function") {
+    if (
+      typeof value.getContent === "function" &&
+      typeof value.setTitle === "function"
+    ) {
       return "[HtmlOutput]";
     }
 
@@ -177,11 +180,7 @@ function wrapFunctionWithErrorHandling_(name, fn) {
       () => {
         const result = fn.apply(this, args);
         try {
-          Logger.log(
-            "[%s] returning: %s",
-            name,
-            safeStringify_(result)
-          );
+          Logger.log("[%s] returning: %s", name, safeStringify_(result));
         } catch (err) {
           Logger.log(
             "[%s] failed to log result: %s",
@@ -369,17 +368,26 @@ function setRowValue_(headers, row, value, ...candidates) {
 
 /** ---- ENTRY POINT ---- */
 function doGet(e) {
-  Logger.log("[doGet] invoked with params: %s", safeStringify_(e));
+  // Add a clear marker for deployment vs. real user runs
+  Logger.log(
+    "[doGet] invoked at %s with params: %s",
+    new Date(),
+    safeStringify_(e)
+  );
+
   const result = withErrorHandling(
     function () {
       debugLog("doGet", "render", { query: e && e.parameter });
+
       const t = HtmlService.createTemplateFromFile("Dashboard");
       t.appName = CONFIG.APP_NAME;
+
       const output = t
         .evaluate()
         .setTitle(CONFIG.APP_NAME + " - Demo Portal")
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-      Logger.log("[doGet] returning HtmlOutput");
+
+      Logger.log("[doGet] returning HtmlOutput at %s", new Date());
       return output;
     },
     "doGet",
