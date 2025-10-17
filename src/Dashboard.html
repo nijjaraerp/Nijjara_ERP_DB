@@ -1718,6 +1718,7 @@
 
         /* Bootstrap (server) */
         function applyBootstrap(data) {
+          console.log("Bootstrap data received:", data);
           bootstrapData = data || {};
           renderNav(data?.nav || []);
           const displayName =
@@ -1743,6 +1744,7 @@
             if (window.google && google.script && google.script.run) {
               google.script.run
                 .withSuccessHandler((f) => {
+                  console.log("Department and role filters received:", f);
                   fillSelect(selDept, f?.departments || []);
                   fillSelect(selRole, f?.roles || []);
                   fillSelect(bulkRoleSelect, f?.roleOptions || f?.roles || []);
@@ -1858,6 +1860,7 @@
           google.script.run
             .withFailureHandler(() => {})
             .withSuccessHandler((k) => {
+              console.log("System KPIs received:", k);
               if (!k) return;
               const $ = (id) => document.getElementById(id);
               $("kpi-total-users").textContent = k.totalUsers ?? "—";
@@ -1925,6 +1928,7 @@
               syncBulkActionsState();
             })
             .withSuccessHandler((list) => {
+              console.log("User list received:", list);
               clearTimeout(usersReqTimer);
               renderUsers(list);
             })
@@ -1953,7 +1957,8 @@
                 console.error(err);
                 showToast("تعذر تغيير حالة الحساب.", "error");
               })
-              .withSuccessHandler(() => {
+              .withSuccessHandler((res) => {
+                console.log("Toggle user active response:", res);
                 showToast("تم تحديث الحالة.", "success");
                 loadUsers();
               })
@@ -2055,7 +2060,8 @@
               console.error(err);
               showToast("تعذّر إعادة كلمة المرور.", "error");
             })
-            .withSuccessHandler(() => {
+            .withSuccessHandler((res) => {
+              console.log("Reset password response:", res);
               showToast("تم تحديث كلمة المرور (مشفّرة).", "success");
               dlgReset.close();
             })
@@ -2279,6 +2285,7 @@
               setTableStatus(rolesTbody, "تعذر تحميل الأدوار.", "error");
             })
             .withSuccessHandler((rows) => {
+              console.log("Roles data received:", rows);
               rolesLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(rolesTbody, list, (row) => {
@@ -2313,6 +2320,7 @@
               );
             })
             .withSuccessHandler((rows) => {
+              console.log("Permissions data received:", rows);
               permissionsLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(permissionsTbody, list, (row) => {
@@ -2347,6 +2355,7 @@
               );
             })
             .withSuccessHandler((rows) => {
+              console.log("Role permissions data received:", rows);
               rolePermsLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(rolePermsTbody, list, (row) => {
@@ -2393,6 +2402,7 @@
               );
             })
             .withSuccessHandler((rows) => {
+              console.log("User properties data received:", rows);
               propertiesLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(propertiesTbody, list, (row) => {
@@ -2423,6 +2433,7 @@
               setTableStatus(sessionsTbody, "تعذر تحميل الجلسات.", "error");
             })
             .withSuccessHandler((rows) => {
+              console.log("Sessions data received:", rows);
               sessionsLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(sessionsTbody, list, (row) => {
@@ -2455,6 +2466,7 @@
               setTableStatus(auditTbody, "تعذر تحميل سجل التدقيق.", "error");
             })
             .withSuccessHandler((rows) => {
+              console.log("Audit log data received:", rows);
               auditLoaded = true;
               const list = Array.isArray(rows) ? rows : [];
               renderTableRows(auditTbody, list, (row) => {
@@ -2573,6 +2585,7 @@
               showToast("تعذر تحديث الحالة للمستخدمين المحددين.", "error");
             })
             .withSuccessHandler((res) => {
+              console.log("Bulk status update response:", res);
               const count = res?.updated ?? ids.length;
               showToast(
                 "تم تحديث حالة " + count + " مستخدم.",
@@ -2603,6 +2616,7 @@
               showToast("تعذر تعيين الدور للمستخدمين المحددين.", "error");
             })
             .withSuccessHandler((res) => {
+              console.log("Bulk role assignment response:", res);
               const count = res?.updated ?? ids.length;
               showToast(
                 "تم تعيين الدور لـ " + count + " مستخدم.",
@@ -2655,6 +2669,7 @@
               showToast("تعذر تجهيز ملف التصدير.", "error");
             })
             .withSuccessHandler((payload) => {
+              console.log("Export payload received:", payload);
               triggerExportDownload(payload);
               showToast("تم تجهيز ملف التصدير.", "success");
             })
@@ -2727,6 +2742,7 @@
                 dlgNew.showModal();
               })
               .withSuccessHandler((fields) => {
+                console.log("Add user form fields received:", fields);
                 if (Array.isArray(fields) && fields.length) {
                   renderDynamicUserForm(fields, null);
                 } else {
@@ -2952,6 +2968,7 @@
             if (!isEdit) {
               google.script.run
                 .withSuccessHandler((nextId) => {
+                  console.log("Next user ID received:", nextId);
                   const el = document.getElementById("nu_uid");
                   if (el) {
                     el.value = nextId;
@@ -2961,6 +2978,7 @@
             }
             google.script.run
               .withSuccessHandler((f) => {
+                console.log("Dynamic form filters received:", f);
                 const d = f?.departments || [];
                 const r = f?.roles || [];
                 const dSel = document.getElementById("nu_dept");
@@ -3023,7 +3041,8 @@
                   console.error(err);
                   showToast("تعذّر تحديث المستخدم.", "error");
                 })
-                .withSuccessHandler(() => {
+                .withSuccessHandler((res) => {
+                  console.log("Update user response:", res);
                   showToast("تم تحديث بيانات المستخدم.", "success");
                   dlgNew.close();
                   e.target.reset();
@@ -3036,7 +3055,8 @@
                   console.error(err);
                   showToast("تعذّر إنشاء المستخدم.", "error");
                 })
-                .withSuccessHandler(() => {
+                .withSuccessHandler((res) => {
+                  console.log("Create user response:", res);
                   showToast("تم إنشاء المستخدم بنجاح.", "success");
                   dlgNew.close();
                   e.target.reset();
@@ -3054,11 +3074,13 @@
               showToast("تعذر تحميل بيانات المستخدم.", "error");
             })
             .withSuccessHandler((user) => {
+              console.log("User profile for edit received:", user);
               if (!user) {
                 showToast("لم يتم العثور على المستخدم.", "error");
                 return;
               }
               const handleForm = (fields) => {
+                console.log("Edit user form fields received:", fields);
                 if (Array.isArray(fields) && fields.length) {
                   renderDynamicUserForm(fields, user);
                 } else {
@@ -3110,6 +3132,7 @@
               callback([]);
             })
             .withSuccessHandler((options) => {
+              console.log("Role options received:", options);
               roleOptionsCache = Array.isArray(options) ? options : [];
               callback(roleOptionsCache);
             })
@@ -3182,7 +3205,8 @@
                 console.error(err);
                 showToast("تعذر تعيين الدور للمستخدم المحدد.", "error");
               })
-              .withSuccessHandler(() => {
+              .withSuccessHandler((res) => {
+                console.log("Assign user role response:", res);
                 showToast("تم تعيين الدور بنجاح.", "success");
                 dlgAssign.close();
                 loadUsers();
@@ -3362,6 +3386,7 @@
               showToast("تعذر تحميل ملف المستخدم.", "error");
             })
             .withSuccessHandler((payload) => {
+              console.log("User profile payload received:", payload);
               if (!payload || !payload.user) {
                 showToast("لم يتم العثور على المستخدم.", "error");
                 return;
@@ -3380,6 +3405,7 @@
               showToast("تعذر بدء جلسة الانتحال.", "error");
             })
             .withSuccessHandler((res) => {
+              console.log("Impersonation start response:", res);
               const sessionId = res?.sessionId || "";
               showToast(
                 sessionId
@@ -3403,7 +3429,8 @@
               console.error(err);
               showToast("تعذر حذف المستخدم.", "error");
             })
-            .withSuccessHandler(() => {
+            .withSuccessHandler((res) => {
+              console.log("Soft delete response:", res);
               showToast("تم تعطيل المستخدم ووضع علامة الحذف.", "success");
               loadUsers();
               if (currentProfileUserId === userId && profileDataCache) {
