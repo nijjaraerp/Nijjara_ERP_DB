@@ -606,25 +606,127 @@ function doGet(e) {
 /** ---- DATA ACCESS ---- */
 function getBootstrapData() {
   debugLog("getBootstrapData", "start");
-  const user = getCurrentUser();
-  const role = user?.Role_Id || user?.role || "GUEST";
-  const perms = getRolePermissions(role);
-  const filters = getDeptAndRoleFilters();
-
-  const payload = {
-    appName: CONFIG.APP_NAME,
-    now: new Date().toISOString(),
-    user,
-    role,
-    permissions: perms,
-    filters,
-  };
+  const currentUser = getCurrentUser();
+  const payload = buildBootstrapPayload_(currentUser);
   debugLog("getBootstrapData", "resolved", {
-    role,
-    perms: perms ? perms.length || Object.keys(perms).length : 0,
-    hasFilters: !!filters,
+    hasUser: !!payload.user,
+    role: payload.role,
+    nav: Array.isArray(payload.nav) ? payload.nav.length : 0,
   });
   return payload;
+}
+
+function buildBootstrapPayload_(rawUser) {
+  const sanitizedUser = sanitizeUserForClient_(rawUser);
+  const role = sanitizedUser?.Role_Id || sanitizedUser?.role || "GUEST";
+  const permissions = getRolePermissions(role) || [];
+  const filters = getDeptAndRoleFilters() || {
+    departments: [],
+    roles: [],
+    roleOptions: [],
+  };
+
+  const timestamp = new Date().toISOString();
+
+  return {
+    appName: CONFIG.APP_NAME,
+    now: timestamp,
+    user: sanitizedUser,
+    role,
+    permissions,
+    filters,
+    nav: buildNavigationConfig_(role, permissions),
+    meta: {
+      hasUser: !!sanitizedUser,
+      permissions: Array.isArray(permissions) ? permissions.length : 0,
+      generatedAt: timestamp,
+    },
+  };
+}
+
+function buildNavigationConfig_(role, permissions) {
+  const permissionSet = new Set();
+  if (Array.isArray(permissions)) {
+    permissions.forEach((p) => {
+      const key =
+        (p &&
+          (p.Permission_Key || p.permissionKey || p.key || p.Permission)) ||
+        null;
+      if (key) permissionSet.add(String(key).toUpperCase());
+    });
+  }
+  const hasPermission = (requiredKeys) => {
+    if (!requiredKeys || (Array.isArray(requiredKeys) && !requiredKeys.length)) {
+      return true;
+    }
+    if (!permissionSet.size) return false;
+    const keys = Array.isArray(requiredKeys) ? requiredKeys : [requiredKeys];
+    return keys.some((key) =>
+      permissionSet.has(String(key || "").toUpperCase())
+    );
+  };
+
+  const NAV_ITEMS = [
+    {
+      key: "PRJ",
+      label: "Projects",
+      target: "projects-workspace",
+      permissions: ["PRJ_VIEW_PROJECTS", "PRJ_EDIT_PROJECTS"],
+    },
+    {
+      key: "FIN",
+      label: "Finance",
+      target: "finance-workspace",
+      permissions: ["FIN_VIEW_REPORTS", "FIN_EDIT_TRANSACTIONS"],
+    },
+    {
+      key: "HR",
+      label: "HR",
+      target: "hr-workspace",
+      permissions: ["HR_VIEW_EMPLOYEES", "HR_EDIT_EMPLOYEES"],
+    },
+    {
+      key: "SYS",
+      label: "System",
+      target: "system-management-view",
+      permissions: [
+        "SYS_VIEW_USERS",
+        "SYS_EDIT_USERS",
+        "SYS_MANAGE_ROLES",
+        "SYS_VIEW_AUDIT",
+      ],
+    },
+  ];
+
+  const eligible = NAV_ITEMS.filter((item) =>
+    role && String(role).toUpperCase() === "ADMIN"
+      ? true
+      : hasPermission(item.permissions)
+  );
+
+  if (!eligible.length) {
+    // Fallback to System view for guests to avoid empty navigation.
+    return [
+      {
+        key: "SYS",
+        label: "System",
+        target: "system-management-view",
+      },
+    ];
+  }
+
+  return eligible;
+}
+
+function sanitizeUserForClient_(user) {
+  if (!user) return null;
+  if (Array.isArray(user)) return null;
+  const sanitized = {};
+  Object.keys(user).forEach((key) => {
+    if (/password/i.test(key)) return;
+    sanitized[key] = user[key];
+  });
+  return sanitized;
 }
 
 function getSystemKPIs() {
@@ -747,6 +849,128 @@ function getSystemKPIs() {
 
   debugLog("getSystemKPIs", "fallback", defaults);
   return defaults;
+}
+
+function authenticateUser(credentials) {
+  const FNAME = "authenticateUser";
+  const username = String(credentials?.username || "")
+    .trim()
+    .toLowerCase();
+  const password = credentials?.password || "";
+  debugLog(FNAME, "start", {
+    hasUsername: !!username,
+    providedPassword: password ? "<hidden>" : "",
+  });
+
+  if (!username || !password) {
+    debugLog(FNAME, "missingCredentials");
+    return {
+      success: false,
+      message: "يرجى إدخال اسم المستخدم وكلمة المرور.",
+    };
+  }
+
+  const sh = getSheet_(CONFIG.SHEETS.USERS);
+  if (!sh) {
+    debugLog(FNAME, "usersSheetMissing");
+    return {
+      success: false,
+      message: "تعذر الوصول إلى بيانات المستخدمين.",
+    };
+  }
+
+  const data = sh.getDataRange().getValues();
+  if (!data || data.length < 2) {
+    debugLog(FNAME, "usersEmpty");
+    return {
+      success: false,
+      message: "لا يوجد مستخدمون مسجلون.",
+    };
+  }
+
+  const headers = data[0];
+  const idx = {
+    username: findHeaderIndex_(headers, "Username", "User", "Login"),
+    email: findHeaderIndex_(headers, "Email", "Email_Address"),
+    hash: findHeaderIndex_(headers, "Password_Hash", "Password"),
+    isActive: findHeaderIndex_(headers, "IsActive", "Active", "Status"),
+    userId: findHeaderIndex_(headers, "User_Id", "Id", "ID"),
+    role: findHeaderIndex_(headers, "Role_Id", "Role", "RoleID"),
+    fullName: findHeaderIndex_(headers, "Full_Name", "Name"),
+    lastLogin: findHeaderIndex_(headers, "Last_Login", "LastLogin"),
+  };
+
+  const rows = data.slice(1);
+  const matchEntry = rows.find((row) => {
+    const rowUsername = idx.username >= 0 ? row[idx.username] : "";
+    const rowEmail = idx.email >= 0 ? row[idx.email] : "";
+    const normalizedUsername = String(rowUsername || "").trim().toLowerCase();
+    const normalizedEmail = String(rowEmail || "").trim().toLowerCase();
+    return username === normalizedUsername || username === normalizedEmail;
+  });
+
+  if (!matchEntry) {
+    logAuditEvent("LOGIN_FAILURE", { username, reason: "NOT_FOUND" });
+    debugLog(FNAME, "userNotFound", { username });
+    return {
+      success: false,
+      message: "بيانات الدخول غير صحيحة.",
+    };
+  }
+
+  const entryIndex = rows.indexOf(matchEntry);
+  const storedHash = idx.hash >= 0 ? matchEntry[idx.hash] : "";
+  const activeFlag = idx.isActive >= 0 ? matchEntry[idx.isActive] : true;
+
+  if (!isTruthyFlag_(activeFlag)) {
+    logAuditEvent("LOGIN_FAILURE", { username, reason: "INACTIVE" });
+    debugLog(FNAME, "userInactive", { username });
+    return {
+      success: false,
+      message: "تم تعطيل هذا الحساب. يرجى التواصل مع المسؤول.",
+    };
+  }
+
+  if (!verifyPassword_(storedHash, password)) {
+    logAuditEvent("LOGIN_FAILURE", { username, reason: "BAD_PASSWORD" });
+    debugLog(FNAME, "passwordMismatch", { username });
+    return {
+      success: false,
+      message: "بيانات الدخول غير صحيحة.",
+    };
+  }
+
+  const userObject = headers.reduce((obj, header, index) => {
+    obj[header] = matchEntry[index];
+    return obj;
+  }, {});
+
+  if (idx.lastLogin >= 0) {
+    try {
+      sh.getRange(entryIndex + 2, idx.lastLogin + 1).setValue(new Date());
+    } catch (err) {
+      debugError(FNAME, err, { stage: "updateLastLogin" });
+    }
+  }
+
+  const bootstrap = buildBootstrapPayload_(userObject);
+  const sanitizedUser = bootstrap.user || sanitizeUserForClient_(userObject);
+  logAuditEvent("LOGIN_SUCCESS", {
+    userId: sanitizedUser?.User_Id || sanitizedUser?.user_id || "",
+    username: sanitizedUser?.Username || username,
+    role: sanitizedUser?.Role_Id || "",
+  });
+
+  debugLog(FNAME, "success", {
+    userId: sanitizedUser?.User_Id,
+    role: sanitizedUser?.Role_Id,
+  });
+
+  return {
+    success: true,
+    user: sanitizedUser,
+    bootstrap,
+  };
 }
 
 // Enhanced user search with dynamic filtering
@@ -1979,16 +2203,36 @@ function generateUserId() {
   return id;
 }
 
-function hashPassword(password) {
-  return Utilities.computeDigest(
+function computePasswordHash_(password) {
+  const digest = Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256,
     password,
     Utilities.Charset.UTF_8
-  )
+  );
+  const hex = digest
     .map(function (b) {
       return ("0" + (b & 0xff).toString(16)).slice(-2);
     })
     .join("");
+  const base64 = Utilities.base64Encode(digest);
+  return { hex, base64 };
+}
+
+function hashPassword(password) {
+  if (!password && password !== 0) return "";
+  const hashed = computePasswordHash_(String(password));
+  return hashed.base64;
+}
+
+function verifyPassword_(storedHash, password) {
+  if (!password && password !== 0) return false;
+  if (storedHash == null) return false;
+  const candidate = String(storedHash).trim();
+  if (!candidate) return false;
+  const hashed = computePasswordHash_(String(password));
+  if (candidate === hashed.base64) return true;
+  if (candidate === hashed.hex) return true;
+  return candidate.toLowerCase() === hashed.hex.toLowerCase();
 }
 
 function logAuditEvent(action, details) {
