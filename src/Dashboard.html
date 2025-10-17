@@ -1656,21 +1656,18 @@
         let roleOptionsCache = null;
         let normalizedUsersCache = [];
         let overviewLoaded = false;
-        let rolesLoaded = false;
-        let permissionsLoaded = false;
-        let rolePermsLoaded = false;
-        let propertiesLoaded = false;
-        let sessionsLoaded = false;
-        let auditLoaded = false;
+        const tableLoadState = {
+          roles: false,
+          permissions: false,
+          rolePerms: false,
+          properties: false,
+          sessions: false,
+          audit: false,
+        };
         let currentSysPane = "overview";
+        let lastLoginIdentity = null;
 
         /* Basic nav */
-        function updateUserContext(name) {
-          const safe = name || "User";
-          userLabel.textContent = "User: " + safe;
-          const welcome = document.getElementById("portal-welcome-message");
-          if (welcome) welcome.textContent = "Welcome, " + safe;
-        }
         function switchView(id) {
           views.forEach((v) => v.classList.toggle("active", v.id === id));
           document.querySelectorAll(".app-navbar .nav-btn").forEach((b) => {
@@ -1716,18 +1713,39 @@
           if (activeView) switchView(activeView.id);
         }
 
+        function markTableLoaded(key, value) {
+          if (!key) return;
+          tableLoadState[key] = !!value;
+        }
+
+        function isTableLoaded(key) {
+          return !!tableLoadState[key];
+        }
+
+        function resetTableLoadState() {
+          Object.keys(tableLoadState).forEach((key) => {
+            tableLoadState[key] = false;
+          });
+        }
+
         /* Bootstrap (server) */
         function applyBootstrap(data) {
           console.log("Bootstrap data received:", data);
           bootstrapData = data || {};
+          overviewLoaded = false;
+          resetTableLoadState();
+          selectedUsers.clear();
+          normalizedUsersCache = [];
           renderNav(data?.nav || []);
+          const identityFromServer =
+            data?.user &&
+            (data.user.Full_Name || data.user.Username || data.user.Email)
+              ? data.user
+              : null;
           const displayName =
             data?.user?.Full_Name || data?.user?.Username || "User";
-          if (data?.user) {
-            updateUserContext(data.user);
-          } else {
-            updateUserContext(displayName);
-          }
+          const identityToUse = identityFromServer || lastLoginIdentity || displayName;
+          updateUserContext(identityToUse);
           // Fill filter selects if server sent lists
           if (data?.filters) {
             fillSelect(selDept, data.filters.departments);
@@ -1812,11 +1830,12 @@
             loginBtn.classList.remove("loading");
             if (u === USERNAME && p === PASSWORD) {
               navbar.classList.remove("hidden");
-              const fallback =
-                bootstrapData?.user?.Full_Name ||
-                bootstrapData?.user?.Username ||
-                USERNAME;
-              updateUserContext(fallback);
+              const identity = {
+                Full_Name: bootstrapData?.user?.Full_Name || "",
+                Username: u || USERNAME,
+              };
+              lastLoginIdentity = identity;
+              updateUserContext(identity);
               renderNav(bootstrapData?.nav || []);
               switchView("portal-view");
               bootstrapApp();
@@ -1860,6 +1879,13 @@
             const welcome = document.getElementById("portal-welcome-message");
             if (welcome) welcome.textContent = "";
             bootstrapData = null;
+            lastLoginIdentity = null;
+            overviewLoaded = false;
+            resetTableLoadState();
+            selectedUsers.clear();
+            normalizedUsersCache = [];
+            profileDataCache = null;
+            currentProfileUserId = null;
             renderNav();
             switchView("login-screen");
             showToast("You have been signed out.", "info", "Logged Out");
@@ -2151,6 +2177,61 @@
             : `<span class="badge badge--no">${escapeHtml(noLabel)}</span>`;
         }
 
+        function loadSimpleTable({
+          key,
+          fetcher,
+          tbody,
+          renderer,
+          normalize,
+          force = false,
+          label,
+        }) {
+          if (!tbody) return;
+          if (isTableLoaded(key) && !force) return;
+          if (force) markTableLoaded(key, false);
+          const methodLabel = label || fetcher || key || "list";
+          console.log(`[CLIENT] ${methodLabel} requested (force=${force})`);
+          if (!(window.google && google.script && google.script.run)) {
+            console.error(
+              `[CLIENT] ${methodLabel} requires Apps Script runtime`
+            );
+            setTableStatus(tbody, "غير متصل بالخادم.", "error");
+            return;
+          }
+          setTableStatus(tbody, "جاري التحميل…");
+          const request = google.script.run
+            .withFailureHandler((err) => {
+              console.error(`[CLIENT] ${methodLabel} failed:`, err);
+              markTableLoaded(key, false);
+              setTableStatus(
+                tbody,
+                "خطأ: " + (err && err.message ? err.message : err),
+                "error"
+              );
+            })
+            .withSuccessHandler((rows) => {
+              const count = Array.isArray(rows) ? rows.length : 0;
+              console.log(
+                `[CLIENT] ${methodLabel} data received, count:`,
+                count
+              );
+              markTableLoaded(key, true);
+              const list = Array.isArray(rows) ? rows : [];
+              const normalized = normalize
+                ? list.map((item) => normalize(item || {}))
+                : list;
+              renderTableRows(tbody, normalized, (row) => renderer(row || {}));
+            });
+          const fn = fetcher && request[fetcher];
+          if (typeof fn === "function") {
+            fn.call(request);
+          } else {
+            console.error(`[CLIENT] Missing server function: ${fetcher}`);
+            markTableLoaded(key, false);
+            setTableStatus(tbody, "تعذر تحميل البيانات.", "error");
+          }
+        }
+
         function renderUsers(list) {
           usersTbody.innerHTML = "";
           if (!Array.isArray(list) || list.length === 0) {
@@ -2297,264 +2378,248 @@
         }
 
         function loadRoles({ force = false } = {}) {
-          if (!rolesTbody) return;
-          if (rolesLoaded && !force) return;
-          console.log("[CLIENT] loadRoles called with force:", force);
-          if (!(window.google && google.script && google.script.run)) {
-            console.error("[CLIENT] Apps Script runtime not available");
-            setTableStatus(rolesTbody, "غير متصل بالخادم.", "error");
-            return;
-          }
-          setTableStatus(rolesTbody, "جاري التحميل…");
-          google.script.run
-            .withFailureHandler((err) => {
-              console.error("[CLIENT] listRoles failed:", err);
-              rolesLoaded = false;
-              setTableStatus(
-                rolesTbody,
-                "خطأ: " + (err.message || err),
-                "error"
-              );
-            })
-            .withSuccessHandler((rows) => {
-              console.log(
-                "[CLIENT] Roles data received, count:",
-                Array.isArray(rows) ? rows.length : 0
-              );
-              console.log("[CLIENT] Roles data:", rows);
-              rolesLoaded = true;
-              const list = Array.isArray(rows) ? rows : [];
-              renderTableRows(rolesTbody, list, (row) => {
-                return `
-                  <td>${escapeHtml(row.roleId || "")}</td>
-                  <td>${escapeHtml(row.title || "")}</td>
-                  <td>${escapeHtml(row.description || "")}</td>
-                  <td>${renderBooleanBadge(row.isSystem)}</td>
-                  <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
-                `;
-              });
-            })
-            .listRoles();
+          loadSimpleTable({
+            key: "roles",
+            fetcher: "listRoles",
+            tbody: rolesTbody,
+            force,
+            label: "listRoles",
+            normalize: (row = {}) => ({
+              roleId: row.roleId ?? row.Role_Id ?? row.RoleID ?? row.id ?? "",
+              title:
+                row.title ??
+                row.Role_Title ??
+                row.role ??
+                row.name ??
+                "",
+              description: row.description ?? row.Description ?? "",
+              isSystem: normalizeBool(
+                row.isSystem ??
+                  row.Is_System ??
+                  row.is_system ??
+                  row.isSystemFlag
+              ),
+              updatedAt:
+                row.updatedAt ??
+                row.Updated_At ??
+                row.updated ??
+                row.updated_at ??
+                row.Last_Modified ??
+                "",
+            }),
+            renderer: (row) => `
+              <td>${escapeHtml(row.roleId || "")}</td>
+              <td>${escapeHtml(row.title || "")}</td>
+              <td>${escapeHtml(row.description || "")}</td>
+              <td>${renderBooleanBadge(row.isSystem)}</td>
+              <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
+            `,
+          });
         }
 
         function loadPermissions({ force = false } = {}) {
-          if (!permissionsTbody) return;
-          if (permissionsLoaded && !force) return;
-          console.log("[CLIENT] loadPermissions called with force:", force);
-          if (!(window.google && google.script && google.script.run)) {
-            console.error("[CLIENT] Apps Script runtime not available");
-            setTableStatus(permissionsTbody, "غير متصل بالخادم.", "error");
-            return;
-          }
-          setTableStatus(permissionsTbody, "جاري التحميل…");
-          google.script.run
-            .withFailureHandler((err) => {
-              console.error("[CLIENT] listPermissions failed:", err);
-              permissionsLoaded = false;
-              setTableStatus(
-                permissionsTbody,
-                "خطأ: " + (err.message || err),
-                "error"
-              );
-            })
-            .withSuccessHandler((rows) => {
-              console.log(
-                "[CLIENT] Permissions data received, count:",
-                Array.isArray(rows) ? rows.length : 0
-              );
-              console.log("[CLIENT] Permissions data:", rows);
-              permissionsLoaded = true;
-              const list = Array.isArray(rows) ? rows : [];
-              renderTableRows(permissionsTbody, list, (row) => {
-                return `
-                  <td>${escapeHtml(row.permissionKey || row.key || "")}</td>
-                  <td>${escapeHtml(row.label || "")}</td>
-                  <td>${escapeHtml(row.category || "")}</td>
-                  <td>${escapeHtml(row.description || "")}</td>
-                  <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
-                `;
-              });
-            })
-            .listPermissions();
+          loadSimpleTable({
+            key: "permissions",
+            fetcher: "listPermissions",
+            tbody: permissionsTbody,
+            force,
+            label: "listPermissions",
+            normalize: (row = {}) => ({
+              permissionKey:
+                row.permissionKey ??
+                row.Permission_Key ??
+                row.key ??
+                row.id ??
+                "",
+              label:
+                row.label ??
+                row.Permission_Label ??
+                row.name ??
+                row.Permission ??
+                "",
+              category: row.category ?? row.Category ?? "",
+              description: row.description ?? row.Description ?? "",
+              updatedAt:
+                row.updatedAt ??
+                row.Updated_At ??
+                row.updated ??
+                row.updated_at ??
+                "",
+            }),
+            renderer: (row) => `
+              <td>${escapeHtml(row.permissionKey || "")}</td>
+              <td>${escapeHtml(row.label || "")}</td>
+              <td>${escapeHtml(row.category || "")}</td>
+              <td>${escapeHtml(row.description || "")}</td>
+              <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
+            `,
+          });
         }
 
         function loadRolePermissions({ force = false } = {}) {
-          if (!rolePermsTbody) return;
-          if (rolePermsLoaded && !force) return;
-          console.log("[CLIENT] loadRolePermissions called with force:", force);
-          if (!(window.google && google.script && google.script.run)) {
-            console.error("[CLIENT] Apps Script runtime not available");
-            setTableStatus(rolePermsTbody, "غير متصل بالخادم.", "error");
-            return;
-          }
-          setTableStatus(rolePermsTbody, "جاري التحميل…");
-          google.script.run
-            .withFailureHandler((err) => {
-              console.error("[CLIENT] listRolePermissions failed:", err);
-              rolePermsLoaded = false;
-              setTableStatus(
-                rolePermsTbody,
-                "خطأ: " + (err.message || err),
-                "error"
-              );
-            })
-            .withSuccessHandler((rows) => {
-              console.log(
-                "[CLIENT] Role permissions data received, count:",
-                Array.isArray(rows) ? rows.length : 0
-              );
-              console.log("[CLIENT] Role permissions data:", rows);
-              rolePermsLoaded = true;
-              const list = Array.isArray(rows) ? rows : [];
-              renderTableRows(rolePermsTbody, list, (row) => {
-                const roleDisplay =
-                  row.roleTitle && row.roleId
-                    ? `${escapeHtml(row.roleTitle)} (${escapeHtml(row.roleId)})`
-                    : escapeHtml(row.roleTitle || row.roleId || "");
-                const permDisplay =
-                  row.permissionLabel && row.permissionKey
-                    ? `${escapeHtml(row.permissionLabel)} (${escapeHtml(
-                        row.permissionKey
-                      )})`
-                    : escapeHtml(
-                        row.permissionLabel || row.permissionKey || ""
-                      );
-                return `
-                  <td>${roleDisplay}</td>
-                  <td>${permDisplay}</td>
-                  <td>${escapeHtml(row.scope || "")}</td>
-                  <td>${renderBooleanBadge(row.allowed, "مسموح", "مرفوض")}</td>
-                  <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
-                `;
-              });
-            })
-            .listRolePermissions();
+          loadSimpleTable({
+            key: "rolePerms",
+            fetcher: "listRolePermissions",
+            tbody: rolePermsTbody,
+            force,
+            label: "listRolePermissions",
+            normalize: (row = {}) => ({
+              roleId: row.roleId ?? row.Role_Id ?? row.role ?? "",
+              roleTitle:
+                row.roleTitle ?? row.Role_Title ?? row.roleName ?? row.role ?? "",
+              permissionKey:
+                row.permissionKey ??
+                row.Permission_Key ??
+                row.permission ??
+                "",
+              permissionLabel:
+                row.permissionLabel ??
+                row.Permission_Label ??
+                row.permissionLabelAr ??
+                row.permission ??
+                "",
+              scope: row.scope ?? row.Scope ?? "",
+              allowed: normalizeBool(row.allowed ?? row.Allowed),
+              updatedAt:
+                row.updatedAt ??
+                row.Updated_At ??
+                row.updated ??
+                row.updated_at ??
+                "",
+            }),
+            renderer: (row) => {
+              const roleDisplay = row.roleTitle && row.roleId
+                ? `${escapeHtml(row.roleTitle)} (${escapeHtml(row.roleId)})`
+                : escapeHtml(row.roleTitle || row.roleId || "");
+              const permDisplay = row.permissionLabel && row.permissionKey
+                ? `${escapeHtml(row.permissionLabel)} (${escapeHtml(
+                    row.permissionKey
+                  )})`
+                : escapeHtml(row.permissionLabel || row.permissionKey || "");
+              return `
+                <td>${roleDisplay}</td>
+                <td>${permDisplay}</td>
+                <td>${escapeHtml(row.scope || "")}</td>
+                <td>${renderBooleanBadge(row.allowed, "مسموح", "مرفوض")}</td>
+                <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
+              `;
+            },
+          });
         }
 
         function loadProperties({ force = false } = {}) {
-          if (!propertiesTbody) return;
-          if (propertiesLoaded && !force) return;
-          console.log("[CLIENT] loadProperties called with force:", force);
-          if (!(window.google && google.script && google.script.run)) {
-            console.error("[CLIENT] Apps Script runtime not available");
-            setTableStatus(propertiesTbody, "غير متصل بالخادم.", "error");
-            return;
-          }
-          setTableStatus(propertiesTbody, "جاري التحميل…");
-          google.script.run
-            .withFailureHandler((err) => {
-              console.error("[CLIENT] listUserProperties failed:", err);
-              propertiesLoaded = false;
-              setTableStatus(
-                propertiesTbody,
-                "خطأ: " + (err.message || err),
-                "error"
-              );
-            })
-            .withSuccessHandler((rows) => {
-              console.log(
-                "[CLIENT] User properties data received, count:",
-                Array.isArray(rows) ? rows.length : 0
-              );
-              console.log("[CLIENT] User properties data:", rows);
-              propertiesLoaded = true;
-              const list = Array.isArray(rows) ? rows : [];
-              renderTableRows(propertiesTbody, list, (row) => {
-                return `
-                  <td>${escapeHtml(row.userId || "")}</td>
-                  <td>${escapeHtml(row.key || "")}</td>
-                  <td>${escapeHtml(row.value || "")}</td>
-                  <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
-                  <td>${escapeHtml(row.updatedBy || "")}</td>
-                `;
-              });
-            })
-            .listUserProperties();
+          loadSimpleTable({
+            key: "properties",
+            fetcher: "listUserProperties",
+            tbody: propertiesTbody,
+            force,
+            label: "listUserProperties",
+            normalize: (row = {}) => ({
+              userId: row.userId ?? row.User_Id ?? row.user ?? "",
+              key: row.key ?? row.Property_Key ?? row.name ?? "",
+              value: row.value ?? row.Property_Value ?? row.Property ?? "",
+              updatedAt:
+                row.updatedAt ??
+                row.Updated_At ??
+                row.updated ??
+                row.updated_at ??
+                "",
+              updatedBy:
+                row.updatedBy ?? row.Updated_By ?? row.actor ?? row.User ?? "",
+            }),
+            renderer: (row) => `
+              <td>${escapeHtml(row.userId || "")}</td>
+              <td>${escapeHtml(row.key || "")}</td>
+              <td>${escapeHtml(row.value || "")}</td>
+              <td>${escapeHtml(formatDateTime(row.updatedAt))}</td>
+              <td>${escapeHtml(row.updatedBy || "")}</td>
+            `,
+          });
         }
 
         function loadSessions({ force = false } = {}) {
-          if (!sessionsTbody) return;
-          if (sessionsLoaded && !force) return;
-          console.log("[CLIENT] loadSessions called with force:", force);
-          if (!(window.google && google.script && google.script.run)) {
-            console.error("[CLIENT] Apps Script runtime not available");
-            setTableStatus(sessionsTbody, "غير متصل بالخادم.", "error");
-            return;
-          }
-          setTableStatus(sessionsTbody, "جاري التحميل…");
-          google.script.run
-            .withFailureHandler((err) => {
-              console.error("[CLIENT] listSessions failed:", err);
-              sessionsLoaded = false;
-              setTableStatus(
-                sessionsTbody,
-                "خطأ: " + (err.message || err),
-                "error"
-              );
-            })
-            .withSuccessHandler((rows) => {
-              console.log(
-                "[CLIENT] Sessions data received, count:",
-                Array.isArray(rows) ? rows.length : 0
-              );
-              console.log("[CLIENT] Sessions data:", rows);
-              sessionsLoaded = true;
-              const list = Array.isArray(rows) ? rows : [];
-              renderTableRows(sessionsTbody, list, (row) => {
-                return `
-                  <td>${escapeHtml(row.sessionId || "")}</td>
-                  <td>${escapeHtml(row.userId || "")}</td>
-                  <td>${escapeHtml(row.actor || "")}</td>
-                  <td>${escapeHtml(row.type || "")}</td>
-                  <td>${escapeHtml(row.status || "")}</td>
-                  <td>${escapeHtml(formatDateTime(row.startedAt))}</td>
-                  <td>${escapeHtml(formatDateTime(row.endedAt))}</td>
-                `;
-              });
-            })
-            .listSessions();
+          loadSimpleTable({
+            key: "sessions",
+            fetcher: "listSessions",
+            tbody: sessionsTbody,
+            force,
+            label: "listSessions",
+            normalize: (row = {}) => ({
+              sessionId: row.sessionId ?? row.Session_Id ?? row.session ?? row.id ?? "",
+              userId: row.userId ?? row.User_Id ?? row.user ?? "",
+              actor:
+                row.actor ??
+                row.Actor ??
+                row.actorEmail ??
+                row.Actor_Email ??
+                row.Created_By ??
+                "",
+              type: row.type ?? row.Type ?? row.Session_Type ?? "",
+              status: row.status ?? row.Status ?? row.Session_Status ?? "",
+              startedAt:
+                row.startedAt ??
+                row.Started_At ??
+                row.Created_At ??
+                row.start ??
+                "",
+              endedAt:
+                row.endedAt ??
+                row.Ended_At ??
+                row.Revoked_At ??
+                row.end ??
+                row.Last_Seen ??
+                "",
+            }),
+            renderer: (row) => `
+              <td>${escapeHtml(row.sessionId || "")}</td>
+              <td>${escapeHtml(row.userId || "")}</td>
+              <td>${escapeHtml(row.actor || "")}</td>
+              <td>${escapeHtml(row.type || "")}</td>
+              <td>${escapeHtml(row.status || "")}</td>
+              <td>${escapeHtml(formatDateTime(row.startedAt))}</td>
+              <td>${escapeHtml(formatDateTime(row.endedAt))}</td>
+            `,
+          });
         }
 
         function loadAuditLog({ force = false } = {}) {
-          if (!auditTbody) return;
-          if (auditLoaded && !force) return;
-          console.log("[CLIENT] loadAuditLog called with force:", force);
-          if (!(window.google && google.script && google.script.run)) {
-            console.error("[CLIENT] Apps Script runtime not available");
-            setTableStatus(auditTbody, "غير متصل بالخادم.", "error");
-            return;
-          }
-          setTableStatus(auditTbody, "جاري التحميل…");
-          google.script.run
-            .withFailureHandler((err) => {
-              console.error("[CLIENT] getAuditLog failed:", err);
-              auditLoaded = false;
-              setTableStatus(
-                auditTbody,
-                "خطأ: " + (err.message || err),
-                "error"
-              );
-            })
-            .withSuccessHandler((rows) => {
-              console.log(
-                "[CLIENT] Audit log data received, count:",
-                Array.isArray(rows) ? rows.length : 0
-              );
-              console.log("[CLIENT] Audit log data:", rows);
-              auditLoaded = true;
-              const list = Array.isArray(rows) ? rows : [];
-              renderTableRows(auditTbody, list, (row) => {
-                return `
-                  <td>${escapeHtml(formatDateTime(row.timestamp))}</td>
-                  <td>${escapeHtml(row.user || "")}</td>
-                  <td>${escapeHtml(row.action || "")}</td>
-                  <td><pre style="white-space:pre-wrap;margin:0;">${escapeHtml(
-                    parseDetails(row.details)
-                  )}</pre></td>
-                `;
-              });
-            })
-            .getAuditLog();
+          loadSimpleTable({
+            key: "audit",
+            fetcher: "getAuditLog",
+            tbody: auditTbody,
+            force,
+            label: "getAuditLog",
+            normalize: (row = {}) => ({
+              timestamp:
+                row.timestamp ??
+                row.Timestamp ??
+                row.Created_At ??
+                row.createdAt ??
+                "",
+              user:
+                row.user ??
+                row.User ??
+                row.actor ??
+                row.Actor ??
+                row.Actor_Email ??
+                "",
+              action: row.action ?? row.Action ?? row.event ?? "",
+              details:
+                row.details ??
+                row.Details ??
+                row.Summary ??
+                row.Message ??
+                "",
+            }),
+            renderer: (row) => `
+              <td>${escapeHtml(formatDateTime(row.timestamp))}</td>
+              <td>${escapeHtml(row.user || "")}</td>
+              <td>${escapeHtml(row.action || "")}</td>
+              <td><pre style="white-space:pre-wrap;margin:0;">${escapeHtml(
+                parseDetails(row.details)
+              )}</pre></td>
+            `,
+          });
         }
 
         const sysPaneLoaders = {
@@ -3318,11 +3383,13 @@
             bodyEl.appendChild(empty);
             return;
           }
+          const frag = document.createDocumentFragment();
           rows.forEach((row) => {
             const tr = document.createElement("tr");
-            tr.innerHTML = renderRow(row);
-            bodyEl.appendChild(tr);
+            tr.innerHTML = renderRow(row || {});
+            frag.appendChild(tr);
           });
+          bodyEl.appendChild(frag);
         }
 
         function normalizeBool(val) {
@@ -3515,19 +3582,74 @@
         }
 
         /* Welcome label shows Full_Name (Username) when available */
-        function updateUserContext(nameOrObj) {
-          let display = "User";
-          let uname = "";
-          if (typeof nameOrObj === "object" && nameOrObj) {
-            const username = nameOrObj.Username || "";
-            display = nameOrObj.Full_Name || username || "User";
-            uname = username && username !== display ? ` (${username})` : "";
-          } else if (typeof nameOrObj === "string") {
-            display = nameOrObj;
+        function updateUserContext(identity) {
+          if (!userLabel) return;
+          let display = "";
+          let username = "";
+
+          if (identity && typeof identity === "object") {
+            const normalizedFull =
+              identity.Full_Name ||
+              identity.fullName ||
+              identity.Name ||
+              identity.name ||
+              identity.displayName ||
+              "";
+            const normalizedUser =
+              identity.Username ||
+              identity.username ||
+              identity.UserName ||
+              identity.userName ||
+              identity.Email ||
+              identity.email ||
+              "";
+            display = normalizedFull || "";
+            username = normalizedUser || "";
+            lastLoginIdentity = {
+              Full_Name: normalizedFull || "",
+              Username: normalizedUser || normalizedFull || "",
+            };
+          } else if (typeof identity === "string") {
+            const trimmed = identity.trim();
+            if (trimmed) {
+              display = trimmed;
+              if (trimmed !== "User" || !lastLoginIdentity) {
+                lastLoginIdentity = {
+                  Full_Name: trimmed,
+                  Username: trimmed,
+                };
+              }
+            }
+          } else if (identity != null) {
+            const text = String(identity).trim();
+            if (text) {
+              display = text;
+              if (text !== "User" || !lastLoginIdentity) {
+                lastLoginIdentity = {
+                  Full_Name: text,
+                  Username: text,
+                };
+              }
+            }
           }
-          userLabel.textContent = `User: ${display}${uname}`;
+
+          if (!display && lastLoginIdentity) {
+            display =
+              lastLoginIdentity.Full_Name ||
+              lastLoginIdentity.Username ||
+              "";
+            username = lastLoginIdentity.Username || username;
+          }
+
+          if (!display) display = "User";
+          if (!username && lastLoginIdentity) {
+            username = lastLoginIdentity.Username || "";
+          }
+
+          const suffix = username && username !== display ? ` (${username})` : "";
+          userLabel.textContent = `User: ${display}${suffix}`;
           const welcome = document.getElementById("portal-welcome-message");
-          if (welcome) welcome.textContent = `Welcome, ${display}${uname}`;
+          if (welcome) welcome.textContent = `Welcome, ${display}${suffix}`;
         }
 
         // Set up sys nav event handlers
@@ -3540,14 +3662,6 @@
             }
           });
         }
-
-        // On login, immediately show typed username; server bootstrap will refine with Full_Name
-        loginForm.addEventListener("submit", (e) => {
-          const uVal = (document.getElementById("username").value || "").trim();
-          setTimeout(() => {
-            updateUserContext({ Username: uVal });
-          }, 500);
-        });
 
         /* Init */
         setActiveSysPane("overview", { force: true });
