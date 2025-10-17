@@ -163,6 +163,24 @@ function safeStringify_(value) {
   }
 }
 
+function normalizeKeyValue_(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (value instanceof Date) return value.toISOString();
+  try {
+    return String(value).trim();
+  } catch (err) {
+    return "";
+  }
+}
+
+function keysEqual_(a, b) {
+  return normalizeKeyValue_(a) === normalizeKeyValue_(b);
+}
+
 function wrapFunctionWithErrorHandling_(name, fn) {
   return function wrappedWithErrorHandling() {
     const args = Array.prototype.slice.call(arguments || []);
@@ -1584,7 +1602,7 @@ function updateUserPassword(userId, newPassword) {
   const iUpdBy = h.indexOf("Updated_By");
   if (iUser < 0 || iHash < 0) throw new Error("Users headers mismatch");
 
-  const rowIndex = data.slice(1).findIndex((r) => r[iUser] === userId);
+  const rowIndex = data.slice(1).findIndex((r) => keysEqual_(r[iUser], userId));
   if (rowIndex < 0) throw new Error("User not found");
 
   const targetRow = rowIndex + 2; // 1-based + header
@@ -1614,7 +1632,7 @@ function toggleUserActive(userId) {
   const iDisBy = h.indexOf("Disabled_By");
   if (iUser < 0 || iAct < 0) throw new Error("Users headers mismatch");
 
-  const idx = data.slice(1).findIndex((r) => r[iUser] === userId);
+  const idx = data.slice(1).findIndex((r) => keysEqual_(r[iUser], userId));
   if (idx < 0) throw new Error("User not found");
 
   const row = idx + 2;
@@ -1673,13 +1691,14 @@ function bulkUpdateUserStatus(userIds = [], makeActive = true) {
   const byId = new Map();
   rows.forEach((row, i) => {
     const id = row[idx.id];
-    if (id != null && id !== "") byId.set(String(id), { row, index: i });
+    const key = normalizeKeyValue_(id);
+    if (key) byId.set(key, { row, index: i });
   });
 
   let updated = 0;
   userIds.forEach((rawId) => {
-    const key = String(rawId);
-    if (!byId.has(key)) return;
+    const key = normalizeKeyValue_(rawId);
+    if (!key || !byId.has(key)) return;
     const entry = byId.get(key);
     const prevRaw = entry.row[idx.isActive];
     const prev = prevRaw === true || String(prevRaw).toLowerCase() === "true";
@@ -1742,13 +1761,14 @@ function bulkAssignRole(userIds = [], roleId) {
   const byId = new Map();
   rows.forEach((row, i) => {
     const id = row[idx.id];
-    if (id != null && id !== "") byId.set(String(id), { row, index: i });
+    const key = normalizeKeyValue_(id);
+    if (key) byId.set(key, { row, index: i });
   });
 
   let updated = 0;
   userIds.forEach((rawId) => {
-    const key = String(rawId);
-    if (!byId.has(key)) return;
+    const key = normalizeKeyValue_(rawId);
+    if (!key || !byId.has(key)) return;
     const entry = byId.get(key);
     const currentRole = entry.row[idx.role];
     if (String(currentRole) === String(roleId)) return;
@@ -1839,7 +1859,7 @@ function getCurrentUser() {
   }
 
   let row = data.slice(1).find(function (r) {
-    return r[emailCol] === email;
+    return keysEqual_(r[emailCol], email);
   });
   let usedFallback = false;
   if (!row) {
@@ -1905,7 +1925,7 @@ function getUserById(userId) {
   const h = data[0];
   const i = h.indexOf("User_Id");
   if (i < 0) return null;
-  const idx = data.slice(1).findIndex((r) => r[i] === userId);
+  const idx = data.slice(1).findIndex((r) => keysEqual_(r[i], userId));
   if (idx < 0) {
     debugLog("getUserById", "notFound", { userId });
     return null;
@@ -1931,7 +1951,9 @@ function updateUser(userData) {
   const data = sh.getDataRange().getValues();
   const h = data[0];
   const iId = h.indexOf("User_Id");
-  const rIdx = data.slice(1).findIndex((r) => r[iId] === userData.User_Id);
+  const rIdx = data.slice(1).findIndex((r) =>
+    keysEqual_(r[iId], userData.User_Id)
+  );
   if (rIdx < 0) throw new Error("User not found");
   const row = rIdx + 2;
 
@@ -2083,7 +2105,7 @@ function upsertUserProperty_(userId, key, value) {
   const now = new Date();
   const rows = data.slice(1);
   const existingIndex = rows.findIndex((row) => {
-    const userMatch = String(row[idx.user]) === String(userId);
+    const userMatch = keysEqual_(row[idx.user], userId);
     const keyMatch =
       idx.key >= 0 && String(row[idx.key] || "").toLowerCase() === targetKey;
     return userMatch && keyMatch;
@@ -2290,9 +2312,7 @@ function softDeleteUser(userId, reason) {
   if (idx.id < 0 || idx.isActive < 0) throw new Error("Users headers mismatch");
 
   const rows = data.slice(1);
-  const rowIndex = rows.findIndex(
-    (row) => String(row[idx.id]) === String(userId)
-  );
+  const rowIndex = rows.findIndex((row) => keysEqual_(row[idx.id], userId));
   if (rowIndex < 0) throw new Error("User not found");
   const rowNumber = rowIndex + 2;
   const actor = getActorEmail_();
@@ -2411,7 +2431,7 @@ function getUserProperties_(userId) {
   if (idx.user < 0) return [];
   const rows = data
     .slice(1)
-    .filter((row) => String(row[idx.user]) === String(userId))
+    .filter((row) => keysEqual_(row[idx.user], userId))
     .map((row) => ({
       key: idx.key >= 0 ? row[idx.key] : "",
       value: idx.value >= 0 ? row[idx.value] : "",
@@ -2448,7 +2468,7 @@ function getUserDocuments_(userId) {
     .filter((row) => {
       const entityMatch = idx.entity < 0 || row[idx.entity] === "Users";
       const idMatch =
-        idx.entityId < 0 || String(row[idx.entityId]) === String(userId);
+        idx.entityId < 0 || keysEqual_(row[idx.entityId], userId);
       return entityMatch && idMatch;
     })
     .map((row) => ({
@@ -2507,7 +2527,7 @@ function getUserSessions_(userId) {
   if (idx.user < 0) return [];
   const rows = data
     .slice(1)
-    .filter((row) => String(row[idx.user]) === String(userId))
+    .filter((row) => keysEqual_(row[idx.user], userId))
     .map((row) => ({
       sessionId: getValueAt_(row, idx.sessionId),
       actor: getValueAt_(row, idx.actor),
@@ -2543,7 +2563,7 @@ function getUserAuditTrail_(userId) {
     .slice(1)
     .filter((row) => {
       if (idx.userId < 0) return true;
-      return String(row[idx.userId]) === String(userId);
+      return keysEqual_(row[idx.userId], userId);
     })
     .map((row) => ({
       action: idx.action >= 0 ? row[idx.action] : "",
