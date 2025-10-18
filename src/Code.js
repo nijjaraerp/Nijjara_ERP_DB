@@ -605,15 +605,35 @@ function doGet(e) {
 
 /** ---- DATA ACCESS ---- */
 function getBootstrapData() {
-  debugLog("getBootstrapData", "start");
-  const currentUser = getCurrentUser();
-  const payload = buildBootstrapPayload_(currentUser);
-  debugLog("getBootstrapData", "resolved", {
-    hasUser: !!payload.user,
-    role: payload.role,
-    nav: Array.isArray(payload.nav) ? payload.nav.length : 0,
-  });
-  return payload;
+  const FNAME = "getBootstrapData";
+  debugLog(FNAME, "start");
+
+  try {
+    const currentUser = getCurrentUser();
+    let payload = buildBootstrapPayload_(currentUser);
+    if (!payload || typeof payload !== "object") {
+      debugLog(FNAME, "invalidPayload", {
+        hasPayload: !!payload,
+        type: typeof payload,
+      });
+      payload = buildGuestBootstrapPayload_();
+    }
+
+    debugLog(FNAME, "resolved", {
+      hasUser: !!payload.user,
+      role: payload.role,
+      nav: Array.isArray(payload.nav) ? payload.nav.length : 0,
+    });
+    return payload;
+  } catch (err) {
+    debugError(FNAME, err);
+    const fallback = buildGuestBootstrapPayload_();
+    fallback.meta = Object.assign({}, fallback.meta, {
+      error: true,
+      errorMessage: err && err.message ? String(err.message) : "unknown",
+    });
+    return fallback;
+  }
 }
 
 function buildBootstrapPayload_(rawUser) {
@@ -639,6 +659,28 @@ function buildBootstrapPayload_(rawUser) {
     meta: {
       hasUser: !!sanitizedUser,
       permissions: Array.isArray(permissions) ? permissions.length : 0,
+      generatedAt: timestamp,
+    },
+  };
+}
+
+function buildGuestBootstrapPayload_() {
+  const timestamp = new Date().toISOString();
+  return {
+    appName: CONFIG.APP_NAME,
+    now: timestamp,
+    user: null,
+    role: "GUEST",
+    permissions: [],
+    filters: {
+      departments: [],
+      roles: [],
+      roleOptions: [],
+    },
+    nav: buildNavigationConfig_("GUEST", []),
+    meta: {
+      hasUser: false,
+      permissions: 0,
       generatedAt: timestamp,
     },
   };
@@ -853,124 +895,130 @@ function getSystemKPIs() {
 
 function authenticateUser(credentials) {
   const FNAME = "authenticateUser";
-  const username = String(credentials?.username || "")
-    .trim()
-    .toLowerCase();
-  const password = credentials?.password || "";
-  debugLog(FNAME, "start", {
-    hasUsername: !!username,
-    providedPassword: password ? "<hidden>" : "",
-  });
-
-  if (!username || !password) {
-    debugLog(FNAME, "missingCredentials");
-    return {
+  const fail = (message, meta) => {
+    const base = {
       success: false,
-      message: "يرجى إدخال اسم المستخدم وكلمة المرور.",
+      message: message || "بيانات الدخول غير صحيحة.",
     };
-  }
-
-  const sh = getSheet_(CONFIG.SHEETS.USERS);
-  if (!sh) {
-    debugLog(FNAME, "usersSheetMissing");
-    return {
-      success: false,
-      message: "تعذر الوصول إلى بيانات المستخدمين.",
-    };
-  }
-
-  const data = sh.getDataRange().getValues();
-  if (!data || data.length < 2) {
-    debugLog(FNAME, "usersEmpty");
-    return {
-      success: false,
-      message: "لا يوجد مستخدمون مسجلون.",
-    };
-  }
-
-  const headers = data[0];
-  const idx = {
-    username: findHeaderIndex_(headers, "Username", "User", "Login"),
-    email: findHeaderIndex_(headers, "Email", "Email_Address"),
-    hash: findHeaderIndex_(headers, "Password_Hash", "Password"),
-    isActive: findHeaderIndex_(headers, "IsActive", "Active", "Status"),
-    userId: findHeaderIndex_(headers, "User_Id", "Id", "ID"),
-    role: findHeaderIndex_(headers, "Role_Id", "Role", "RoleID"),
-    fullName: findHeaderIndex_(headers, "Full_Name", "Name"),
-    lastLogin: findHeaderIndex_(headers, "Last_Login", "LastLogin"),
-  };
-
-  const rows = data.slice(1);
-  const matchEntry = rows.find((row) => {
-    const rowUsername = idx.username >= 0 ? row[idx.username] : "";
-    const rowEmail = idx.email >= 0 ? row[idx.email] : "";
-    const normalizedUsername = String(rowUsername || "").trim().toLowerCase();
-    const normalizedEmail = String(rowEmail || "").trim().toLowerCase();
-    return username === normalizedUsername || username === normalizedEmail;
-  });
-
-  if (!matchEntry) {
-    logAuditEvent("LOGIN_FAILURE", { username, reason: "NOT_FOUND" });
-    debugLog(FNAME, "userNotFound", { username });
-    return {
-      success: false,
-      message: "بيانات الدخول غير صحيحة.",
-    };
-  }
-
-  const entryIndex = rows.indexOf(matchEntry);
-  const storedHash = idx.hash >= 0 ? matchEntry[idx.hash] : "";
-  const activeFlag = idx.isActive >= 0 ? matchEntry[idx.isActive] : true;
-
-  if (!isTruthyFlag_(activeFlag)) {
-    logAuditEvent("LOGIN_FAILURE", { username, reason: "INACTIVE" });
-    debugLog(FNAME, "userInactive", { username });
-    return {
-      success: false,
-      message: "تم تعطيل هذا الحساب. يرجى التواصل مع المسؤول.",
-    };
-  }
-
-  if (!verifyPassword_(storedHash, password)) {
-    logAuditEvent("LOGIN_FAILURE", { username, reason: "BAD_PASSWORD" });
-    debugLog(FNAME, "passwordMismatch", { username });
-    return {
-      success: false,
-      message: "بيانات الدخول غير صحيحة.",
-    };
-  }
-
-  const userObject = headers.reduce((obj, header, index) => {
-    obj[header] = matchEntry[index];
-    return obj;
-  }, {});
-
-  if (idx.lastLogin >= 0) {
-    try {
-      sh.getRange(entryIndex + 2, idx.lastLogin + 1).setValue(new Date());
-    } catch (err) {
-      debugError(FNAME, err, { stage: "updateLastLogin" });
+    if (meta && typeof meta === "object") {
+      base.meta = Object.assign({}, meta);
     }
-  }
-
-  const bootstrap = buildBootstrapPayload_(userObject);
-  const sanitizedUser = bootstrap.user || sanitizeUserForClient_(userObject);
-  logAuditEvent("LOGIN_SUCCESS", {
-    userId: sanitizedUser?.User_Id || sanitizedUser?.user_id || "",
-    username: sanitizedUser?.Username || username,
-    role: sanitizedUser?.Role_Id || "",
-  });
-
-  debugLog(FNAME, "success", {
-    userId: sanitizedUser?.User_Id,
-    role: sanitizedUser?.Role_Id,
-  });
-
-  return {
-    success: true,
-    user: sanitizedUser,
-    bootstrap,
+    return base;
   };
+
+  try {
+    const username = String(credentials?.username || "")
+      .trim()
+      .toLowerCase();
+    const password = credentials?.password || "";
+    debugLog(FNAME, "start", {
+      hasUsername: !!username,
+      providedPassword: password ? "<hidden>" : "",
+    });
+
+    if (!username || !password) {
+      debugLog(FNAME, "missingCredentials");
+      return fail("يرجى إدخال اسم المستخدم وكلمة المرور.", {
+        reason: "MISSING_CREDENTIALS",
+      });
+    }
+
+    const sh = getSheet_(CONFIG.SHEETS.USERS);
+    if (!sh) {
+      debugLog(FNAME, "usersSheetMissing");
+      return fail("تعذر الوصول إلى بيانات المستخدمين.", {
+        reason: "NO_USERS_SHEET",
+      });
+    }
+
+    const data = sh.getDataRange().getValues();
+    if (!data || data.length < 2) {
+      debugLog(FNAME, "usersEmpty");
+      return fail("لا يوجد مستخدمون مسجلون.", { reason: "NO_USERS" });
+    }
+
+    const headers = data[0];
+    const idx = {
+      username: findHeaderIndex_(headers, "Username", "User", "Login"),
+      email: findHeaderIndex_(headers, "Email", "Email_Address"),
+      hash: findHeaderIndex_(headers, "Password_Hash", "Password"),
+      isActive: findHeaderIndex_(headers, "IsActive", "Active", "Status"),
+      userId: findHeaderIndex_(headers, "User_Id", "Id", "ID"),
+      role: findHeaderIndex_(headers, "Role_Id", "Role", "RoleID"),
+      fullName: findHeaderIndex_(headers, "Full_Name", "Name"),
+      lastLogin: findHeaderIndex_(headers, "Last_Login", "LastLogin"),
+    };
+
+    const rows = data.slice(1);
+    const matchEntry = rows.find((row) => {
+      const rowUsername = idx.username >= 0 ? row[idx.username] : "";
+      const rowEmail = idx.email >= 0 ? row[idx.email] : "";
+      const normalizedUsername = String(rowUsername || "").trim().toLowerCase();
+      const normalizedEmail = String(rowEmail || "").trim().toLowerCase();
+      return username === normalizedUsername || username === normalizedEmail;
+    });
+
+    if (!matchEntry) {
+      logAuditEvent("LOGIN_FAILURE", { username, reason: "NOT_FOUND" });
+      debugLog(FNAME, "userNotFound", { username });
+      return fail("بيانات الدخول غير صحيحة.", { reason: "NOT_FOUND" });
+    }
+
+    const entryIndex = rows.indexOf(matchEntry);
+    const storedHash = idx.hash >= 0 ? matchEntry[idx.hash] : "";
+    const activeFlag = idx.isActive >= 0 ? matchEntry[idx.isActive] : true;
+
+    if (!isTruthyFlag_(activeFlag)) {
+      logAuditEvent("LOGIN_FAILURE", { username, reason: "INACTIVE" });
+      debugLog(FNAME, "userInactive", { username });
+      return fail("تم تعطيل هذا الحساب. يرجى التواصل مع المسؤول.", {
+        reason: "INACTIVE",
+      });
+    }
+
+    if (!verifyPassword_(storedHash, password)) {
+      logAuditEvent("LOGIN_FAILURE", { username, reason: "BAD_PASSWORD" });
+      debugLog(FNAME, "passwordMismatch", { username });
+      return fail("بيانات الدخول غير صحيحة.", { reason: "BAD_PASSWORD" });
+    }
+
+    const userObject = headers.reduce((obj, header, index) => {
+      obj[header] = matchEntry[index];
+      return obj;
+    }, {});
+
+    if (idx.lastLogin >= 0 && entryIndex >= 0) {
+      try {
+        sh.getRange(entryIndex + 2, idx.lastLogin + 1).setValue(new Date());
+      } catch (err) {
+        debugError(FNAME, err, { stage: "updateLastLogin" });
+      }
+    }
+
+    const bootstrap = buildBootstrapPayload_(userObject);
+    const sanitizedUser = bootstrap.user || sanitizeUserForClient_(userObject);
+    logAuditEvent("LOGIN_SUCCESS", {
+      userId: sanitizedUser?.User_Id || sanitizedUser?.user_id || "",
+      username: sanitizedUser?.Username || username,
+      role: sanitizedUser?.Role_Id || "",
+    });
+
+    debugLog(FNAME, "success", {
+      userId: sanitizedUser?.User_Id,
+      role: sanitizedUser?.Role_Id,
+    });
+
+    return {
+      success: true,
+      user: sanitizedUser,
+      bootstrap,
+    };
+  } catch (err) {
+    debugError(FNAME, err, { stage: "unexpected" });
+    return fail("حدث خطأ غير متوقع أثناء تسجيل الدخول.", {
+      reason: "EXCEPTION",
+    });
+  }
 }
 
 // Enhanced user search with dynamic filtering
