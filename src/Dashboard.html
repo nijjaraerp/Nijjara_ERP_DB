@@ -1648,7 +1648,7 @@
           FIN: "finance-workspace",
           HR: "hr-workspace",
         };
-        let bootstrapData = null;
+        let bootstrapData = {};
         const selectedUsers = new Set();
         let resetUserId = null;
         let currentProfileUserId = null;
@@ -1695,20 +1695,58 @@
           navButtonsContainer.appendChild(
             createNavButton("Portal", "portal-view")
           );
-          ["PRJ", "FIN", "HR", "SYS"].forEach((key) => {
-            navButtonsContainer.appendChild(
-              createNavButton(
+
+          const appendedTargets = new Set(["portal-view"]);
+          const items = Array.isArray(navConfig) ? navConfig : [];
+
+          items
+            .map((entry) => ({
+              key: entry?.key || entry?.id || entry?.module || "",
+              label:
+                entry?.label ||
+                entry?.title ||
+                entry?.text ||
+                entry?.key ||
+                entry?.id ||
+                "",
+              target:
+                entry?.target ||
+                entry?.viewId ||
+                NAV_VIEW_MAP[entry?.key] ||
+                entry?.route ||
+                entry?.moduleTarget ||
+                "",
+            }))
+            .filter((item) => item.target)
+            .forEach((item) => {
+              const label = item.label || item.key || item.target;
+              const btn = createNavButton(label, item.target);
+              if (item.key) {
+                btn.dataset.key = item.key;
+              }
+              appendedTargets.add(item.target);
+              navButtonsContainer.appendChild(btn);
+            });
+
+          if (items.length === 0) {
+            ["PRJ", "FIN", "HR", "SYS"].forEach((key) => {
+              const target = NAV_VIEW_MAP[key];
+              if (!target || appendedTargets.has(target)) return;
+              const label =
                 key === "PRJ"
                   ? "Projects"
                   : key === "FIN"
                   ? "Finance"
                   : key === "HR"
                   ? "HR"
-                  : "System",
-                NAV_VIEW_MAP[key]
-              )
-            );
-          });
+                  : "System";
+              const btn = createNavButton(label, target);
+              btn.dataset.key = key;
+              appendedTargets.add(target);
+              navButtonsContainer.appendChild(btn);
+            });
+          }
+
           const activeView = document.querySelector(".view.active");
           if (activeView) switchView(activeView.id);
         }
@@ -1731,7 +1769,7 @@
         /* Bootstrap (server) */
         function applyBootstrap(data) {
           console.log("Bootstrap data received:", data);
-          bootstrapData = data || {};
+          bootstrapData = Object.assign({}, data || {});
           overviewLoaded = false;
           resetTableLoadState();
           selectedUsers.clear();
@@ -1817,38 +1855,61 @@
         /* Login */
         const loginForm = document.getElementById("login-form");
         const loginBtn = document.getElementById("login-button");
-        const USERNAME = "mkhoraiby",
-          PASSWORD = "210388";
-        loginForm.addEventListener("submit", (e) => {
-          e.preventDefault();
-          loginBtn.classList.add("loading");
-          const u = (document.getElementById("username").value || "")
-            .trim()
-            .toLowerCase();
-          const p = (document.getElementById("password").value || "").trim();
-          setTimeout(() => {
-            loginBtn.classList.remove("loading");
-            if (u === USERNAME && p === PASSWORD) {
-              navbar.classList.remove("hidden");
-              const identity = {
-                Full_Name: bootstrapData?.user?.Full_Name || "",
-                Username: u || USERNAME,
-              };
+        if (loginForm) {
+          loginForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (!(window.google && google.script && google.script.run)) {
+              console.warn("[CLIENT] Login attempt without Apps Script runtime");
+              showToast("الخادم غير متصل حاليًا.", "error", "خطأ");
+              return;
+          }
+
+          const usernameInput = document.getElementById("username");
+          const passwordInput = document.getElementById("password");
+          const username = (usernameInput?.value || "").trim();
+          const password = passwordInput?.value || "";
+
+          if (!username || !password) {
+            showToast("يرجى إدخال بيانات الدخول كاملة.", "info");
+            return;
+          }
+
+          if (loginBtn) loginBtn.classList.add("loading");
+          console.log("[CLIENT] Login attempt for:", username);
+
+          google.script.run
+            .withFailureHandler((err) => {
+              if (loginBtn) loginBtn.classList.remove("loading");
+              console.error("[CLIENT] Login failed:", err);
+              showToast("تعذر الاتصال بالخادم.", "error", "خطأ");
+            })
+            .withSuccessHandler((res) => {
+              if (loginBtn) loginBtn.classList.remove("loading");
+              console.log("[CLIENT] Login response:", res);
+              if (!res || res.success !== true) {
+                const message =
+                  res?.message || "بيانات الدخول غير صحيحة. حاول مرة أخرى.";
+                showToast(message, "error", "خطأ");
+                return;
+              }
+
+              const data = res.bootstrap || {};
+              const identity =
+                res.user || data.user || {
+                  Username: username,
+                };
               lastLoginIdentity = identity;
-              updateUserContext(identity);
-              renderNav(bootstrapData?.nav || []);
+              navbar.classList.remove("hidden");
+              applyBootstrap(data);
               switchView("portal-view");
-              bootstrapApp();
               showToast("تم تسجيل الدخول بنجاح.", "success", "تم الدخول");
-            } else {
-              showToast(
-                "بيانات الدخول غير صحيحة. حاول مرة أخرى.",
-                "error",
-                "خطأ"
-              );
-            }
-          }, 450);
-        });
+            })
+            .authenticateUser({
+              username,
+              password,
+            });
+          });
+        }
 
         /* Top nav clicks */
         navbar.addEventListener("click", (e) => {
@@ -1878,7 +1939,7 @@
             userLabel.textContent = "";
             const welcome = document.getElementById("portal-welcome-message");
             if (welcome) welcome.textContent = "";
-            bootstrapData = null;
+            bootstrapData = {};
             lastLoginIdentity = null;
             overviewLoaded = false;
             resetTableLoadState();
@@ -1988,63 +2049,67 @@
         }
 
         // تفويض أحداث الجدول
-        usersTable.addEventListener("click", (e) => {
-          const btn = e.target.closest("button[data-act]");
-          if (!btn) return;
-          const act = btn.dataset.act;
-          const userId = btn.dataset.id;
-          if (!userId) return;
-          if (!(window.google && google.script && google.script.run)) {
-            showToast("غير متصل بالخادم.", "error");
-            return;
-          }
+        if (usersTable) {
+          usersTable.addEventListener("click", (e) => {
+            const btn = e.target.closest("button[data-act]");
+            if (!btn) return;
+            const act = btn.dataset.act;
+            const userId = btn.dataset.id;
+            if (!userId) return;
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("غير متصل بالخادم.", "error");
+              return;
+            }
 
-          if (act === "reset") {
-            resetUserId = userId;
-            formReset.reset();
-            dlgReset.showModal();
-          } else if (act === "toggle") {
-            google.script.run
-              .withFailureHandler((err) => {
-                console.error(err);
-                showToast("تعذر تغيير حالة الحساب.", "error");
-              })
-              .withSuccessHandler((res) => {
-                console.log("Toggle user active response:", res);
-                showToast("تم تحديث الحالة.", "success");
-                loadUsers();
-              })
-              .toggleUserActive(userId);
-          } else if (act === "edit") {
-            openUserEditor(userId);
-          } else if (act === "view") {
-            openUserProfile(userId, "profile");
-          } else if (act === "audit") {
-            openUserProfile(userId, "audit");
-          } else if (act === "assign") {
-            openAssignRoleDialog(userId);
-          } else if (act === "docs") {
-            openUserProfile(userId, "documents");
-          } else if (act === "impersonate") {
-            startImpersonationFlow(userId);
-          } else if (act === "delete") {
-            performSoftDelete(userId);
-          }
-        });
+            if (act === "reset") {
+              resetUserId = userId;
+              formReset.reset();
+              dlgReset.showModal();
+            } else if (act === "toggle") {
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                  showToast("تعذر تغيير حالة الحساب.", "error");
+                })
+                .withSuccessHandler((res) => {
+                  console.log("Toggle user active response:", res);
+                  showToast("تم تحديث الحالة.", "success");
+                  loadUsers();
+                })
+                .toggleUserActive(userId);
+            } else if (act === "edit") {
+              openUserEditor(userId);
+            } else if (act === "view") {
+              openUserProfile(userId, "profile");
+            } else if (act === "audit") {
+              openUserProfile(userId, "audit");
+            } else if (act === "assign") {
+              openAssignRoleDialog(userId);
+            } else if (act === "docs") {
+              openUserProfile(userId, "documents");
+            } else if (act === "impersonate") {
+              startImpersonationFlow(userId);
+            } else if (act === "delete") {
+              performSoftDelete(userId);
+            }
+          });
 
-        usersTable.addEventListener("change", (e) => {
-          const checkbox = e.target.closest(".row-select");
-          if (!checkbox) return;
-          const userId = checkbox.dataset.id;
-          if (!userId) return;
-          if (checkbox.checked) {
-            selectedUsers.add(userId);
-          } else {
-            selectedUsers.delete(userId);
-          }
-          syncSelectAllState();
-          syncBulkActionsState();
-        });
+          usersTable.addEventListener("change", (e) => {
+            const checkbox = e.target.closest(".row-select");
+            if (!checkbox) return;
+            const userId = checkbox.dataset.id;
+            if (!userId) return;
+            if (checkbox.checked) {
+              selectedUsers.add(userId);
+            } else {
+              selectedUsers.delete(userId);
+            }
+            syncSelectAllState();
+            syncBulkActionsState();
+          });
+        } else {
+          console.warn("[CLIENT] Users table element not found; actions disabled");
+        }
 
         selectAllUsers.addEventListener("change", (e) => {
           const checked = e.target.checked;
