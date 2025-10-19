@@ -1887,9 +1887,12 @@
               if (loginBtn) loginBtn.classList.remove("loading");
               console.log("[CLIENT] Login response:", res);
               if (!res || res.success !== true) {
-                const message =
-                  res?.message || "بيانات الدخول غير صحيحة. حاول مرة أخرى.";
-                showToast(message, "error", "خطأ");
+                // Display the EXACT message returned by the server's fail() function
+                const messageFromServer =
+                  res?.message ||
+                  "بيانات الدخول غير صحيحة أو حدث خطأ غير متوقع."; // More descriptive default
+                // Use a slightly clearer title for login errors
+                showToast(messageFromServer, "error", "فشل تسجيل الدخول");
                 return;
               }
 
@@ -2196,12 +2199,38 @@
 
         function formatDateTime(value) {
           if (!value) return "—";
+          // Attempt parsing robustly - handles ISO strings, common date strings, and Date objects
           const date = value instanceof Date ? value : new Date(value);
-          if (Number.isNaN(date.getTime())) return "—";
+
+          // Check if the parsed date is valid
+          if (Number.isNaN(date.getTime())) {
+            // If invalid, return the original string (escaped) or a placeholder
+            console.warn("formatDateTime: Invalid date value encountered:", value);
+            return typeof value === "string" ? escapeHtml(value) : "—";
+          }
+
           try {
-            return date.toLocaleString("ar-EG", DATE_OPTS);
+            // Use a locale that often gives a clear format like YYYY-MM-DD HH:MM
+            // Adjust 'en-CA' or options if needed for your preferred display
+            return date
+              .toLocaleString("en-CA", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false,
+              })
+              .replace(",", ""); // Remove potential comma separator
           } catch (err) {
-            return date.toISOString();
+            console.error("formatDateTime: localeString failed:", err);
+            // Fallback to ISO string format YYYY-MM-DD HH:MM if locale fails
+            try {
+              return date.toISOString().replace("T", " ").substring(0, 16);
+            } catch (isoErr) {
+              console.error("formatDateTime: ISOString fallback failed:", isoErr);
+              return "Invalid Date"; // Final fallback
+            }
           }
         }
 

@@ -989,7 +989,9 @@ function authenticateUser(credentials) {
 
     if (idx.lastLogin >= 0 && entryIndex >= 0) {
       try {
+        // Ensure a proper Date object is written to the sheet
         sh.getRange(entryIndex + 2, idx.lastLogin + 1).setValue(new Date());
+        debugLog(FNAME, "updatedLastLogin", { username, rowIndex: entryIndex + 2 });
       } catch (err) {
         debugError(FNAME, err, { stage: "updateLastLogin" });
       }
@@ -2273,14 +2275,31 @@ function hashPassword(password) {
 }
 
 function verifyPassword_(storedHash, password) {
+  // Return false immediately if password or stored hash are missing/invalid
   if (!password && password !== 0) return false;
-  if (storedHash == null) return false;
-  const candidate = String(storedHash).trim();
+  const candidate = String(storedHash || "").trim();
   if (!candidate) return false;
+
+  // Compute both hex and base64 hashes for the provided password
   const hashed = computePasswordHash_(String(password));
-  if (candidate === hashed.base64) return true;
-  if (candidate === hashed.hex) return true;
-  return candidate.toLowerCase() === hashed.hex.toLowerCase();
+
+  // Check if the stored hash matches EITHER the computed Base64 OR the computed Hex (case-insensitive for hex)
+  if (candidate === hashed.base64) {
+    debugLog("verifyPassword_", "match", { type: "base64" });
+    return true; // Match found (Base64)
+  }
+  if (candidate.toLowerCase() === hashed.hex.toLowerCase()) {
+    debugLog("verifyPassword_", "match", { type: "hex" });
+    return true; // Match found (Hex)
+  }
+
+  // If neither matches, log the failure and return false
+  debugLog("verifyPassword_", "noMatch", {
+    stored: candidate.substring(0, 10) + "...", // Log only a prefix for security
+    computedHex: hashed.hex.substring(0, 10) + "...",
+    computedBase64: hashed.base64.substring(0, 10) + "...",
+  });
+  return false; // No match
 }
 
 function logAuditEvent(action, details) {
@@ -2297,7 +2316,7 @@ function logAuditEvent(action, details) {
   const payloadObject =
     details && typeof details === "object" ? Object.assign({}, details) : null;
   const row = new Array(headers.length).fill("");
-  const now = new Date();
+  const now = new Date(); // Use a Date object for consistent timestamping
   setRowValue_(
     headers,
     row,
