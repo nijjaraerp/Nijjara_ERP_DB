@@ -624,7 +624,7 @@ function getBootstrapData() {
       role: payload.role,
       nav: Array.isArray(payload.nav) ? payload.nav.length : 0,
     });
-    return payload;
+    return sanitizeForClientResponse_(payload);
   } catch (err) {
     debugError(FNAME, err);
     const fallback = buildGuestBootstrapPayload_();
@@ -632,7 +632,7 @@ function getBootstrapData() {
       error: true,
       errorMessage: err && err.message ? String(err.message) : "unknown",
     });
-    return fallback;
+    return sanitizeForClientResponse_(fallback);
   }
 }
 
@@ -769,6 +769,51 @@ function sanitizeUserForClient_(user) {
     sanitized[key] = user[key];
   });
   return sanitized;
+}
+
+function sanitizeForClientResponse_(value, depth = 0) {
+  if (depth > 10) {
+    return null;
+  }
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  const valueType = typeof value;
+  if (valueType === "string" || valueType === "boolean") {
+    return value;
+  }
+  if (valueType === "number") {
+    if (!Number.isFinite(value)) return null;
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => sanitizeForClientResponse_(item, depth + 1))
+      .filter((item) => item !== undefined);
+  }
+  if (valueType === "object") {
+    const result = {};
+    Object.keys(value).forEach((key) => {
+      const item = value[key];
+      if (typeof item === "function") return;
+      const sanitized = sanitizeForClientResponse_(item, depth + 1);
+      if (sanitized !== undefined) {
+        result[key] = sanitized;
+      }
+    });
+    return result;
+  }
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (err) {
+    return String(value);
+  }
 }
 
 function getSystemKPIs() {
@@ -997,8 +1042,17 @@ function authenticateUser(credentials) {
       }
     }
 
-    const bootstrap = buildBootstrapPayload_(userObject);
-    const sanitizedUser = bootstrap.user || sanitizeUserForClient_(userObject);
+    const rawBootstrap = buildBootstrapPayload_(userObject);
+    const bootstrap =
+      sanitizeForClientResponse_(rawBootstrap) ||
+      sanitizeForClientResponse_(buildGuestBootstrapPayload_());
+    const sanitizedUser =
+      sanitizeForClientResponse_(bootstrap?.user) ||
+      sanitizeForClientResponse_(sanitizeUserForClient_(userObject)) ||
+      null;
+    if (bootstrap && typeof bootstrap === "object") {
+      bootstrap.user = sanitizedUser;
+    }
     logAuditEvent("LOGIN_SUCCESS", {
       userId: sanitizedUser?.User_Id || sanitizedUser?.user_id || "",
       username: sanitizedUser?.Username || username,
@@ -1010,11 +1064,14 @@ function authenticateUser(credentials) {
       role: sanitizedUser?.Role_Id,
     });
 
-    return {
+    return sanitizeForClientResponse_({
       success: true,
       user: sanitizedUser,
       bootstrap,
-    };
+      meta: {
+        loginAt: new Date().toISOString(),
+      },
+    });
   } catch (err) {
     debugError(FNAME, err, { stage: "unexpected" });
     return fail("حدث خطأ غير متوقع أثناء تسجيل الدخول.", {
