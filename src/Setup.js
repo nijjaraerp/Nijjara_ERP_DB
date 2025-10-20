@@ -1733,6 +1733,8 @@ function seedCoreData() {
  * and all required dropdowns.
  * * This function is idempotent: it will clear old data before adding
  * new data to prevent duplicates.
+ *
+ * (FIXED: Now safely handles empty 'PRJ_Clients' and 'SYS_Users' sheets)
  */
 function seedProjectFormAndDropdowns() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1800,20 +1802,29 @@ function seedProjectFormAndDropdowns() {
 
   // --- 4. Prepare Dynamic Client Dropdowns (from PRJ_Clients) ---
   // Assumes Client_ID is in Col A, Client_Name is in Col B
-  const clientDataValues = clientsSheet.getRange(2, 1, clientsSheet.getLastRow() - 1, 2).getValues();
-  const clientDropdowns = clientDataValues
-    .filter(row => row[0] && row[1]) // Ensure Client_ID (row[0]) and Client_Name (row[1]) exist
-    .map((row, index) => ['DD_Clients', row[0], row[1], 'TRUE', index + 1]); // [Key, English_Title(Value), Arabic_Title(Display), Active, Sort]
-
+  let clientDropdowns = []; // Default to empty array
+  const clientLastRow = clientsSheet.getLastRow();
+  
+  if (clientLastRow > 1) { // ***FIX***: Only run if there is data beyond the header
+    const clientDataValues = clientsSheet.getRange(2, 1, clientLastRow - 1, 2).getValues();
+    clientDropdowns = clientDataValues
+      .filter(row => row[0] && row[1]) // Ensure Client_ID (row[0]) and Client_Name (row[1]) exist
+      .map((row, index) => ['DD_Clients', row[0], row[1], 'TRUE', index + 1]); // [Key, English_Title(Value), Arabic_Title(Display), Active, Sort]
+  }
   Logger.log(`Found ${clientDropdowns.length} clients to seed.`);
+
 
   // --- 5. Prepare Dynamic Manager Dropdowns (from SYS_Users) ---
   // Assumes User_Id is in Col A, Full_Name is in Col B
-  const usersDataValues = usersSheet.getRange(2, 1, usersSheet.getLastRow() - 1, 2).getValues();
-  const managerDropdowns = usersDataValues
-    .filter(row => row[0] && row[1]) // Ensure User_Id (row[0]) and Full_Name (row[1]) exist
-    .map((row, index) => ['DD_Managers', row[0], row[1], 'TRUE', index + 1]); // [Key, English_Title(Value), Arabic_Title(Display), Active, Sort]
-  
+  let managerDropdowns = []; // Default to empty array
+  const usersLastRow = usersSheet.getLastRow();
+
+  if (usersLastRow > 1) { // ***FIX***: Only run if there is data beyond the header
+    const usersDataValues = usersSheet.getRange(2, 1, usersLastRow - 1, 2).getValues();
+    managerDropdowns = usersDataValues
+      .filter(row => row[0] && row[1]) // Ensure User_Id (row[0]) and Full_Name (row[1]) exist
+      .map((row, index) => ['DD_Managers', row[0], row[1], 'TRUE', index + 1]); // [Key, English_Title(Value), Arabic_Title(Display), Active, Sort]
+  }
   Logger.log(`Found ${managerDropdowns.length} managers to seed.`);
 
   // --- 6. Write all new data to the sheets ---
@@ -1851,6 +1862,12 @@ function clearOldData(sheet, key, colIndex) {
   
   // If sheet is empty or only has a header, do nothing
   if (data.length <= 1) {
+    // Handle edge case where sheet has 1 empty row [[""]]
+    if (data.length == 1 && data[0].length == 1 && data[0][0] == "") {
+      // This is a truly empty sheet, do nothing.
+      return;
+    }
+    // Otherwise, it's just a header, so also do nothing.
     return;
   }
 
@@ -1867,7 +1884,8 @@ function clearOldData(sheet, key, colIndex) {
   sheet.clearContents(); // Preserves formatting
   
   // Write the filtered data (header + non-matching rows) back to the sheet
-  if (newData.length > 0) {
+  // ***FIX***: Added check for newData[0] to prevent error on empty header
+  if (newData.length > 0 && newData[0] && newData[0].length > 0) {
      sheet.getRange(1, 1, newData.length, newData[0].length).setValues(newData);
   }
 }
