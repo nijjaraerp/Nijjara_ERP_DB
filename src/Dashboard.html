@@ -1381,18 +1381,7 @@
         </section>
 
         <aside class="workspace-nav" id="sys-side-nav">
-          <button class="nav-item" data-pane="overview">نظرة عامة</button>
-          <button class="nav-item active" data-pane="users">المستخدمون</button>
-          <button class="nav-item" data-pane="roles">الأدوار</button>
-          <button class="nav-item" data-pane="permissions">الأذونات</button>
-          <button class="nav-item" data-pane="rolePerms">
-            تعيين أذونات الأدوار
-          </button>
-          <button class="nav-item" data-pane="properties">
-            خصائص المستخدم
-          </button>
-          <button class="nav-item" data-pane="sessions">الجلسات</button>
-          <button class="nav-item" data-pane="audit">التدقيق</button>
+          <!-- Tabs will be rendered dynamically -->
         </aside>
       </div>
     </div>
@@ -1630,9 +1619,6 @@
         const btnCancelAssign = document.getElementById("btn-cancel-assign");
         const sysView = document.getElementById("system-management-view");
         const sysNav = document.getElementById("sys-side-nav");
-        const sysNavButtons = sysNav
-          ? Array.from(sysNav.querySelectorAll("[data-pane]"))
-          : [];
         const sysPanes = sysView
           ? Array.from(sysView.querySelectorAll(".sys-pane"))
           : [];
@@ -1648,6 +1634,80 @@
           FIN: "finance-workspace",
           HR: "hr-workspace",
         };
+        const DEFAULT_SYS_SUB_TABS = [
+          {
+            tabId: "Tab_SYS_Management",
+            subId: "Sub_SYS_Overview",
+            pane: "overview",
+            labelAr: "نظرة عامة",
+            labelEn: "Overview",
+            route: "/sys",
+            sortOrder: 1,
+          },
+          {
+            tabId: "Tab_SYS_Management",
+            subId: "Sub_SYS_Users",
+            pane: "users",
+            labelAr: "المستخدمون",
+            labelEn: "Users",
+            route: "/sys/users",
+            sortOrder: 2,
+          },
+          {
+            tabId: "Tab_SYS_Management",
+            subId: "Sub_SYS_Roles",
+            pane: "roles",
+            labelAr: "الأدوار",
+            labelEn: "Roles",
+            route: "/sys/roles",
+            sortOrder: 3,
+          },
+          {
+            tabId: "Tab_SYS_Management",
+            subId: "Sub_SYS_Permissions",
+            pane: "permissions",
+            labelAr: "الأذونات",
+            labelEn: "Permissions",
+            route: "/sys/permissions",
+            sortOrder: 4,
+          },
+          {
+            tabId: "Tab_SYS_Management",
+            subId: "Sub_SYS_RolePerms",
+            pane: "rolePerms",
+            labelAr: "تعيين أذونات الأدوار",
+            labelEn: "Role Permissions",
+            route: "/sys/role-perms",
+            sortOrder: 5,
+          },
+          {
+            tabId: "Tab_SYS_Management",
+            subId: "Sub_SYS_Properties",
+            pane: "properties",
+            labelAr: "خصائص المستخدم",
+            labelEn: "User Properties",
+            route: "/sys/properties",
+            sortOrder: 6,
+          },
+          {
+            tabId: "Tab_SYS_Management",
+            subId: "Sub_SYS_Sessions",
+            pane: "sessions",
+            labelAr: "الجلسات",
+            labelEn: "Sessions",
+            route: "/sys/sessions",
+            sortOrder: 7,
+          },
+          {
+            tabId: "Tab_SYS_Management",
+            subId: "Sub_SYS_Audit",
+            pane: "audit",
+            labelAr: "التدقيق",
+            labelEn: "Audit",
+            route: "/sys/audit",
+            sortOrder: 8,
+          },
+        ];
         let bootstrapData = {};
         const selectedUsers = new Set();
         let resetUserId = null;
@@ -1656,6 +1716,10 @@
         let roleOptionsCache = null;
         let normalizedUsersCache = [];
         let overviewLoaded = false;
+        let sysTabRegister = DEFAULT_SYS_SUB_TABS.map((entry) => ({
+          ...entry,
+        }));
+        let sysSubTabLookup = Object.create(null);
         const tableLoadState = {
           roles: false,
           permissions: false,
@@ -1668,6 +1732,370 @@
         let lastLoginIdentity = null;
 
         /* Basic nav */
+        function isSysManagementTab(tabId) {
+          return String(tabId || "")
+            .trim()
+            .toLowerCase() === "tab_sys_management";
+        }
+
+        function toNumberOrNull(value) {
+          if (value == null || value === "") return null;
+          const num = Number(value);
+          return Number.isFinite(num) ? num : null;
+        }
+
+        function derivePaneNameFromEntry(entry) {
+          if (!entry) return "";
+          const subIdRaw =
+            entry.subId || entry.Sub_ID || entry.subID || entry.id || "";
+          if (subIdRaw) {
+            let clean = String(subIdRaw).trim();
+            if (clean) {
+              clean = clean.replace(/^Sub_/i, "");
+              clean = clean.replace(/^SYS_/i, "");
+              clean = clean.replace(/^Tab_/i, "");
+              const tokens = clean.split(/[_\s]+/).filter(Boolean);
+              if (tokens.length) {
+                const camel = tokens
+                  .map((token, idx) => {
+                    const normalized = token.replace(/[^A-Za-z0-9]/g, "");
+                    if (!normalized) return "";
+                    if (idx === 0) {
+                      return (
+                        normalized.charAt(0).toLowerCase() +
+                        normalized.slice(1)
+                      );
+                    }
+                    return (
+                      normalized.charAt(0).toUpperCase() +
+                      normalized.slice(1)
+                    );
+                  })
+                  .join("");
+                if (camel) return camel;
+              }
+            }
+          }
+
+          const routeRaw = entry.route || entry.Route || entry.path || "";
+          if (routeRaw) {
+            const route = String(routeRaw).trim();
+            if (route) {
+              const parts = route.split("/").filter(Boolean);
+              if (!parts.length) {
+                return "";
+              }
+              let lastSegment = parts[parts.length - 1] || "";
+              if (!lastSegment && parts.length > 1) {
+                lastSegment = parts[parts.length - 2];
+              }
+              if (!lastSegment) {
+                return "";
+              }
+              if (lastSegment.toLowerCase() === "sys") {
+                return "overview";
+              }
+              const tokens = lastSegment.split(/[-_\s]+/).filter(Boolean);
+              if (tokens.length) {
+                const camel = tokens
+                  .map((token, idx) => {
+                    const normalized = token.replace(/[^A-Za-z0-9]/g, "");
+                    if (!normalized) return "";
+                    if (idx === 0) {
+                      return normalized.toLowerCase();
+                    }
+                    return (
+                      normalized.charAt(0).toUpperCase() +
+                      normalized.slice(1).toLowerCase()
+                    );
+                  })
+                  .join("");
+                if (camel) return camel;
+              }
+            }
+          }
+
+          return "";
+        }
+
+        function normalizeTabRegister(tabRegisterData) {
+          if (!Array.isArray(tabRegisterData)) return [];
+
+          const map = new Map();
+
+          const storeNormalized = (rawEntry) => {
+            if (!rawEntry) return;
+            const tabId =
+              rawEntry.tabId ||
+              rawEntry.Tab_ID ||
+              rawEntry.TabId ||
+              rawEntry.tabID ||
+              "";
+            if (!isSysManagementTab(tabId)) return;
+
+            const paneName = rawEntry.pane || derivePaneNameFromEntry(rawEntry);
+            const subId = rawEntry.subId || rawEntry.Sub_ID || rawEntry.subID || "";
+            if (!paneName && !subId) return;
+
+            const normalized = {
+              tabId: tabId || "Tab_SYS_Management",
+              subId: subId ? String(subId) : paneName,
+              labelAr:
+                rawEntry.labelAr ||
+                rawEntry.Sub_Label_AR ||
+                rawEntry.subLabelAr ||
+                rawEntry.Tab_Label_AR ||
+                "",
+              labelEn:
+                rawEntry.labelEn ||
+                rawEntry.Sub_Label_EN ||
+                rawEntry.subLabelEn ||
+                rawEntry.Tab_Label_EN ||
+                "",
+              route: rawEntry.route || rawEntry.Route || rawEntry.path || "",
+              sortOrder: toNumberOrNull(
+                rawEntry.sortOrder ?? rawEntry.Sort_Order ?? rawEntry.order
+              ),
+              pane: paneName || (subId ? String(subId) : ""),
+            };
+
+            if (!normalized.pane) return;
+            const key = normalized.subId || normalized.pane;
+            if (!key) return;
+
+            if (!map.has(key)) {
+              map.set(key, normalized);
+            } else {
+              const existing = map.get(key);
+              if (!existing.labelAr && normalized.labelAr)
+                existing.labelAr = normalized.labelAr;
+              if (!existing.labelEn && normalized.labelEn)
+                existing.labelEn = normalized.labelEn;
+              if (!existing.route && normalized.route)
+                existing.route = normalized.route;
+              if (
+                (existing.sortOrder == null ||
+                  !Number.isFinite(existing.sortOrder)) &&
+                normalized.sortOrder != null
+              ) {
+                existing.sortOrder = normalized.sortOrder;
+              }
+              if (!existing.pane && normalized.pane) {
+                existing.pane = normalized.pane;
+              }
+            }
+          };
+
+          const acceptRecordType = (value) => {
+            if (!value) return true;
+            const normalized = String(value).trim().toUpperCase();
+            return (
+              normalized === "SUB" ||
+              normalized === "SUBTAB" ||
+              normalized === "SUB_TAB"
+            );
+          };
+
+          const hasSubCollections = tabRegisterData.some((item) =>
+            Array.isArray(item && item.subTabs)
+          );
+
+          if (hasSubCollections) {
+            tabRegisterData.forEach((tab) => {
+              if (!tab) return;
+              const tabId = tab.tabId || tab.Tab_ID || tab.TabId || tab.tabID || "";
+              if (!isSysManagementTab(tabId)) return;
+              const subTabs = Array.isArray(tab.subTabs) ? tab.subTabs : [];
+              subTabs.forEach((sub) => {
+                if (!sub) return;
+                storeNormalized({
+                  tabId,
+                  subId: sub.subId || sub.Sub_ID || sub.subID || sub.id || "",
+                  labelAr:
+                    sub.subLabelAr ||
+                    sub.Sub_Label_AR ||
+                    sub.labelAr ||
+                    sub.label_ar ||
+                    tab.tabLabelAr ||
+                    tab.Tab_Label_AR ||
+                    "",
+                  labelEn:
+                    sub.subLabelEn ||
+                    sub.Sub_Label_EN ||
+                    sub.labelEn ||
+                    sub.label_en ||
+                    tab.tabLabelEn ||
+                    tab.Tab_Label_EN ||
+                    "",
+                  route: sub.route || sub.Route || sub.path || "",
+                  sortOrder: toNumberOrNull(
+                    sub.sortOrder ?? sub.Sort_Order ?? sub.order
+                  ),
+                  pane: sub.pane,
+                });
+              });
+            });
+          } else {
+            tabRegisterData.forEach((row) => {
+              if (!row) return;
+              const recordType =
+                row.recordType || row.Record_Type || row.Type || "";
+              if (!acceptRecordType(recordType)) return;
+              storeNormalized({
+                tabId: row.tabId || row.Tab_ID || row.TabId || row.tabID || "",
+                subId: row.subId || row.Sub_ID || row.subID || row.id || "",
+                labelAr:
+                  row.subLabelAr ||
+                  row.Sub_Label_AR ||
+                  row.labelAr ||
+                  row.Tab_Label_AR ||
+                  "",
+                labelEn:
+                  row.subLabelEn ||
+                  row.Sub_Label_EN ||
+                  row.labelEn ||
+                  row.Tab_Label_EN ||
+                  "",
+                route: row.route || row.Route || row.path || "",
+                sortOrder: toNumberOrNull(
+                  row.sortOrder ?? row.Sort_Order ?? row.order
+                ),
+                pane: row.pane,
+              });
+            });
+          }
+
+          return Array.from(map.values()).sort((a, b) => {
+            const aOrder =
+              a.sortOrder != null && Number.isFinite(a.sortOrder)
+                ? a.sortOrder
+                : Number.MAX_SAFE_INTEGER;
+            const bOrder =
+              b.sortOrder != null && Number.isFinite(b.sortOrder)
+                ? b.sortOrder
+                : Number.MAX_SAFE_INTEGER;
+            if (aOrder !== bOrder) return aOrder - bOrder;
+            return String(a.pane || "").localeCompare(String(b.pane || ""));
+          });
+        }
+
+        function updateSysNavActive(paneName) {
+          if (!sysNav) return;
+          Array.from(sysNav.querySelectorAll("[data-pane]")).forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.pane === paneName);
+          });
+        }
+
+        function renderTabs(tabRegisterData) {
+          if (!sysNav) return;
+
+          const sourceData =
+            tabRegisterData !== undefined ? tabRegisterData : sysTabRegister;
+          const normalized = normalizeTabRegister(sourceData);
+          const effectiveRegister = normalized.length
+            ? normalized
+            : DEFAULT_SYS_SUB_TABS;
+
+          sysTabRegister = effectiveRegister.map((entry) => ({ ...entry }));
+          sysSubTabLookup = Object.create(null);
+          sysNav.innerHTML = "";
+
+          let firstPane = "";
+          const seen = new Set();
+
+          sysTabRegister.forEach((entry) => {
+            if (!entry || !entry.pane) return;
+            const pane = entry.pane;
+            const key = entry.subId || pane;
+            if (seen.has(key)) return;
+            seen.add(key);
+
+            if (!firstPane) firstPane = pane;
+
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "nav-item";
+            button.dataset.pane = pane;
+            if (entry.subId) button.dataset.subId = entry.subId;
+            if (entry.route) button.dataset.route = entry.route;
+            button.textContent = entry.labelAr || entry.labelEn || pane;
+            sysNav.appendChild(button);
+
+            const lookupKeys = new Set([
+              pane,
+              pane.toLowerCase(),
+              entry.subId,
+              entry.subId ? entry.subId.toLowerCase() : "",
+              entry.route,
+              entry.route ? entry.route.toLowerCase() : "",
+            ]);
+
+            if (entry.route) {
+              const routeParts = String(entry.route)
+                .split("/")
+                .filter(Boolean);
+              if (routeParts.length) {
+                const last = routeParts[routeParts.length - 1];
+                if (last) {
+                  lookupKeys.add(last);
+                  lookupKeys.add(last.toLowerCase());
+                }
+              }
+            }
+
+            lookupKeys.forEach((lookupKey) => {
+              if (!lookupKey) return;
+              sysSubTabLookup[lookupKey] = entry;
+            });
+          });
+
+          if (!firstPane) {
+            updateSysNavActive(currentSysPane);
+            return;
+          }
+
+          if (!currentSysPane || !sysSubTabLookup[currentSysPane]) {
+            currentSysPane = firstPane;
+          }
+
+          updateSysNavActive(currentSysPane);
+        }
+
+        function loadTab(identifier, options = {}) {
+          if (!identifier) {
+            if (currentSysPane) {
+              setActiveSysPane(currentSysPane, options);
+            }
+            return;
+          }
+
+          const rawKey = String(identifier).trim();
+          if (!rawKey) return;
+
+          const candidates = [rawKey, rawKey.toLowerCase()];
+          if (rawKey.startsWith("Sub_")) {
+            const trimmed = rawKey.replace(/^Sub_/i, "");
+            candidates.push(trimmed);
+            candidates.push(trimmed.toLowerCase());
+          }
+
+          let entry = null;
+          for (const candidate of candidates) {
+            if (!candidate) continue;
+            if (sysSubTabLookup[candidate]) {
+              entry = sysSubTabLookup[candidate];
+              break;
+            }
+          }
+
+          const paneName = entry?.pane || derivePaneNameFromEntry({ subId: rawKey });
+          if (paneName) {
+            setActiveSysPane(paneName, options);
+          } else {
+            setActiveSysPane(rawKey, options);
+          }
+        }
+
         function switchView(id) {
           views.forEach((v) => v.classList.toggle("active", v.id === id));
           document.querySelectorAll(".app-navbar .nav-btn").forEach((b) => {
@@ -1679,7 +2107,7 @@
             );
           });
           if (id === "system-management-view") {
-            setActiveSysPane(currentSysPane || "overview");
+            loadTab(currentSysPane || "overview");
           }
         }
         function createNavButton(label, target) {
@@ -1775,6 +2203,13 @@
           selectedUsers.clear();
           normalizedUsersCache = [];
           renderNav(data?.nav || []);
+          renderTabs(
+            data?.tabRegister ||
+              data?.tabs ||
+              data?.tabRegistry ||
+              data?.tabConfig ||
+              undefined
+          );
           const identityFromServer =
             data?.user &&
             (data.user.Full_Name || data.user.Username || data.user.Email)
@@ -2741,6 +3176,7 @@
         function setActiveSysPane(paneName, options = {}) {
           if (!paneName || !sysPanes.length) return;
           if (paneName === currentSysPane && !options.force) {
+            updateSysNavActive(paneName);
             runPaneLoaders(paneName, options);
             return;
           }
@@ -2755,9 +3191,7 @@
               paneKey === paneName || stacksWith.includes(paneName);
             pane.classList.toggle("active", shouldShow);
           });
-          sysNavButtons.forEach((btn) => {
-            btn.classList.toggle("active", btn.dataset.pane === paneName);
-          });
+          updateSysNavActive(paneName);
           runPaneLoaders(paneName, options);
         }
 
@@ -2766,8 +3200,8 @@
             const btn = evt.target.closest("button[data-pane]");
             if (!btn) return;
             evt.preventDefault();
-            const pane = btn.dataset.pane || "users";
-            setActiveSysPane(pane);
+            const pane = btn.dataset.subId || btn.dataset.pane || "users";
+            loadTab(pane);
           });
         }
 
@@ -3747,19 +4181,10 @@
         }
 
         // Set up sys nav event handlers
-        if (sysNav) {
-          sysNav.addEventListener("click", (e) => {
-            const btn = e.target.closest("[data-pane]");
-            if (btn) {
-              const pane = btn.dataset.pane;
-              setActiveSysPane(pane);
-            }
-          });
-        }
-
         /* Init */
-        setActiveSysPane("overview", { force: true });
         renderNav();
+        renderTabs();
+        setActiveSysPane("overview", { force: true });
         bootstrapApp();
       })();
     </script>

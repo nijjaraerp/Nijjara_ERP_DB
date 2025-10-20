@@ -19,6 +19,7 @@ const CONFIG = {
     DROPDOWNS: "SYS_Dropdowns",
     DYNAMIC_FORMS: "SYS_Dynamic_Forms",
     PROFILE_VIEW: "SYS_Profile_View",
+    TAB_REGISTER: "SYS_Tab_Register",
     USER_PROPERTIES: "SYS_User_Properties",
     USERS_VIEW: "PV_SYS_Users_Table",
 
@@ -656,6 +657,7 @@ function buildBootstrapPayload_(rawUser) {
     permissions,
     filters,
     nav: buildNavigationConfig_(role, permissions),
+    tabRegister: getTabRegister(),
     meta: {
       hasUser: !!sanitizedUser,
       permissions: Array.isArray(permissions) ? permissions.length : 0,
@@ -678,6 +680,7 @@ function buildGuestBootstrapPayload_() {
       roleOptions: [],
     },
     nav: buildNavigationConfig_("GUEST", []),
+    tabRegister: getTabRegister(),
     meta: {
       hasUser: false,
       permissions: 0,
@@ -1438,6 +1441,220 @@ function getDropdownOptions(key) {
     return options;
   } catch (err) {
     debugError("getDropdownOptions", err, { key });
+    throw err;
+  }
+}
+
+function getTabRegister() {
+  const FNAME = "getTabRegister";
+  debugLog(FNAME, "start");
+
+  const { headers, rows, sheet, sourceName } = loadSheetData_(
+    CONFIG.SHEETS.TAB_REGISTER
+  );
+
+  if (!rows.length) {
+    debugLog(FNAME, "noRows", {
+      source: sheet ? sheet.getName() : sourceName || "<none>",
+    });
+    return [];
+  }
+
+  const idx = {
+    recordType: findHeaderIndex_(headers, "Record_Type", "RecordType", "Type"),
+    tabId: findHeaderIndex_(headers, "Tab_ID", "TabId", "TabID"),
+    tabLabelEn: findHeaderIndex_(
+      headers,
+      "Tab_Label_EN",
+      "Tab_Label",
+      "Tab_Name_EN",
+      "Tab_LabelEn",
+      "Tab_Label_En"
+    ),
+    tabLabelAr: findHeaderIndex_(
+      headers,
+      "Tab_Label_AR",
+      "Tab_LabelAr",
+      "Tab_Label_ARABIC",
+      "Tab_Name_AR"
+    ),
+    subId: findHeaderIndex_(headers, "Sub_ID", "SubId", "SubID"),
+    subLabelEn: findHeaderIndex_(
+      headers,
+      "Sub_Label_EN",
+      "Sub_Label",
+      "Sub_LabelEn",
+      "Sub_Label_En"
+    ),
+    subLabelAr: findHeaderIndex_(
+      headers,
+      "Sub_Label_AR",
+      "Sub_LabelAr",
+      "Sub_Label_ARABIC"
+    ),
+    route: findHeaderIndex_(headers, "Route", "Path", "Url", "URL"),
+    sortOrder: findHeaderIndex_(
+      headers,
+      "Sort_Order",
+      "SortOrder",
+      "Sort",
+      "Order"
+    ),
+  };
+
+  const readString = (row, index) => {
+    if (index == null || index < 0) return "";
+    const value = getValueAt_(row, index);
+    if (value == null) return "";
+    if (value instanceof Date) return value.toISOString();
+    return String(value).trim();
+  };
+
+  const readNumber = (row, index) => {
+    if (index == null || index < 0) return null;
+    const raw = getValueAt_(row, index);
+    if (raw == null || raw === "") return null;
+    const num = Number(raw);
+    return Number.isFinite(num) ? num : null;
+  };
+
+  const tabsMap = new Map();
+
+  rows.forEach((row) => {
+    const tabIdRaw = readString(row, idx.tabId);
+    if (!tabIdRaw) return;
+    const tabKey = tabIdRaw;
+    const recordType = readString(row, idx.recordType).toUpperCase();
+    const rowSortOrder = readNumber(row, idx.sortOrder);
+    let tab = tabsMap.get(tabKey);
+    if (!tab) {
+      tab = {
+        tabId: tabKey,
+        tabLabelEn: readString(row, idx.tabLabelEn),
+        tabLabelAr: readString(row, idx.tabLabelAr),
+        route: readString(row, idx.route),
+        sortOrder: rowSortOrder,
+        subTabs: [],
+        _subMap: new Map(),
+      };
+      tabsMap.set(tabKey, tab);
+    } else {
+      if (!tab.tabLabelEn) tab.tabLabelEn = readString(row, idx.tabLabelEn);
+      if (!tab.tabLabelAr) tab.tabLabelAr = readString(row, idx.tabLabelAr);
+      if (!tab.route) tab.route = readString(row, idx.route);
+      if (
+        (tab.sortOrder == null || !Number.isFinite(tab.sortOrder)) &&
+        rowSortOrder != null
+      ) {
+        tab.sortOrder = rowSortOrder;
+      }
+    }
+
+    if (recordType && recordType !== "SUB" && recordType !== "SUBTAB") {
+      return;
+    }
+
+    const subIdRaw = readString(row, idx.subId);
+    if (!subIdRaw) return;
+    const subKey = subIdRaw;
+    const targetMap = tab._subMap;
+    const payload = {
+      subId: subIdRaw,
+      subLabelEn: readString(row, idx.subLabelEn),
+      subLabelAr: readString(row, idx.subLabelAr),
+      route: readString(row, idx.route),
+      sortOrder: rowSortOrder,
+    };
+
+    if (!targetMap.has(subKey)) {
+      targetMap.set(subKey, payload);
+      tab.subTabs.push(payload);
+    } else {
+      const existing = targetMap.get(subKey);
+      if (!existing.subLabelEn) existing.subLabelEn = payload.subLabelEn;
+      if (!existing.subLabelAr) existing.subLabelAr = payload.subLabelAr;
+      if (!existing.route) existing.route = payload.route;
+      if (
+        (existing.sortOrder == null || !Number.isFinite(existing.sortOrder)) &&
+        payload.sortOrder != null
+      ) {
+        existing.sortOrder = payload.sortOrder;
+      }
+    }
+  });
+
+  let totalSubTabs = 0;
+  const result = Array.from(tabsMap.values())
+    .map((tab) => {
+      tab.subTabs = tab.subTabs
+        .map((sub) => ({
+          subId: sub.subId,
+          subLabelEn: sub.subLabelEn || "",
+          subLabelAr: sub.subLabelAr || "",
+          route: sub.route || "",
+          sortOrder: sub.sortOrder != null && Number.isFinite(sub.sortOrder)
+            ? sub.sortOrder
+            : null,
+        }))
+        .sort((a, b) => {
+          const aOrder =
+            a.sortOrder != null && Number.isFinite(a.sortOrder)
+              ? a.sortOrder
+              : Number.MAX_SAFE_INTEGER;
+          const bOrder =
+            b.sortOrder != null && Number.isFinite(b.sortOrder)
+              ? b.sortOrder
+              : Number.MAX_SAFE_INTEGER;
+          if (aOrder !== bOrder) return aOrder - bOrder;
+          return String(a.subId || "").localeCompare(String(b.subId || ""));
+        });
+      totalSubTabs += tab.subTabs.length;
+      delete tab._subMap;
+      if (
+        tab.sortOrder == null || !Number.isFinite(Number(tab.sortOrder))
+      ) {
+        tab.sortOrder = null;
+      }
+      return {
+        tabId: tab.tabId,
+        tabLabelEn: tab.tabLabelEn || "",
+        tabLabelAr: tab.tabLabelAr || "",
+        route: tab.route || "",
+        sortOrder: tab.sortOrder,
+        subTabs: tab.subTabs,
+      };
+    })
+    .sort((a, b) => {
+      const aOrder =
+        a.sortOrder != null && Number.isFinite(a.sortOrder)
+          ? a.sortOrder
+          : Number.MAX_SAFE_INTEGER;
+      const bOrder =
+        b.sortOrder != null && Number.isFinite(b.sortOrder)
+          ? b.sortOrder
+          : Number.MAX_SAFE_INTEGER;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return String(a.tabId || "").localeCompare(String(b.tabId || ""));
+    });
+
+  debugLog(FNAME, "resolved", {
+    tabs: result.length,
+    subTabs: totalSubTabs,
+    source: sheet ? sheet.getName() : sourceName || "<unknown>",
+  });
+
+  return result;
+}
+
+function doGetTabRegister() {
+  const FNAME = "doGetTabRegister";
+  debugLog(FNAME, "start");
+  try {
+    const data = getTabRegister();
+    debugLog(FNAME, "success", { count: Array.isArray(data) ? data.length : 0 });
+    return sanitizeForClientResponse_(data);
+  } catch (err) {
+    debugError(FNAME, err);
     throw err;
   }
 }
