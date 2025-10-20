@@ -711,37 +711,56 @@ function buildNavigationConfig_(role, permissions) {
     );
   };
 
-  const NAV_ITEMS = [
-    {
-      key: "PRJ",
-      label: "Projects",
-      target: "projects-workspace",
-      permissions: ["PRJ_VIEW_PROJECTS", "PRJ_EDIT_PROJECTS"],
-    },
-    {
-      key: "FIN",
-      label: "Finance",
-      target: "finance-workspace",
-      permissions: ["FIN_VIEW_REPORTS", "FIN_EDIT_TRANSACTIONS"],
-    },
-    {
-      key: "HR",
-      label: "HR",
-      target: "hr-workspace",
-      permissions: ["HR_VIEW_EMPLOYEES", "HR_EDIT_EMPLOYEES"],
-    },
-    {
-      key: "SYS",
-      label: "System",
-      target: "system-management-view",
-      permissions: [
-        "SYS_VIEW_USERS",
-        "SYS_EDIT_USERS",
-        "SYS_MANAGE_ROLES",
-        "SYS_VIEW_AUDIT",
-      ],
-    },
-  ];
+  const FALLBACK_TAB_TARGETS = {
+    Tab_SYS_Management: "system-management-view",
+    Tab_PRJ_Management: "projects-workspace",
+    Tab_FIN_Management: "finance-workspace",
+    Tab_HR_Management: "hr-workspace",
+    TAB_SYS_MANAGEMENT: "system-management-view",
+    TAB_PRJ_MANAGEMENT: "projects-workspace",
+    TAB_FIN_MANAGEMENT: "finance-workspace",
+    TAB_HR_MANAGEMENT: "hr-workspace",
+  };
+
+  const tabRegister = getTabRegister();
+  const NAV_ITEMS = (Array.isArray(tabRegister) ? tabRegister : [])
+    .map((tab) => {
+      const rawPermissions = tab?.permissions;
+      let permissionsList = [];
+      if (Array.isArray(rawPermissions)) {
+        permissionsList = rawPermissions.filter(Boolean).map(String);
+      } else if (typeof rawPermissions === "string") {
+        permissionsList = rawPermissions
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+      } else if (rawPermissions) {
+        permissionsList = [String(rawPermissions)];
+      }
+
+      const key = tab?.tabId || tab?.tabID || tab?.key || "";
+      const label =
+        tab?.tabLabelAr || tab?.tabLabelEn || tab?.tabLabel || key || "";
+      const normalizedKey = String(key || "");
+      const fallbackTarget =
+        FALLBACK_TAB_TARGETS[normalizedKey] ||
+        FALLBACK_TAB_TARGETS[normalizedKey.toUpperCase()] ||
+        FALLBACK_TAB_TARGETS[normalizedKey.toLowerCase()] ||
+        null;
+      const target = tab?.route || tab?.target || fallbackTarget || "";
+
+      if (!key || !target) {
+        return null;
+      }
+
+      return {
+        key,
+        label,
+        target,
+        permissions: permissionsList,
+      };
+    })
+    .filter(Boolean);
 
   const eligible = NAV_ITEMS.filter((item) =>
     role && String(role).toUpperCase() === "ADMIN"
@@ -750,17 +769,49 @@ function buildNavigationConfig_(role, permissions) {
   );
 
   if (!eligible.length) {
-    // Fallback to System view for guests to avoid empty navigation.
-    return [
-      {
-        key: "SYS",
-        label: "System",
-        target: "system-management-view",
-      },
-    ];
+    const systemNav =
+      NAV_ITEMS.find((item) =>
+        String(item.key || "").toUpperCase().includes("SYS")
+      ) ||
+      NAV_ITEMS.find((item) =>
+        String(item.target || "").toLowerCase() === "system-management-view"
+      );
+    if (systemNav) {
+      return [systemNav];
+    }
+    if (NAV_ITEMS.length) {
+      return [NAV_ITEMS[0]];
+    }
+    return [];
   }
 
   return eligible;
+}
+
+function getSheetData(sourceName) {
+  const FNAME = "getSheetData";
+  debugLog(FNAME, "start", { sourceName });
+  try {
+    if (!sourceName) {
+      debugLog(FNAME, "emptySource");
+      return sanitizeForClientResponse_({ headers: [], rows: [] });
+    }
+
+    const { headers = [], rows = [] } = loadSheetData_(sourceName);
+    const payload = {
+      headers: Array.isArray(headers) ? headers : [],
+      rows: Array.isArray(rows) ? rows : [],
+    };
+    const sanitized = sanitizeForClientResponse_(payload);
+    debugLog(FNAME, "success", {
+      headers: payload.headers.length,
+      rows: payload.rows.length,
+    });
+    return sanitized;
+  } catch (err) {
+    debugError(FNAME, err, { sourceName });
+    throw err;
+  }
 }
 
 function sanitizeUserForClient_(user) {
@@ -1500,6 +1551,18 @@ function getTabRegister() {
       "Sort",
       "Order"
     ),
+    sourceSheet: findHeaderIndex_(
+      headers,
+      "Source_Sheet",
+      "Source",
+      "SourceSheet"
+    ),
+    permissions: findHeaderIndex_(
+      headers,
+      "Permissions",
+      "Permission",
+      "Permission_Key"
+    ),
   };
 
   const readString = (row, index) => {
@@ -1534,6 +1597,8 @@ function getTabRegister() {
         tabLabelAr: readString(row, idx.tabLabelAr),
         route: readString(row, idx.route),
         sortOrder: rowSortOrder,
+        sourceSheet: readString(row, idx.sourceSheet),
+        permissions: readString(row, idx.permissions),
         subTabs: [],
         _subMap: new Map(),
       };
@@ -1542,6 +1607,8 @@ function getTabRegister() {
       if (!tab.tabLabelEn) tab.tabLabelEn = readString(row, idx.tabLabelEn);
       if (!tab.tabLabelAr) tab.tabLabelAr = readString(row, idx.tabLabelAr);
       if (!tab.route) tab.route = readString(row, idx.route);
+      if (!tab.sourceSheet) tab.sourceSheet = readString(row, idx.sourceSheet);
+      if (!tab.permissions) tab.permissions = readString(row, idx.permissions);
       if (
         (tab.sortOrder == null || !Number.isFinite(tab.sortOrder)) &&
         rowSortOrder != null
@@ -1564,6 +1631,7 @@ function getTabRegister() {
       subLabelAr: readString(row, idx.subLabelAr),
       route: readString(row, idx.route),
       sortOrder: rowSortOrder,
+      sourceSheet: readString(row, idx.sourceSheet),
     };
 
     if (!targetMap.has(subKey)) {
@@ -1574,6 +1642,7 @@ function getTabRegister() {
       if (!existing.subLabelEn) existing.subLabelEn = payload.subLabelEn;
       if (!existing.subLabelAr) existing.subLabelAr = payload.subLabelAr;
       if (!existing.route) existing.route = payload.route;
+      if (!existing.sourceSheet) existing.sourceSheet = payload.sourceSheet;
       if (
         (existing.sortOrder == null || !Number.isFinite(existing.sortOrder)) &&
         payload.sortOrder != null
@@ -1595,6 +1664,7 @@ function getTabRegister() {
           sortOrder: sub.sortOrder != null && Number.isFinite(sub.sortOrder)
             ? sub.sortOrder
             : null,
+          sourceSheet: sub.sourceSheet || "",
         }))
         .sort((a, b) => {
           const aOrder =
@@ -1621,6 +1691,8 @@ function getTabRegister() {
         tabLabelAr: tab.tabLabelAr || "",
         route: tab.route || "",
         sortOrder: tab.sortOrder,
+        sourceSheet: tab.sourceSheet || "",
+        permissions: tab.permissions || "",
         subTabs: tab.subTabs,
       };
     })
