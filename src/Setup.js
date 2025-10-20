@@ -1728,3 +1728,146 @@ function seedCoreData() {
   seedHrDepartments(ss);
   Logger.log("✅ Core SYS + Admin seeding completed.");
 }
+/**
+ * Main seeder function to populate the 'New Project' form definition
+ * and all required dropdowns.
+ * * This function is idempotent: it will clear old data before adding
+ * new data to prevent duplicates.
+ */
+function seedProjectFormAndDropdowns() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Get all required sheets
+  const formsSheet = ss.getSheetByName('SYS_Dynamic_Forms');
+  const dropsSheet = ss.getSheetByName('SYS_Dropdowns');
+  const clientsSheet = ss.getSheetByName('PRJ_Clients');
+  const usersSheet = ss.getSheetByName('SYS_Users');
+
+  // Safety check to ensure all sheets exist
+  if (!formsSheet || !dropsSheet || !clientsSheet || !usersSheet) {
+    let missing = [
+      !formsSheet ? 'SYS_Dynamic_Forms' : null,
+      !dropsSheet ? 'SYS_Dropdowns' : null,
+      !clientsSheet ? 'PRJ_Clients' : null,
+      !usersSheet ? 'SYS_Users' : null
+    ].filter(Boolean).join(', ');
+    
+    Logger.log(`Error: Missing one or more required sheets: ${missing}.`);
+    SpreadsheetApp.getUi().alert(`Error: Missing required sheets: ${missing}`);
+    return;
+  }
+
+  Logger.log('All sheets found. Starting seeding process...');
+
+  // --- 1. Clear existing data to prevent duplicates ---
+  Logger.log('Clearing old data...');
+  // Clear old form definition
+  clearOldData(formsSheet, 'FORM_PRJ_AddProject', 0); // 0 is the column index for 'Form_ID'
+  
+  // Clear old dropdowns
+  clearOldData(dropsSheet, 'DD_Project_Status', 0); // 0 is the column index for 'Key'
+  clearOldData(dropsSheet, 'DD_Clients', 0);
+  clearOldData(dropsSheet, 'DD_Managers', 0);
+
+  // --- 2. Define New Form Data for 'FORM_PRJ_AddProject' ---
+  // Based on the schema of 'SYS_Dynamic_Forms'
+  const newFormData = [
+    // [Form_ID, Form_Title, Tab_ID, Tab_Name, Section_Header, Field_ID, Field_Label, Field_Type, Source_Sheet, Source_Range, Mandatory, Default_Value, Dropdown_Key, Target_Sheet, Target_Column, Role_ID]
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Project_ID', 'معرّف المشروع', 'Auto', '', '', 'No', '', '', 'PRJ_Main', 'Project_ID', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Project_Name', 'اسم المشروع', 'Text', '', '', 'Yes', '', '', 'PRJ_Main', 'Project_Name', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Client_ID', 'العميل', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Clients', 'PRJ_Main', 'Client_ID', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Contract_ID', 'معرّف العقد', 'Text', '', '', 'No', '', '', 'PRJ_Main', 'Contract_ID', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Status', 'حالة المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', 'New', 'DD_Project_Status', 'PRJ_Main', 'Status', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Start_Date', 'تاريخ البدء', 'Date', '', '', 'Yes', '', '', 'PRJ_Main', 'Start_Date', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_Days', 'الأيام المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Days', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_End_Date', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Main', 'Planned_End_Date', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Budget', 'الميزانية', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Budget', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Planned_Material_Expense', 'تكلفة المواد المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Material_Expense', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Manager', 'مدير المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Managers', 'PRJ_Main', 'Manager', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Notes', 'ملاحظات', 'Paragraph', '', '', 'No', '', '', 'PRJ_Main', 'Notes', '']
+  ];
+
+  // --- 3. Define New Static Dropdown Data ---
+  // Based on the schema of 'SYS_Dropdowns'
+  const newStaticDropdowns = [
+    // [Key, English_Title, Arabic_Title, Is_Active, Sort_Order]
+    ['DD_Project_Status', 'New', 'جديد', 'TRUE', 1],
+    ['DD_Project_Status', 'In_Progress', 'قيد التنفيذ', 'TRUE', 2],
+    ['DD_Project_Status', 'Completed', 'مكتمل', 'TRUE', 3],
+    ['DD_Project_Status', 'On_Hold', 'معلق', 'TRUE', 4],
+    ['DD_Project_Status', 'Cancelled', 'ملغى', 'TRUE', 5]
+  ];
+
+  // --- 4. Prepare Dynamic Client Dropdowns (from PRJ_Clients) ---
+  // Assumes Client_ID is in Col A, Client_Name is in Col B
+  const clientDataValues = clientsSheet.getRange(2, 1, clientsSheet.getLastRow() - 1, 2).getValues();
+  const clientDropdowns = clientDataValues
+    .filter(row => row[0] && row[1]) // Ensure Client_ID (row[0]) and Client_Name (row[1]) exist
+    .map((row, index) => ['DD_Clients', row[0], row[1], 'TRUE', index + 1]); // [Key, English_Title(Value), Arabic_Title(Display), Active, Sort]
+
+  Logger.log(`Found ${clientDropdowns.length} clients to seed.`);
+
+  // --- 5. Prepare Dynamic Manager Dropdowns (from SYS_Users) ---
+  // Assumes User_Id is in Col A, Full_Name is in Col B
+  const usersDataValues = usersSheet.getRange(2, 1, usersSheet.getLastRow() - 1, 2).getValues();
+  const managerDropdowns = usersDataValues
+    .filter(row => row[0] && row[1]) // Ensure User_Id (row[0]) and Full_Name (row[1]) exist
+    .map((row, index) => ['DD_Managers', row[0], row[1], 'TRUE', index + 1]); // [Key, English_Title(Value), Arabic_Title(Display), Active, Sort]
+  
+  Logger.log(`Found ${managerDropdowns.length} managers to seed.`);
+
+  // --- 6. Write all new data to the sheets ---
+  Logger.log('Writing new data to sheets...');
+  
+  // Append form data
+  if (newFormData.length > 0) {
+    formsSheet.getRange(formsSheet.getLastRow() + 1, 1, newFormData.length, newFormData[0].length).setValues(newFormData);
+    Logger.log(`Wrote ${newFormData.length} rows to SYS_Dynamic_Forms.`);
+  }
+
+  // Combine all new dropdowns and append
+  const allNewDropdowns = newStaticDropdowns.concat(clientDropdowns).concat(managerDropdowns);
+  
+  if (allNewDropdowns.length > 0) {
+    dropsSheet.getRange(dropsSheet.getLastRow() + 1, 1, allNewDropdowns.length, allNewDropdowns[0].length).setValues(allNewDropdowns);
+    Logger.log(`Wrote ${allNewDropdowns.length} rows to SYS_Dropdowns.`);
+  }
+
+  Logger.log('Seeding complete.');
+  SpreadsheetApp.getUi().alert('Success! The Project Form and all required dropdowns have been seeded.');
+}
+
+
+/**
+ * Helper function to clear existing data from a sheet based on a key 
+ * in a specific column, preserving the header row.
+ * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The sheet to clear data from.
+ * @param {string} key The key to look for (e.g., 'FORM_PRJ_AddProject').
+ * @param {number} colIndex The 0-based index of the column to check for the key.
+ */
+function clearOldData(sheet, key, colIndex) {
+  // Get all data, including headers
+  const data = sheet.getDataRange().getValues();
+  
+  // If sheet is empty or only has a header, do nothing
+  if (data.length <= 1) {
+    return;
+  }
+
+  // Keep the header row
+  const header = data.shift();
+  
+  // Filter the data, keeping only rows that DO NOT match the key
+  const newData = data.filter(row => row[colIndex] !== key);
+
+  // Add the header back to the top
+  newData.unshift(header);
+
+  // Clear the entire sheet's content
+  sheet.clearContents(); // Preserves formatting
+  
+  // Write the filtered data (header + non-matching rows) back to the sheet
+  if (newData.length > 0) {
+     sheet.getRange(1, 1, newData.length, newData[0].length).setValues(newData);
+  }
+}
