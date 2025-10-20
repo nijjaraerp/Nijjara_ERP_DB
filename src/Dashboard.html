@@ -953,32 +953,7 @@
         <h1 id="portal-welcome-message"></h1>
         <p class="muted">اختر الوحدة التي تريد العمل عليها</p>
       </div>
-      <div class="module-grid">
-        <div
-          class="module-card"
-          data-workspace="projects-workspace"
-          data-theme="projects"
-        >
-          <h2>المشاريع</h2>
-        </div>
-        <div
-          class="module-card"
-          data-workspace="finance-workspace"
-          data-theme="finance"
-        >
-          <h2>المالية</h2>
-        </div>
-        <div class="module-card" data-workspace="hr-workspace" data-theme="hr">
-          <h2>الموارد البشرية</h2>
-        </div>
-        <div
-          class="module-card"
-          data-workspace="system-management-view"
-          data-theme="users"
-        >
-          <h2>إدارة المستخدمين</h2>
-        </div>
-      </div>
+      <div class="module-grid"></div>
     </div>
 
     <!-- Projects (no demo data) -->
@@ -995,11 +970,7 @@
         <section class="workspace-content">
           <p class="muted">لا توجد بيانات معروضة هنا بعد.</p>
         </section>
-        <aside class="workspace-nav">
-          <button class="nav-item active">نظرة عامة</button>
-          <button class="nav-item">المهام</button>
-          <button class="nav-item">الملفات</button>
-        </aside>
+        <aside id="prj-side-nav" class="workspace-nav"></aside>
       </div>
     </div>
 
@@ -1017,11 +988,7 @@
         <section class="workspace-content">
           <p class="muted">لا توجد بيانات معروضة هنا بعد.</p>
         </section>
-        <aside class="workspace-nav">
-          <button class="nav-item active">لوحة مالية</button>
-          <button class="nav-item">الإيرادات</button>
-          <button class="nav-item">المصروفات</button>
-        </aside>
+        <aside id="fin-side-nav" class="workspace-nav"></aside>
       </div>
     </div>
 
@@ -1039,11 +1006,7 @@
         <section class="workspace-content">
           <p class="muted">لا توجد بيانات معروضة هنا بعد.</p>
         </section>
-        <aside class="workspace-nav">
-          <button class="nav-item active">نظرة عامة</button>
-          <button class="nav-item">الحضور</button>
-          <button class="nav-item">الإجازات</button>
-        </aside>
+        <aside id="hr-side-nav" class="workspace-nav"></aside>
       </div>
     </div>
 
@@ -1622,6 +1585,10 @@
         const sysPanes = sysView
           ? Array.from(sysView.querySelectorAll(".sys-pane"))
           : [];
+        const moduleGridContainer = document.querySelector(".module-grid");
+        const prjSideNav = document.getElementById("prj-side-nav");
+        const finSideNav = document.getElementById("fin-side-nav");
+        const hrSideNav = document.getElementById("hr-side-nav");
         const rolesTbody = document.getElementById("roles-tbody");
         const permissionsTbody = document.getElementById("permissions-tbody");
         const rolePermsTbody = document.getElementById("role-perms-tbody");
@@ -1986,7 +1953,7 @@
           });
         }
 
-        function renderTabs(tabRegisterData) {
+        function renderSysNav(tabRegisterData) {
           if (!sysNav) return;
 
           const sourceData =
@@ -2097,6 +2064,37 @@
         }
 
         function switchView(id) {
+          const workspaceStates = [
+            {
+              viewId: "projects-workspace",
+              nav: prjSideNav,
+              content: document.querySelector(
+                "#projects-workspace .workspace-content"
+              ),
+            },
+            {
+              viewId: "finance-workspace",
+              nav: finSideNav,
+              content: document.querySelector(
+                "#finance-workspace .workspace-content"
+              ),
+            },
+            {
+              viewId: "hr-workspace",
+              nav: hrSideNav,
+              content: document.querySelector(
+                "#hr-workspace .workspace-content"
+              ),
+            },
+          ];
+
+          workspaceStates.forEach((config) => {
+            if (config.viewId !== id) {
+              if (config.nav) config.nav.innerHTML = "";
+              if (config.content) config.content.innerHTML = "";
+            }
+          });
+
           views.forEach((v) => v.classList.toggle("active", v.id === id));
           document.querySelectorAll(".app-navbar .nav-btn").forEach((b) => {
             const target = b.getAttribute("data-target");
@@ -2108,6 +2106,24 @@
           });
           if (id === "system-management-view") {
             loadTab(currentSysPane || "overview");
+          } else if (id === "projects-workspace") {
+            renderWorkspaceNav(
+              "Tab_PRJ_Management",
+              "prj-side-nav",
+              document.querySelector("#projects-workspace .workspace-content")
+            );
+          } else if (id === "finance-workspace") {
+            renderWorkspaceNav(
+              "Tab_FIN_Management",
+              "fin-side-nav",
+              document.querySelector("#finance-workspace .workspace-content")
+            );
+          } else if (id === "hr-workspace") {
+            renderWorkspaceNav(
+              "Tab_HR_Management",
+              "hr-side-nav",
+              document.querySelector("#hr-workspace .workspace-content")
+            );
           }
         }
         function createNavButton(label, target) {
@@ -2179,6 +2195,190 @@
           if (activeView) switchView(activeView.id);
         }
 
+        function renderModuleGrid(navConfig = []) {
+          if (!moduleGridContainer) return;
+          moduleGridContainer.innerHTML = "";
+
+          const items = Array.isArray(navConfig) ? navConfig : [];
+          items
+            .filter((item) => item && item.target)
+            .forEach((item) => {
+              const card = document.createElement("div");
+              card.className = "module-card";
+              card.dataset.workspace = item.target;
+              card.textContent = item.label || item.key || item.target;
+              card.addEventListener("click", () => switchView(item.target));
+              moduleGridContainer.appendChild(card);
+            });
+
+          if (!moduleGridContainer.children.length) {
+            moduleGridContainer.innerHTML =
+              '<p class="muted">لا توجد وحدات متاحة للعرض.</p>';
+          }
+        }
+
+        function renderWorkspaceNav(tabId, navElementId, contentElement) {
+          const navEl = navElementId
+            ? document.getElementById(navElementId)
+            : null;
+          if (!navEl) return;
+
+          navEl.innerHTML = "";
+
+          if (contentElement) {
+            contentElement.innerHTML = "";
+          }
+
+          const register = Array.isArray(bootstrapData?.tabRegister)
+            ? bootstrapData.tabRegister
+            : [];
+          const normalizedId = (tabId || "").toString().toUpperCase();
+          const tabEntry = register.find((tab) => {
+            const tabKey = tab?.tabId || tab?.tabID;
+            return (
+              tabKey && String(tabKey).toUpperCase() === normalizedId
+            );
+          });
+          const subTabs = Array.isArray(tabEntry?.subTabs)
+            ? tabEntry.subTabs
+            : [];
+
+          subTabs.forEach((sub) => {
+            if (!sub?.subId) return;
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "nav-item";
+            button.textContent =
+              sub.subLabelAr || sub.subLabelEn || sub.subId || "";
+            button.dataset.subId = sub.subId;
+            if (sub.route) button.dataset.route = sub.route;
+            const subSource = (sub.sourceSheet || "").trim();
+            button.dataset.sourceSheet = subSource;
+            button.addEventListener("click", () =>
+              loadGenericTab(sub.subId, subSource, contentElement)
+            );
+            navEl.appendChild(button);
+          });
+
+          const firstButton = navEl.querySelector("button.nav-item");
+          if (firstButton) {
+            firstButton.click();
+          } else if (contentElement) {
+            contentElement.innerHTML =
+              '<p class="muted">لا توجد تبويبات فرعية متاحة.</p>';
+          }
+        }
+
+        function loadGenericTab(paneName, sourceSheet, contentElement) {
+          if (!contentElement || !paneName) return;
+
+          const paneId = String(paneName);
+          const trimmedSource = (sourceSheet || "").trim();
+          let paneElement = contentElement.querySelector(
+            `[data-generic-pane="${paneId}"]`
+          );
+          if (!paneElement) {
+            paneElement = document.createElement("div");
+            paneElement.className = "generic-pane";
+            paneElement.dataset.genericPane = paneId;
+            contentElement.appendChild(paneElement);
+          }
+
+          Array.from(contentElement.children).forEach((child) => {
+            if (child === paneElement) {
+              child.style.display = "";
+              child.classList.add("active");
+            } else {
+              child.style.display = "none";
+              child.classList.remove("active");
+            }
+          });
+
+          if (!trimmedSource) {
+            paneElement.innerHTML =
+              '<p class="error-text">لم يتم تعيين مصدر بيانات لهذا التبويب.</p>';
+            return;
+          }
+
+          paneElement.innerHTML =
+            '<p class="muted">جارٍ تحميل البيانات، يرجى الانتظار...</p>';
+
+          if (!(window.google && google.script && google.script.run)) {
+            paneElement.innerHTML =
+              '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
+            return;
+          }
+
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("loadGenericTab failed", err);
+              paneElement.innerHTML =
+                '<p class="error-text">تعذر تحميل البيانات.</p>';
+            })
+            .withSuccessHandler((result) => {
+              renderGenericTable(paneElement, result);
+            })
+            .getSheetData(trimmedSource);
+        }
+
+        function renderGenericTable(paneElement, data) {
+          if (!paneElement) return;
+          const headers = Array.isArray(data?.headers) ? data.headers : [];
+          const rows = Array.isArray(data?.rows) ? data.rows : [];
+
+          paneElement.innerHTML = "";
+
+          if (!headers.length) {
+            paneElement.innerHTML =
+              '<p class="muted">لا توجد بيانات متاحة للعرض.</p>';
+            return;
+          }
+
+          const table = document.createElement("table");
+          table.className = "sys-table";
+
+          const thead = document.createElement("thead");
+          const headerRow = document.createElement("tr");
+          headers.forEach((header) => {
+            const th = document.createElement("th");
+            th.textContent = header;
+            headerRow.appendChild(th);
+          });
+          thead.appendChild(headerRow);
+
+          const tbody = document.createElement("tbody");
+          rows.forEach((row) => {
+            const tr = document.createElement("tr");
+            headers.forEach((_, index) => {
+              const td = document.createElement("td");
+              const value = Array.isArray(row) ? row[index] : row?.[index];
+              if (value === true || value === false) {
+                td.innerHTML = renderBooleanBadge(value);
+              } else if (
+                typeof value === "string" &&
+                /^(true|false|yes|no|y|n|1|0)$/i.test(value.trim())
+              ) {
+                td.innerHTML = renderBooleanBadge(value);
+              } else if (value instanceof Date) {
+                td.textContent = formatDateTime(value);
+              } else if (
+                typeof value === "string" &&
+                /^\d{4}-\d{2}-\d{2}T/.test(value)
+              ) {
+                td.textContent = formatDateTime(value);
+              } else {
+                td.innerHTML = escapeHtml(value == null ? "" : String(value));
+              }
+              tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+
+          table.appendChild(thead);
+          table.appendChild(tbody);
+          paneElement.appendChild(table);
+        }
+
         function markTableLoaded(key, value) {
           if (!key) return;
           tableLoadState[key] = !!value;
@@ -2203,13 +2403,14 @@
           selectedUsers.clear();
           normalizedUsersCache = [];
           renderNav(data?.nav || []);
-          renderTabs(
+          renderSysNav(
             data?.tabRegister ||
               data?.tabs ||
               data?.tabRegistry ||
               data?.tabConfig ||
               undefined
           );
+          renderModuleGrid(data?.nav || []);
           const identityFromServer =
             data?.user &&
             (data.user.Full_Name || data.user.Username || data.user.Email)
@@ -2386,6 +2587,7 @@
             profileDataCache = null;
             currentProfileUserId = null;
             renderNav();
+            renderModuleGrid();
             switchView("login-screen");
             showToast("You have been signed out.", "info", "Logged Out");
           });
@@ -4183,7 +4385,8 @@
         // Set up sys nav event handlers
         /* Init */
         renderNav();
-        renderTabs();
+        renderSysNav();
+        renderModuleGrid();
         setActiveSysPane("overview", { force: true });
         bootstrapApp();
       })();
