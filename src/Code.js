@@ -1955,57 +1955,74 @@ function getTabRegister() {
   return result;
 }
 
-function getDynamicFormsRegister_() {
-  const FNAME = "getDynamicFormsRegister_";
-  debugLog(FNAME, "start");
+function renderPaneHeader(paneElement, paneName) {
+  if (!paneElement) return;
 
-  try {
-    const { headers = [], rows = [] } = loadSheetData_(
-      CONFIG.SHEETS.DYNAMIC_FORMS
-    );
-    if (!headers.length || !rows.length) {
-      debugLog(FNAME, "noData", { headers: headers.length, rows: rows.length });
-      return {};
-    }
+  const formsRegister =
+    (bootstrapData && bootstrapData.forms) || Object.create(null);
+  const formEntry = formsRegister?.[paneName];
 
-    const idx = {
-      formId: findHeaderIndex_(headers, "Form_ID", "FormId", "FormID"),
-      formTitle: findHeaderIndex_(headers, "Form_Title", "Title"),
-      tabId: findHeaderIndex_(headers, "Tab_ID", "TabId", "TabID"),
-      tabName: findHeaderIndex_(headers, "Tab_Name", "TabName"),
-      targetSheet: findHeaderIndex_(headers, "Target_Sheet", "TargetSheet"),
-    };
-
-    const registry = {};
-
-    rows.forEach((row) => {
-      const formId = idx.formId >= 0 ? getValueAt_(row, idx.formId) : "";
-      const tabId = idx.tabId >= 0 ? getValueAt_(row, idx.tabId) : "";
-      if (!formId || !tabId) return;
-
-      const key = String(tabId);
-      if (registry[key]) return;
-
-      registry[key] = {
-        formId: formId,
-        formTitle: idx.formTitle >= 0 ? getValueAt_(row, idx.formTitle) : "",
-        tabId: key,
-        tabName: idx.tabName >= 0 ? getValueAt_(row, idx.tabName) : "",
-        targetSheet:
-          idx.targetSheet >= 0 ? getValueAt_(row, idx.targetSheet) : "",
-      };
+  // Developer diagnostics
+  if (window.console) {
+    console.log(`[renderPaneHeader] lookup`, {
+      paneName,
+      hasForms: Boolean(formsRegister),
+      availableForms: Object.keys(formsRegister),
+      formEntry,
     });
-
-    debugLog(FNAME, "resolved", {
-      entries: Object.keys(registry).length,
-      hasSubPRJMaterials: Boolean(registry["Sub_PRJ_Materials"]),
-    });
-
-    return registry;
-  } catch (err) {
-    debugError(FNAME, err);
-    return {};
   }
+
+  const formId = formEntry?.formId;
+  if (!formId) return;
+
+  let header = paneElement.querySelector(".pane-header");
+  if (!header) {
+    header = document.createElement("div");
+    header.className = "pane-header";
+    paneElement.prepend(header);
+  }
+
+  header.dataset.formId = formId;
+  header.innerHTML = "";
+
+  const addButton = document.createElement("button");
+  addButton.type = "button";
+  addButton.className = "accent-button";
+  addButton.textContent = "إضافة جديد";
+
+  // Flexible renderForm handler resolution
+  const renderFormHandler =
+    (typeof window !== "undefined" && window.renderForm) ||
+    (typeof window !== "undefined" &&
+      window.app &&
+      typeof window.app.renderForm === "function" &&
+      window.app.renderForm) ||
+    (typeof window !== "undefined" &&
+      window.forms &&
+      typeof window.forms.renderForm === "function" &&
+      window.forms.renderForm);
+
+  if (typeof renderFormHandler === "function") {
+    const context =
+      (typeof window !== "undefined" && window.app) ||
+      (typeof window !== "undefined" && window.forms) ||
+      window;
+    addButton.addEventListener("click", () =>
+      renderFormHandler.call(context, formId, null)
+    );
+  } else {
+    addButton.addEventListener("click", () => {
+      console.warn("renderForm handler is not available", {
+        formId,
+        windowHasRenderForm:
+          typeof window !== "undefined" &&
+          typeof window.renderForm === "function",
+      });
+      showToast("ميزة النماذج غير متاحة حالياً.", "warning");
+    });
+  }
+
+  header.appendChild(addButton);
 }
 
 function doGetTabRegister() {

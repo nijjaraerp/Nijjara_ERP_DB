@@ -2448,7 +2448,7 @@
           }
         }
 
-        function loadGenericTab(paneName, sourceSheet, contentElement) {
+     function loadGenericTab(paneName, sourceSheet, contentElement) {
   if (!contentElement || !paneName) return;
 
   const paneId = String(paneName);
@@ -2536,7 +2536,6 @@
     })
     .getSheetData(trimmedSource);
 }
-
         function renderGenericTable(paneElement, data) {
           if (!paneElement) return;
           const headers = Array.isArray(data?.headers) ? data.headers : [];
@@ -2601,14 +2600,14 @@
           paneElement.appendChild(table);
         }
 
-       function renderPaneHeader(paneElement, paneName) {
+function renderPaneHeader(paneElement, paneName) {
   if (!paneElement) return;
 
   const formsRegister =
     (bootstrapData && bootstrapData.forms) || Object.create(null);
   const formEntry = formsRegister?.[paneName];
 
-  // Developer diagnostics (from feature branch)
+  // Developer diagnostics
   if (window.console) {
     console.log(`[renderPaneHeader] lookup`, {
       paneName,
@@ -2636,11 +2635,34 @@
   addButton.className = "accent-button";
   addButton.textContent = "إضافة جديد";
 
-  if (typeof renderForm === "function") {
-    addButton.addEventListener("click", () => renderForm(formId, null));
+  // Flexible renderForm handler resolution
+  const renderFormHandler =
+    (typeof window !== "undefined" && window.renderForm) ||
+    (typeof window !== "undefined" &&
+      window.app &&
+      typeof window.app.renderForm === "function" &&
+      window.app.renderForm) ||
+    (typeof window !== "undefined" &&
+      window.forms &&
+      typeof window.forms.renderForm === "function" &&
+      window.forms.renderForm);
+
+  if (typeof renderFormHandler === "function") {
+    const context =
+      (typeof window !== "undefined" && window.app) ||
+      (typeof window !== "undefined" && window.forms) ||
+      window;
+    addButton.addEventListener("click", () =>
+      renderFormHandler.call(context, formId, null)
+    );
   } else {
     addButton.addEventListener("click", () => {
-      console.warn("renderForm handler is not available", formId);
+      console.warn("renderForm handler is not available", {
+        formId,
+        windowHasRenderForm:
+          typeof window !== "undefined" &&
+          typeof window.renderForm === "function",
+      });
       showToast("ميزة النماذج غير متاحة حالياً.", "warning");
     });
   }
