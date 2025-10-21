@@ -1996,7 +1996,11 @@ function getDynamicFormsRegister_() {
       };
     });
 
-    debugLog(FNAME, "resolved", { entries: Object.keys(registry).length });
+    debugLog(FNAME, "resolved", {
+      entries: Object.keys(registry).length,
+      hasSubPRJMaterials: Boolean(registry["Sub_PRJ_Materials"]),
+    });
+
     return registry;
   } catch (err) {
     debugError(FNAME, err);
