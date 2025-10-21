@@ -901,6 +901,24 @@
           min-width: 140px;
         }
       }
+
+      /* Hide scrollbars globally */
+      /* For Webkit browsers (Chrome, Safari, Edge Chromium) */
+      ::-webkit-scrollbar {
+        display: none;
+        width: 0 !important;
+        height: 0 !important;
+      }
+
+      /* For Firefox */
+      * {
+        scrollbar-width: none;
+      }
+
+      /* For IE/Edge (older versions, might not be necessary) */
+      body {
+        -ms-overflow-style: none;
+      }
     </style>
   </head>
   <body>
@@ -1601,6 +1619,16 @@
           FIN: "finance-workspace",
           HR: "hr-workspace",
         };
+
+        function resolveThemeFromIdentifier(identifier) {
+          const normalized = (identifier || "")
+            .toString()
+            .toUpperCase();
+          if (normalized.includes("PRJ")) return "projects";
+          if (normalized.includes("FIN")) return "finance";
+          if (normalized.includes("HR")) return "hr";
+          return "users";
+        }
         const DEFAULT_SYS_SUB_TABS = [
           {
             tabId: "Tab_SYS_Management",
@@ -2203,9 +2231,13 @@
           items
             .filter((item) => item && item.target)
             .forEach((item) => {
+              const theme = resolveThemeFromIdentifier(
+                item?.key || item?.target || ""
+              );
               const card = document.createElement("div");
               card.className = "module-card";
               card.dataset.workspace = item.target;
+              card.dataset.theme = theme;
               card.textContent = item.label || item.key || item.target;
               card.addEventListener("click", () => switchView(item.target));
               moduleGridContainer.appendChild(card);
@@ -2222,6 +2254,14 @@
             ? document.getElementById(navElementId)
             : null;
           if (!navEl) return;
+
+          const theme = resolveThemeFromIdentifier(tabId);
+          const workspaceElement =
+            navEl.closest(".workspace") ||
+            (contentElement ? contentElement.closest(".workspace") : null);
+          if (workspaceElement) {
+            workspaceElement.dataset.theme = theme;
+          }
 
           navEl.innerHTML = "";
 
