@@ -1229,6 +1229,27 @@ function getSystemKPIs() {
   return defaults;
 }
 
+function loginUser(username, password) {
+  const FNAME = "loginUser";
+  try {
+    debugLog(FNAME, "start", {
+      hasUsername: !!username,
+      hasPassword: !!password,
+    });
+    return authenticateUser({ username, password });
+  } catch (error) {
+    console.error(
+      `${FNAME} EXCEPTION: ${error.message} \nStack: ${error.stack}`
+    );
+    debugError(FNAME, error, { stage: "loginUser" });
+    return {
+      success: false,
+      message: `Backend exception during login: ${error.message}`,
+      meta: { reason: "EXCEPTION", errorDetails: error.toString() },
+    };
+  }
+}
+
 function authenticateUser(credentials) {
   const FNAME = "authenticateUser";
   const fail = (message, meta) => {
