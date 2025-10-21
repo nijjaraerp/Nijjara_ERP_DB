@@ -2449,91 +2449,93 @@
         }
 
         function loadGenericTab(paneName, sourceSheet, contentElement) {
-          if (!contentElement || !paneName) return;
+  if (!contentElement || !paneName) return;
 
-          const paneId = String(paneName);
-          const trimmedSource = (sourceSheet || "").trim();
-          let paneElement = contentElement.querySelector(
-            `[data-generic-pane="${paneId}"]`
-          );
-          if (!paneElement) {
-            paneElement = document.createElement("div");
-            paneElement.className = "generic-pane";
-            paneElement.dataset.genericPane = paneId;
-            contentElement.appendChild(paneElement);
-          }
+  const paneId = String(paneName);
+  const trimmedSource = (sourceSheet || "").trim();
+  let paneElement = contentElement.querySelector(
+    `[data-generic-pane="${paneId}"]`
+  );
+  if (!paneElement) {
+    paneElement = document.createElement("div");
+    paneElement.className = "generic-pane";
+    paneElement.dataset.genericPane = paneId;
+    contentElement.appendChild(paneElement);
+  }
 
-          Array.from(contentElement.children).forEach((child) => {
-            if (child === paneElement) {
-              child.style.display = "";
-              child.classList.add("active");
-            } else {
-              child.style.display = "none";
-              child.classList.remove("active");
-            }
-          });
+  Array.from(contentElement.children).forEach((child) => {
+    if (child === paneElement) {
+      child.style.display = "";
+      child.classList.add("active");
+    } else {
+      child.style.display = "none";
+      child.classList.remove("active");
+    }
+  });
 
-          const formsRegister =
-            (bootstrapData && bootstrapData.forms) || Object.create(null);
-          const formMeta = formsRegister[paneName];
+  const formsRegister =
+    (bootstrapData && bootstrapData.forms) || Object.create(null);
+  const formMeta = formsRegister[paneName];
 
-          if (window.console && typeof console.groupCollapsed === "function") {
-            console.groupCollapsed(
-              `[loadGenericTab] ${paneId} (source: ${trimmedSource || "<none>"})`
-            );
-            console.log("forms keys", Object.keys(formsRegister));
-            console.log("form meta", formMeta);
-            console.groupEnd();
-          } else if (window.console) {
-            console.log("[loadGenericTab]", paneId, {
-              source: trimmedSource || null,
-              formsKeys: Object.keys(formsRegister),
-              formMeta,
-            });
-          }
+  // Developer diagnostics (from feature branch)
+  if (window.console && typeof console.groupCollapsed === "function") {
+    console.groupCollapsed(
+      `[loadGenericTab] ${paneId} (source: ${trimmedSource || "<none>"})`
+    );
+    console.log("forms keys", Object.keys(formsRegister));
+    console.log("form meta", formMeta);
+    console.groupEnd();
+  } else if (window.console) {
+    console.log("[loadGenericTab]", paneId, {
+      source: trimmedSource || null,
+      formsKeys: Object.keys(formsRegister),
+      formMeta,
+    });
+  }
 
-          if (paneName === "Sub_FIN_Direct") {
-            paneElement.classList.add("direct-expense-pane");
-            if (typeof renderDirectExpenseForm === "function") {
-              renderDirectExpenseForm(paneElement);
-            } else {
-              paneElement.innerHTML =
-                '<p class="error-text">واجهة المصروفات غير متاحة حالياً.</p>';
-            }
-            return;
-          }
+  // Special-case rendering (from main branch)
+  if (paneName === "Sub_FIN_Direct") {
+    paneElement.classList.add("direct-expense-pane");
+    if (typeof renderDirectExpenseForm === "function") {
+      renderDirectExpenseForm(paneElement);
+    } else {
+      paneElement.innerHTML =
+        '<p class="error-text">واجهة المصروفات غير متاحة حالياً.</p>';
+    }
+    return;
+  }
 
-          paneElement.classList.remove("direct-expense-pane");
+  paneElement.classList.remove("direct-expense-pane");
 
-          if (!trimmedSource) {
-            paneElement.innerHTML =
-              '<p class="error-text">لم يتم تعيين مصدر بيانات لهذا التبويب.</p>';
-            return;
-          }
+  if (!trimmedSource) {
+    paneElement.innerHTML =
+      '<p class="error-text">لم يتم تعيين مصدر بيانات لهذا التبويب.</p>';
+    return;
+  }
 
-          paneElement.innerHTML =
-            '<p class="muted">جارٍ تحميل البيانات، يرجى الانتظار...</p>';
+  paneElement.innerHTML =
+    '<p class="muted">جارٍ تحميل البيانات، يرجى الانتظار...</p>';
 
-          if (!(window.google && google.script && google.script.run)) {
-            paneElement.innerHTML =
-              '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
-            return;
-          }
+  if (!(window.google && google.script && google.script.run)) {
+    paneElement.innerHTML =
+      '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
+    return;
+  }
 
-          google.script.run
-            .withFailureHandler((err) => {
-              console.error("loadGenericTab failed", err);
-              paneElement.innerHTML =
-                '<p class="error-text">تعذر تحميل البيانات.</p>';
-            })
-            .withSuccessHandler((result) => {
-              if (formMeta) {
-                renderPaneHeader(paneElement, paneName);
-              }
-              renderGenericTable(paneElement, result);
-            })
-            .getSheetData(trimmedSource);
-        }
+  google.script.run
+    .withFailureHandler((err) => {
+      console.error("loadGenericTab failed", err);
+      paneElement.innerHTML =
+        '<p class="error-text">تعذر تحميل البيانات.</p>';
+    })
+    .withSuccessHandler((result) => {
+      if (formMeta) {
+        renderPaneHeader(paneElement, paneName);
+      }
+      renderGenericTable(paneElement, result);
+    })
+    .getSheetData(trimmedSource);
+}
 
         function renderGenericTable(paneElement, data) {
           if (!paneElement) return;
@@ -2599,49 +2601,52 @@
           paneElement.appendChild(table);
         }
 
-        function renderPaneHeader(paneElement, paneName) {
-          if (!paneElement) return;
-          const formsRegister =
-            (bootstrapData && bootstrapData.forms) || Object.create(null);
-          const formEntry = formsRegister?.[paneName];
-          if (window.console) {
-            console.log(`[renderPaneHeader] lookup`, {
-              paneName,
-              hasForms: Boolean(formsRegister),
-              availableForms: Object.keys(formsRegister),
-              formEntry,
-            });
-          }
-          const formId = formEntry?.formId;
-          if (!formId) return;
+       function renderPaneHeader(paneElement, paneName) {
+  if (!paneElement) return;
 
-          let header = paneElement.querySelector(".pane-header");
-          if (!header) {
-            header = document.createElement("div");
-            header.className = "pane-header";
-            paneElement.prepend(header);
-          }
+  const formsRegister =
+    (bootstrapData && bootstrapData.forms) || Object.create(null);
+  const formEntry = formsRegister?.[paneName];
 
-          header.dataset.formId = formId;
-          header.innerHTML = "";
+  // Developer diagnostics (from feature branch)
+  if (window.console) {
+    console.log(`[renderPaneHeader] lookup`, {
+      paneName,
+      hasForms: Boolean(formsRegister),
+      availableForms: Object.keys(formsRegister),
+      formEntry,
+    });
+  }
 
-          const addButton = document.createElement("button");
-          addButton.type = "button";
-          addButton.className = "accent-button";
-          addButton.textContent = "إضافة جديد";
+  const formId = formEntry?.formId;
+  if (!formId) return;
 
-          if (typeof renderForm === "function") {
-            addButton.addEventListener("click", () => renderForm(formId, null));
-          } else {
-            addButton.addEventListener("click", () => {
-              console.warn("renderForm handler is not available", formId);
-              showToast("ميزة النماذج غير متاحة حالياً.", "warning");
-            });
-          }
+  let header = paneElement.querySelector(".pane-header");
+  if (!header) {
+    header = document.createElement("div");
+    header.className = "pane-header";
+    paneElement.prepend(header);
+  }
 
-          header.appendChild(addButton);
-        }
+  header.dataset.formId = formId;
+  header.innerHTML = "";
 
+  const addButton = document.createElement("button");
+  addButton.type = "button";
+  addButton.className = "accent-button";
+  addButton.textContent = "إضافة جديد";
+
+  if (typeof renderForm === "function") {
+    addButton.addEventListener("click", () => renderForm(formId, null));
+  } else {
+    addButton.addEventListener("click", () => {
+      console.warn("renderForm handler is not available", formId);
+      showToast("ميزة النماذج غير متاحة حالياً.", "warning");
+    });
+  }
+
+  header.appendChild(addButton);
+}
         function renderDirectExpenseForm(paneElement) {
           if (!paneElement) return;
           paneElement.innerHTML = "";
