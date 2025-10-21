@@ -327,6 +327,42 @@ function getSheetWithFallback_(...names) {
   return null;
 }
 
+function getSheetByName_(name) {
+  return getSheet_(name);
+}
+
+function appendRow_(sheet, rowObject, headers) {
+  if (!sheet) {
+    throw new Error("appendRow_: sheet is required");
+  }
+
+  let effectiveHeaders = Array.isArray(headers) ? headers.slice() : null;
+  if (!effectiveHeaders || !effectiveHeaders.length) {
+    const lastCol = sheet.getLastColumn();
+    effectiveHeaders =
+      lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
+  }
+
+  if (!effectiveHeaders.length) {
+    throw new Error("appendRow_: sheet headers could not be resolved");
+  }
+
+  const rowValues = effectiveHeaders.map((header) => {
+    if (
+      rowObject &&
+      Object.prototype.hasOwnProperty.call(rowObject, header) &&
+      rowObject[header] !== undefined &&
+      rowObject[header] !== null
+    ) {
+      return rowObject[header];
+    }
+    return "";
+  });
+
+  sheet.appendRow(rowValues);
+  return true;
+}
+
 function resolveDataSourceFromCandidate_(ss, candidate) {
   if (!candidate) return null;
 
@@ -658,6 +694,7 @@ function buildBootstrapPayload_(rawUser) {
     filters,
     nav: buildNavigationConfig_(role, permissions),
     tabRegister: getTabRegister(),
+    forms: getDynamicFormsRegister_(),
     meta: {
       hasUser: !!sanitizedUser,
       permissions: Array.isArray(permissions) ? permissions.length : 0,
@@ -681,6 +718,7 @@ function buildGuestBootstrapPayload_() {
     },
     nav: buildNavigationConfig_("GUEST", []),
     tabRegister: getTabRegister(),
+    forms: getDynamicFormsRegister_(),
     meta: {
       hasUser: false,
       permissions: 0,
@@ -812,6 +850,205 @@ function getSheetData(sourceName) {
     debugError(FNAME, err, { sourceName });
     throw err;
   }
+}
+
+function getMaterialsCatalog() {
+  const FNAME = "getMaterialsCatalog";
+  debugLog(FNAME, "start");
+
+  try {
+    const { headers = [], rows = [] } = loadSheetData_(
+      CONFIG.SHEETS.PRJ_MATERIALS
+    );
+    if (!headers.length || !rows.length) {
+      debugLog(FNAME, "noData", { headers: headers.length, rows: rows.length });
+      return sanitizeForClientResponse_([]);
+    }
+
+    const idxActive = findHeaderIndex_(headers, "Active", "IsActive");
+    const catalog = rows
+      .filter((row) =>
+        idxActive < 0 ? true : isTruthyFlag_(getValueAt_(row, idxActive))
+      )
+      .map((row) =>
+        headers.reduce((acc, header, index) => {
+          acc[header] = row[index];
+          return acc;
+        }, {})
+      );
+
+    debugLog(FNAME, "resolved", { count: catalog.length });
+    return sanitizeForClientResponse_(catalog);
+  } catch (err) {
+    debugError(FNAME, err);
+    throw err;
+  }
+}
+
+function getProjectsForDropdown() {
+  const FNAME = "getProjectsForDropdown";
+  debugLog(FNAME, "start");
+
+  try {
+    const { headers = [], rows = [] } = loadSheetData_(
+      CONFIG.SHEETS.PRJ_MAIN
+    );
+    if (!headers.length || !rows.length) {
+      debugLog(FNAME, "noData", { headers: headers.length, rows: rows.length });
+      return sanitizeForClientResponse_([]);
+    }
+
+    const idxId = findHeaderIndex_(
+      headers,
+      "Project_ID",
+      "ProjectId",
+      "ProjectID",
+      "ID"
+    );
+    const idxName = findHeaderIndex_(
+      headers,
+      "Project_Name",
+      "ProjectName",
+      "Name",
+      "Title"
+    );
+
+    const projects = rows
+      .map((row) => ({
+        Project_ID: idxId >= 0 ? getValueAt_(row, idxId) || "" : "",
+        Project_Name: idxName >= 0 ? getValueAt_(row, idxName) || "" : "",
+      }))
+      .filter((record) => record.Project_ID || record.Project_Name);
+
+    debugLog(FNAME, "resolved", { count: projects.length });
+    return sanitizeForClientResponse_(projects);
+  } catch (err) {
+    debugError(FNAME, err);
+    throw err;
+  }
+}
+
+function saveDirectExpenses(payload) {
+  const FNAME = "saveDirectExpenses";
+  debugLog(FNAME, "start", {
+    hasPayload: !!payload,
+    items: Array.isArray(payload?.items) ? payload.items.length : 0,
+  });
+
+  if (!payload || !Array.isArray(payload.items) || !payload.items.length) {
+    return { success: false, message: "لا توجد عناصر لحفظها." };
+  }
+
+  const sheet = getSheetByName_(CONFIG.SHEETS.FIN_DIRECT_EXP);
+  if (!sheet) {
+    throw new Error("FIN_DirectExpenses sheet not found");
+  }
+
+  const lastCol = sheet.getLastColumn();
+  const headers =
+    lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
+  if (!headers.length) {
+    throw new Error("FIN_DirectExpenses sheet is missing headers");
+  }
+
+  const headerData = payload.header || {};
+  const projectId =
+    headerData.project ||
+    headerData.Project_ID ||
+    headerData.projectId ||
+    headerData.projectCode ||
+    "";
+  const rawDate = headerData.date || headerData.Date || "";
+  const headerNotes = headerData.notes || headerData.Notes || "";
+  const headerPayStatus = headerData.payStatus || headerData.Pay_Status || "";
+
+  let normalizedDate = null;
+  if (rawDate) {
+    const parsed = coerceDate_(rawDate) || new Date(rawDate);
+    normalizedDate =
+      parsed instanceof Date && !Number.isNaN(parsed.getTime())
+        ? parsed
+        : rawDate;
+  } else {
+    normalizedDate = new Date();
+  }
+
+  let insertedCount = 0;
+
+  payload.items.forEach((item) => {
+    if (!item) return;
+
+    const materialId =
+      item.materialId || item.Material_ID || item.MaterialId || "";
+    const materialName =
+      item.materialName || item.Material_Name || item.MaterialName || "";
+    const category = item.category || item.Category || "";
+    const unit = item.unit || item.Unit || "";
+    const quantityRaw =
+      item.quantity ?? item.Qty ?? item.qty ?? item.Quantity ?? 0;
+    const quantity = Number(quantityRaw);
+    if (!quantity || Number.isNaN(quantity) || quantity <= 0) {
+      debugLog(FNAME, "skipItem", { reason: "invalidQuantity", materialId });
+      return;
+    }
+
+    const unitPriceRaw =
+      item.unitPrice ?? item.Unit_Price ?? item.price ?? item.Price ?? 0;
+    const unitPrice = Number(unitPriceRaw) || 0;
+    const amount =
+      item.amount != null && item.amount !== ""
+        ? Number(item.amount)
+        : quantity * unitPrice;
+    const vatRateRaw =
+      item.vatRate ?? item.VAT_Rate ?? item.vat ?? item.taxRate ?? 0;
+    const vatRateNum =
+      vatRateRaw === "" || vatRateRaw === null
+        ? 0
+        : Number(vatRateRaw) || 0;
+    const vatFactor = vatRateNum > 1 ? vatRateNum / 100 : vatRateNum;
+    const vatAmount =
+      item.vatAmount != null && item.vatAmount !== ""
+        ? Number(item.vatAmount)
+        : amount * (Number.isFinite(vatFactor) ? vatFactor : 0);
+    const totalWithVat =
+      item.totalWithVat != null && item.totalWithVat !== ""
+        ? Number(item.totalWithVat)
+        : amount + vatAmount;
+    const payStatus =
+      item.payStatus || item.Pay_Status || headerPayStatus || "";
+    const notes = item.notes || item.Notes || headerNotes || "";
+
+    const newRow = {
+      Project_ID: projectId,
+      Date: normalizedDate,
+      Material_ID: materialId,
+      Material_Name: materialName,
+      Category: category,
+      Unit: unit,
+      Qty: quantity,
+      Unit_Price: unitPrice,
+      Amount: amount,
+      VAT_Rate: vatRateNum,
+      VAT_Amount: vatAmount,
+      Total_With_VAT: totalWithVat,
+      Pay_Status: payStatus,
+      Notes: notes,
+    };
+
+    appendRow_(sheet, newRow, headers);
+    insertedCount += 1;
+  });
+
+  if (!insertedCount) {
+    return { success: false, message: "لم يتم العثور على عناصر صالحة للحفظ." };
+  }
+
+  debugLog(FNAME, "complete", { inserted: insertedCount });
+  return {
+    success: true,
+    message: "تم حفظ المصروفات المباشرة بنجاح.",
+    inserted: insertedCount,
+  };
 }
 
 function sanitizeUserForClient_(user) {
@@ -1716,6 +1953,58 @@ function getTabRegister() {
   });
 
   return result;
+}
+
+function getDynamicFormsRegister_() {
+  const FNAME = "getDynamicFormsRegister_";
+  debugLog(FNAME, "start");
+
+  try {
+    const { headers = [], rows = [] } = loadSheetData_(
+      CONFIG.SHEETS.DYNAMIC_FORMS
+    );
+    if (!headers.length || !rows.length) {
+      debugLog(FNAME, "noData", { headers: headers.length, rows: rows.length });
+      return {};
+    }
+
+    const idx = {
+      formId: findHeaderIndex_(headers, "Form_ID", "FormId", "FormID"),
+      formTitle: findHeaderIndex_(headers, "Form_Title", "Title"),
+      tabId: findHeaderIndex_(headers, "Tab_ID", "TabId", "TabID"),
+      tabName: findHeaderIndex_(headers, "Tab_Name", "TabName"),
+      targetSheet: findHeaderIndex_(headers, "Target_Sheet", "TargetSheet"),
+    };
+
+    const registry = {};
+
+    rows.forEach((row) => {
+      const formId = idx.formId >= 0 ? getValueAt_(row, idx.formId) : "";
+      const tabId = idx.tabId >= 0 ? getValueAt_(row, idx.tabId) : "";
+      if (!formId || !tabId) return;
+
+      const key = String(tabId);
+      if (registry[key]) return;
+
+      registry[key] = {
+        formId: formId,
+        formTitle: idx.formTitle >= 0 ? getValueAt_(row, idx.formTitle) : "",
+        tabId: key,
+        tabName: idx.tabName >= 0 ? getValueAt_(row, idx.tabName) : "",
+        targetSheet:
+          idx.targetSheet >= 0 ? getValueAt_(row, idx.targetSheet) : "",
+      };
+    });
+
+    debugLog(FNAME, "resolved", {
+      entries: Object.keys(registry).length,
+      hasSubPRJMaterials: Boolean(registry["Sub_PRJ_Materials"]),
+    });
+    return registry;
+  } catch (err) {
+    debugError(FNAME, err);
+    return {};
+  }
 }
 
 function doGetTabRegister() {

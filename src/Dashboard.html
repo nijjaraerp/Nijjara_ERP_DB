@@ -518,6 +518,145 @@
         color: #e74c3c;
         border-color: rgba(231, 76, 60, 0.3);
       }
+      .pane-header {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .pane-header .accent-button {
+        min-width: 140px;
+      }
+      .direct-expense-pane {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .direct-expense__header,
+      .direct-expense__footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+        justify-content: flex-start;
+      }
+      .direct-expense__field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        min-width: 200px;
+      }
+      .direct-expense__field label {
+        font-size: 0.9rem;
+        color: var(--color-text-secondary);
+      }
+      .direct-expense__field select,
+      .direct-expense__field input {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        padding: 0.6rem 0.75rem;
+        color: var(--color-text-primary);
+      }
+      .direct-expense__main {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+      }
+      .direct-expense__catalog,
+      .direct-expense__cart {
+        flex: 1;
+        min-width: 280px;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        background: rgba(30, 30, 30, 0.9);
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .direct-expense__catalog h3,
+      .direct-expense__cart h3 {
+        font-size: 1.1rem;
+      }
+      .direct-expense__search {
+        width: 100%;
+      }
+      .direct-expense__search input {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid var(--color-border);
+        background: rgba(0, 0, 0, 0.3);
+        color: var(--color-text-primary);
+      }
+      .direct-expense__materials-list {
+        display: grid;
+        gap: 0.75rem;
+        max-height: 420px;
+        overflow-y: auto;
+        padding-inline-end: 0.5rem;
+      }
+      .direct-expense__material-card {
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 10px;
+        padding: 0.75rem;
+        background: rgba(0, 0, 0, 0.25);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .direct-expense__material-card button {
+        align-self: flex-start;
+      }
+      .direct-expense__material-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+      }
+      .direct-expense__cart-items table {
+        width: 100%;
+      }
+      .direct-expense__cart-items thead th {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .direct-expense__totals {
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 0.75rem;
+        display: grid;
+        gap: 0.45rem;
+      }
+      .direct-expense__totals-row {
+        display: flex;
+        justify-content: space-between;
+        color: var(--color-text-secondary);
+      }
+      .direct-expense__totals-row strong {
+        color: var(--color-text-primary);
+      }
+      .direct-expense__remove-btn {
+        background: transparent;
+        border: 1px solid rgba(231, 76, 60, 0.6);
+        color: #e74c3c;
+        padding: 0.3rem 0.6rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+      .direct-expense__remove-btn:hover {
+        background: rgba(231, 76, 60, 0.12);
+      }
+      .direct-expense__footer button {
+        min-width: 180px;
+      }
+      .direct-expense__empty {
+        color: var(--color-text-secondary);
+        text-align: center;
+        padding: 1rem 0;
+      }
       .icon-row {
         display: flex;
         flex-wrap: wrap;
@@ -2334,6 +2473,38 @@
             }
           });
 
+          const formsRegister =
+            (bootstrapData && bootstrapData.forms) || Object.create(null);
+          const formMeta = formsRegister[paneName];
+
+          if (window.console && typeof console.groupCollapsed === "function") {
+            console.groupCollapsed(
+              `[loadGenericTab] ${paneId} (source: ${trimmedSource || "<none>"})`
+            );
+            console.log("forms keys", Object.keys(formsRegister));
+            console.log("form meta", formMeta);
+            console.groupEnd();
+          } else if (window.console) {
+            console.log("[loadGenericTab]", paneId, {
+              source: trimmedSource || null,
+              formsKeys: Object.keys(formsRegister),
+              formMeta,
+            });
+          }
+
+          if (paneName === "Sub_FIN_Direct") {
+            paneElement.classList.add("direct-expense-pane");
+            if (typeof renderDirectExpenseForm === "function") {
+              renderDirectExpenseForm(paneElement);
+            } else {
+              paneElement.innerHTML =
+                '<p class="error-text">واجهة المصروفات غير متاحة حالياً.</p>';
+            }
+            return;
+          }
+
+          paneElement.classList.remove("direct-expense-pane");
+
           if (!trimmedSource) {
             paneElement.innerHTML =
               '<p class="error-text">لم يتم تعيين مصدر بيانات لهذا التبويب.</p>';
@@ -2356,6 +2527,9 @@
                 '<p class="error-text">تعذر تحميل البيانات.</p>';
             })
             .withSuccessHandler((result) => {
+              if (formMeta) {
+                renderPaneHeader(paneElement, paneName);
+              }
               renderGenericTable(paneElement, result);
             })
             .getSheetData(trimmedSource);
@@ -2366,11 +2540,17 @@
           const headers = Array.isArray(data?.headers) ? data.headers : [];
           const rows = Array.isArray(data?.rows) ? data.rows : [];
 
+          const preservedHeader = paneElement.querySelector(".pane-header");
           paneElement.innerHTML = "";
+          if (preservedHeader) {
+            paneElement.appendChild(preservedHeader);
+          }
 
           if (!headers.length) {
-            paneElement.innerHTML =
-              '<p class="muted">لا توجد بيانات متاحة للعرض.</p>';
+            const emptyMessage = document.createElement("p");
+            emptyMessage.className = "muted";
+            emptyMessage.textContent = "لا توجد بيانات متاحة للعرض.";
+            paneElement.appendChild(emptyMessage);
             return;
           }
 
@@ -2417,6 +2597,537 @@
           table.appendChild(thead);
           table.appendChild(tbody);
           paneElement.appendChild(table);
+        }
+
+        function renderPaneHeader(paneElement, paneName) {
+          if (!paneElement) return;
+          const formsRegister =
+            (bootstrapData && bootstrapData.forms) || Object.create(null);
+          const formEntry = formsRegister?.[paneName];
+          if (window.console) {
+            console.log(`[renderPaneHeader] lookup`, {
+              paneName,
+              hasForms: Boolean(formsRegister),
+              availableForms: Object.keys(formsRegister),
+              formEntry,
+            });
+          }
+          const formId = formEntry?.formId;
+          if (!formId) return;
+
+          let header = paneElement.querySelector(".pane-header");
+          if (!header) {
+            header = document.createElement("div");
+            header.className = "pane-header";
+            paneElement.prepend(header);
+          }
+
+          header.dataset.formId = formId;
+          header.innerHTML = "";
+
+          const addButton = document.createElement("button");
+          addButton.type = "button";
+          addButton.className = "accent-button";
+          addButton.textContent = "إضافة جديد";
+
+          if (typeof renderForm === "function") {
+            addButton.addEventListener("click", () => renderForm(formId, null));
+          } else {
+            addButton.addEventListener("click", () => {
+              console.warn("renderForm handler is not available", formId);
+              showToast("ميزة النماذج غير متاحة حالياً.", "warning");
+            });
+          }
+
+          header.appendChild(addButton);
+        }
+
+        function renderDirectExpenseForm(paneElement) {
+          if (!paneElement) return;
+          paneElement.innerHTML = "";
+
+          let cart = [];
+          let materialsCatalog = [];
+
+          const headerSection = document.createElement("div");
+          headerSection.className = "direct-expense__header";
+
+          const projectField = document.createElement("div");
+          projectField.className = "direct-expense__field";
+          const projectLabel = document.createElement("label");
+          projectLabel.setAttribute("for", "de-project-select");
+          projectLabel.textContent = "المشروع";
+          const projectSelect = document.createElement("select");
+          projectSelect.id = "de-project-select";
+          const defaultProjectOption = document.createElement("option");
+          defaultProjectOption.value = "";
+          defaultProjectOption.textContent = "اختر مشروعًا";
+          projectSelect.appendChild(defaultProjectOption);
+          projectField.appendChild(projectLabel);
+          projectField.appendChild(projectSelect);
+
+          const dateField = document.createElement("div");
+          dateField.className = "direct-expense__field";
+          const dateLabel = document.createElement("label");
+          dateLabel.setAttribute("for", "de-date-input");
+          dateLabel.textContent = "التاريخ";
+          const dateInput = document.createElement("input");
+          dateInput.type = "date";
+          dateInput.id = "de-date-input";
+          dateField.appendChild(dateLabel);
+          dateField.appendChild(dateInput);
+
+          headerSection.appendChild(projectField);
+          headerSection.appendChild(dateField);
+          paneElement.appendChild(headerSection);
+
+          const mainSection = document.createElement("div");
+          mainSection.className = "direct-expense__main";
+
+          const catalogContainer = document.createElement("div");
+          catalogContainer.className = "direct-expense__catalog";
+          const catalogTitle = document.createElement("h3");
+          catalogTitle.textContent = "كتالوج المواد";
+          const searchWrapper = document.createElement("div");
+          searchWrapper.className = "direct-expense__search";
+          const searchInput = document.createElement("input");
+          searchInput.type = "search";
+          searchInput.id = "material-search";
+          searchInput.placeholder = "ابحث عن مادة...";
+          searchWrapper.appendChild(searchInput);
+          const materialsList = document.createElement("div");
+          materialsList.id = "materials-list";
+          materialsList.className = "direct-expense__materials-list";
+          materialsList.innerHTML =
+            '<p class="muted">جارٍ تحميل كتالوج المواد...</p>';
+          catalogContainer.appendChild(catalogTitle);
+          catalogContainer.appendChild(searchWrapper);
+          catalogContainer.appendChild(materialsList);
+
+          const cartContainer = document.createElement("div");
+          cartContainer.className = "direct-expense__cart";
+          const cartTitle = document.createElement("h3");
+          cartTitle.textContent = "سلة المشتريات";
+          const cartItemsTable = document.createElement("div");
+          cartItemsTable.id = "cart-items-table";
+          cartItemsTable.className = "direct-expense__cart-items";
+          const cartTotals = document.createElement("div");
+          cartTotals.id = "cart-totals";
+          cartTotals.className = "direct-expense__totals";
+          cartContainer.appendChild(cartTitle);
+          cartContainer.appendChild(cartItemsTable);
+          cartContainer.appendChild(cartTotals);
+
+          mainSection.appendChild(catalogContainer);
+          mainSection.appendChild(cartContainer);
+          paneElement.appendChild(mainSection);
+
+          const footerSection = document.createElement("div");
+          footerSection.className = "direct-expense__footer";
+          const submitButton = document.createElement("button");
+          submitButton.type = "button";
+          submitButton.id = "submit-cart-btn";
+          submitButton.className = "accent-button";
+          submitButton.textContent = "حفظ المصروفات";
+          footerSection.appendChild(submitButton);
+          paneElement.appendChild(footerSection);
+
+          const formatCurrency = (value) => {
+            const number = Number(value) || 0;
+            try {
+              return new Intl.NumberFormat("ar-EG", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(number);
+            } catch (err) {
+              return number.toFixed(2);
+            }
+          };
+
+          const normalizeId = (material) =>
+            material?.Material_ID ||
+            material?.materialId ||
+            material?.ID ||
+            material?.id ||
+            "";
+
+          function populateMaterialsList(materials) {
+            materialsList.innerHTML = "";
+            if (!Array.isArray(materials) || !materials.length) {
+              const empty = document.createElement("p");
+              empty.className = "direct-expense__empty";
+              empty.textContent = "لا توجد مواد متاحة.";
+              materialsList.appendChild(empty);
+              return;
+            }
+
+            materials.forEach((material) => {
+              const card = document.createElement("div");
+              card.className = "direct-expense__material-card";
+
+              const title = document.createElement("strong");
+              title.textContent =
+                material?.Material_Name ||
+                material?.Name ||
+                normalizeId(material) ||
+                "مادة";
+              card.appendChild(title);
+
+              const meta = document.createElement("div");
+              meta.className = "direct-expense__material-meta";
+
+              const codeSpan = document.createElement("span");
+              codeSpan.textContent = `#${normalizeId(material) || "--"}`;
+              meta.appendChild(codeSpan);
+
+              if (material?.Category) {
+                const categorySpan = document.createElement("span");
+                categorySpan.textContent = material.Category;
+                meta.appendChild(categorySpan);
+              }
+
+              const unitPrice = Number(material?.Unit_Price || material?.UnitPrice || 0) || 0;
+              const priceSpan = document.createElement("span");
+              priceSpan.textContent = `السعر: ${formatCurrency(unitPrice)}`;
+              meta.appendChild(priceSpan);
+
+              if (material?.Unit) {
+                const unitSpan = document.createElement("span");
+                unitSpan.textContent = material.Unit;
+                meta.appendChild(unitSpan);
+              }
+
+              card.appendChild(meta);
+
+              const addButton = document.createElement("button");
+              addButton.type = "button";
+              addButton.className = "accent-button";
+              addButton.textContent = "إضافة للسلة";
+              const materialId = normalizeId(material);
+              addButton.addEventListener("click", () => addToCart(materialId));
+              card.appendChild(addButton);
+
+              materialsList.appendChild(card);
+            });
+          }
+
+          function addToCart(materialId) {
+            const material = materialsCatalog.find(
+              (item) => String(normalizeId(item)) === String(materialId)
+            );
+            if (!material) {
+              showToast("تعذر العثور على المادة المحددة.", "error");
+              return;
+            }
+
+            const promptMessage =
+              "أدخل الكمية للمادة " +
+              (material.Material_Name || material.MaterialName || materialId) +
+              ":";
+            const quantityText = window.prompt(promptMessage, "1");
+            if (quantityText === null) return;
+
+            const normalized = String(quantityText)
+              .replace(/،/g, ".")
+              .replace(/,/g, ".")
+              .trim();
+            const quantity = Number(normalized);
+            if (!quantity || Number.isNaN(quantity) || quantity <= 0) {
+              showToast("الكمية غير صالحة.", "warning");
+              return;
+            }
+
+            const unitPrice = Number(material.Unit_Price || material.UnitPrice || 0) || 0;
+            const vatRate =
+              material.VAT_Rate !== undefined && material.VAT_Rate !== null
+                ? Number(material.VAT_Rate) || 0
+                : 0;
+
+            const existing = cart.find(
+              (item) => String(item.materialId) === String(materialId)
+            );
+
+            if (existing) {
+              existing.quantity += quantity;
+            } else {
+              cart.push({
+                materialId: String(materialId),
+                materialName:
+                  material.Material_Name ||
+                  material.MaterialName ||
+                  String(materialId),
+                category: material.Category || "",
+                unit: material.Unit || "",
+                unitPrice,
+                vatRate,
+                quantity,
+                amount: 0,
+                vatAmount: 0,
+                totalWithVat: 0,
+              });
+            }
+
+            renderCart();
+          }
+
+          function renderCart() {
+            cartItemsTable.innerHTML = "";
+            cartTotals.innerHTML = "";
+
+            if (!cart.length) {
+              const emptyCart = document.createElement("p");
+              emptyCart.className = "direct-expense__empty";
+              emptyCart.textContent = "لم يتم إضافة أي عناصر بعد.";
+              cartItemsTable.appendChild(emptyCart);
+              return;
+            }
+
+            let subtotal = 0;
+            let vatTotal = 0;
+            let grandTotal = 0;
+
+            const table = document.createElement("table");
+            const thead = document.createElement("thead");
+            const headRow = document.createElement("tr");
+            [
+              "المادة",
+              "السعر",
+              "الكمية",
+              "الإجمالي",
+              "الضريبة",
+              "الإجمالي مع الضريبة",
+              "",
+            ].forEach((label) => {
+              const th = document.createElement("th");
+              th.textContent = label;
+              headRow.appendChild(th);
+            });
+            thead.appendChild(headRow);
+
+            const tbody = document.createElement("tbody");
+
+            cart.forEach((item, index) => {
+              const amount = item.quantity * item.unitPrice;
+              const vatFactor = item.vatRate > 1 ? item.vatRate / 100 : item.vatRate;
+              const vatAmount = amount * (Number.isFinite(vatFactor) ? vatFactor : 0);
+              const totalWithVat = amount + vatAmount;
+
+              item.amount = amount;
+              item.vatAmount = vatAmount;
+              item.totalWithVat = totalWithVat;
+
+              subtotal += amount;
+              vatTotal += vatAmount;
+              grandTotal += totalWithVat;
+
+              const row = document.createElement("tr");
+
+              const materialCell = document.createElement("td");
+              materialCell.textContent = item.materialName;
+              row.appendChild(materialCell);
+
+              const priceCell = document.createElement("td");
+              priceCell.textContent = formatCurrency(item.unitPrice);
+              row.appendChild(priceCell);
+
+              const qtyCell = document.createElement("td");
+              qtyCell.textContent = formatCurrency(item.quantity);
+              row.appendChild(qtyCell);
+
+              const amountCell = document.createElement("td");
+              amountCell.textContent = formatCurrency(amount);
+              row.appendChild(amountCell);
+
+              const vatCell = document.createElement("td");
+              vatCell.textContent = formatCurrency(vatAmount);
+              row.appendChild(vatCell);
+
+              const totalCell = document.createElement("td");
+              totalCell.textContent = formatCurrency(totalWithVat);
+              row.appendChild(totalCell);
+
+              const actionsCell = document.createElement("td");
+              const removeButton = document.createElement("button");
+              removeButton.type = "button";
+              removeButton.className = "direct-expense__remove-btn";
+              removeButton.textContent = "حذف";
+              removeButton.addEventListener("click", () => {
+                cart.splice(index, 1);
+                renderCart();
+              });
+              actionsCell.appendChild(removeButton);
+              row.appendChild(actionsCell);
+
+              tbody.appendChild(row);
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            cartItemsTable.appendChild(table);
+
+            const totalsConfig = [
+              { label: "الإجمالي قبل الضريبة", value: subtotal },
+              { label: "ضريبة القيمة المضافة", value: vatTotal },
+              { label: "الإجمالي الكلي", value: grandTotal },
+            ];
+
+            totalsConfig.forEach(({ label, value }) => {
+              const row = document.createElement("div");
+              row.className = "direct-expense__totals-row";
+              const labelSpan = document.createElement("span");
+              labelSpan.textContent = label;
+              const valueSpan = document.createElement("strong");
+              valueSpan.textContent = formatCurrency(value);
+              row.appendChild(labelSpan);
+              row.appendChild(valueSpan);
+              cartTotals.appendChild(row);
+            });
+          }
+
+          searchInput.addEventListener("input", (event) => {
+            const term = String(event.target.value || "").trim().toLowerCase();
+            if (!term) {
+              populateMaterialsList(materialsCatalog);
+              return;
+            }
+            const filtered = materialsCatalog.filter((material) => {
+              const haystack = [
+                normalizeId(material),
+                material?.Material_Name,
+                material?.MaterialName,
+                material?.Category,
+              ]
+                .filter(Boolean)
+                .map((value) => String(value).toLowerCase());
+              return haystack.some((value) => value.includes(term));
+            });
+            populateMaterialsList(filtered);
+          });
+
+          searchInput.addEventListener("keyup", (event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+            }
+          });
+
+          renderCart();
+
+          if (!(window.google && google.script && google.script.run)) {
+            materialsList.innerHTML =
+              '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
+            return;
+          }
+
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("getMaterialsCatalog failed", err);
+              materialsList.innerHTML =
+                '<p class="error-text">تعذر تحميل كتالوج المواد.</p>';
+              showToast("تعذر تحميل كتالوج المواد.", "error");
+            })
+            .withSuccessHandler((result) => {
+              materialsCatalog = Array.isArray(result) ? result : [];
+              populateMaterialsList(materialsCatalog);
+            })
+            .getMaterialsCatalog();
+
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("getProjectsForDropdown failed", err);
+              showToast("تعذر تحميل المشاريع.", "warning");
+            })
+            .withSuccessHandler((projects) => {
+              const list = Array.isArray(projects) ? projects : [];
+              list.forEach((project) => {
+                const option = document.createElement("option");
+                option.value =
+                  project?.Project_ID ||
+                  project?.projectId ||
+                  project?.value ||
+                  "";
+                option.textContent =
+                  project?.Project_Name ||
+                  project?.projectName ||
+                  project?.label ||
+                  option.value;
+                projectSelect.appendChild(option);
+              });
+            })
+            .getProjectsForDropdown();
+
+          submitButton.addEventListener("click", () => {
+            if (!cart.length) {
+              showToast("أضف مادة واحدة على الأقل قبل الحفظ.", "warning");
+              return;
+            }
+
+            if (!projectSelect.value) {
+              showToast("يرجى اختيار المشروع.", "warning");
+              projectSelect.focus();
+              return;
+            }
+
+            if (!dateInput.value) {
+              showToast("يرجى اختيار التاريخ.", "warning");
+              dateInput.focus();
+              return;
+            }
+
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("خدمة الخادم غير متاحة.", "error");
+              return;
+            }
+
+            const originalText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = "جاري الحفظ...";
+
+            const payload = {
+              header: {
+                project: projectSelect.value,
+                date: dateInput.value,
+              },
+              items: cart.map((item) => ({
+                materialId: item.materialId,
+                materialName: item.materialName,
+                category: item.category,
+                unit: item.unit,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                amount: item.amount,
+                vatRate: item.vatRate,
+                vatAmount: item.vatAmount,
+                totalWithVat: item.totalWithVat,
+              })),
+            };
+
+            google.script.run
+              .withFailureHandler((err) => {
+                console.error("saveDirectExpenses failed", err);
+                showToast("تعذر حفظ المصروفات.", "error");
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+              })
+              .withSuccessHandler((response) => {
+                if (response && response.success) {
+                  showToast(
+                    response.message || "تم حفظ المصروفات بنجاح.",
+                    "success"
+                  );
+                  cart = [];
+                  renderCart();
+                } else {
+                  showToast(
+                    (response && response.message) ||
+                      "تعذر حفظ المصروفات.",
+                    "error"
+                  );
+                }
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+              })
+              .saveDirectExpenses(payload);
+          });
         }
 
         function markTableLoaded(key, value) {
