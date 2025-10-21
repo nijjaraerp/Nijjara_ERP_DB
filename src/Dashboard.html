@@ -3299,27 +3299,53 @@ function renderPaneHeader(paneElement, paneName) {
             })
             .withSuccessHandler((res) => {
               if (loginBtn) loginBtn.classList.remove("loading");
-              console.log("[CLIENT] Login response:", res);
-              if (!res || res.success !== true) {
-                // Display the EXACT message returned by the server's fail() function
-                const messageFromServer =
-                  res?.message ||
-                  "بيانات الدخول غير صحيحة أو حدث خطأ غير متوقع."; // More descriptive default
-                // Use a slightly clearer title for login errors
-                showToast(messageFromServer, "error", "فشل تسجيل الدخول");
-                return;
-              }
+              console.log("[CLIENT] Login response received:", res);
+              try {
+                console.log("[CLIENT] Evaluating login response success flag...");
+                if (!res || res.success !== true) {
+                  const messageFromServer =
+                    res?.message ||
+                    "بيانات الدخول غير صحيحة أو حدث خطأ غير متوقع.";
+                  console.warn(
+                    "[CLIENT] Login response indicates failure:",
+                    messageFromServer,
+                    res
+                  );
+                  showToast(messageFromServer, "error", "فشل تسجيل الدخول");
+                  return;
+                }
 
-              const data = res.bootstrap || {};
-              const identity =
-                res.user || data.user || {
-                  Username: username,
-                };
-              lastLoginIdentity = identity;
-              navbar.classList.remove("hidden");
-              applyBootstrap(data);
-              switchView("portal-view");
-              showToast("تم تسجيل الدخول بنجاح.", "success", "تم الدخول");
+                console.log("[CLIENT] Login response marked success. Extracting bootstrap data...");
+                const data = res.bootstrap || {};
+                console.log(
+                  "[CLIENT] Bootstrap payload keys:",
+                  Object.keys(data || {})
+                );
+                const identity =
+                  res.user || data.user || {
+                    Username: username,
+                  };
+                console.log("[CLIENT] Resolved login identity:", identity);
+                lastLoginIdentity = identity;
+                navbar.classList.remove("hidden");
+                console.log("[CLIENT] Applying bootstrap data to UI...");
+                applyBootstrap(data);
+                console.log("[CLIENT] Bootstrap applied. Switching to portal view...");
+                switchView("portal-view");
+                console.log("[CLIENT] Displaying success toast.");
+                showToast("تم تسجيل الدخول بنجاح.", "success", "تم الدخول");
+              } catch (handlerError) {
+                console.error(
+                  "[CLIENT] Exception while handling successful login response:",
+                  handlerError,
+                  res
+                );
+                showToast(
+                  "حدث خطأ غير متوقع بعد تسجيل الدخول.",
+                  "error",
+                  "خطأ"
+                );
+              }
             })
             .authenticateUser({
               username,
