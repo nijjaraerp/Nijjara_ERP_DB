@@ -525,6 +525,46 @@
         gap: 0.75rem;
         margin-bottom: 1rem;
       }
+      .materials-catalog__controls {
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.75rem 1rem;
+      }
+      .materials-catalog__search {
+        flex: 1 1 260px;
+        max-width: 420px;
+      }
+      .materials-catalog__search input {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid var(--color-border);
+        background: rgba(0, 0, 0, 0.3);
+        color: var(--color-text-primary);
+      }
+      .materials-catalog__table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .materials-catalog__table th {
+        cursor: pointer;
+        position: relative;
+      }
+      .materials-catalog__table th.sorted-asc::after,
+      .materials-catalog__table th.sorted-desc::after {
+        content: "";
+        position: absolute;
+        inset-inline-end: 0.75rem;
+        border: 5px solid transparent;
+      }
+      .materials-catalog__table th.sorted-asc::after {
+        border-bottom-color: var(--color-accent);
+        top: 45%;
+      }
+      .materials-catalog__table th.sorted-desc::after {
+        border-top-color: var(--color-accent);
+        bottom: 45%;
+      }
       .pane-header .accent-button {
         min-width: 140px;
       }
@@ -593,10 +633,12 @@
       }
       .direct-expense__materials-list {
         display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 0.75rem;
         max-height: 420px;
         overflow-y: auto;
         padding-inline-end: 0.5rem;
+        align-content: start;
       }
       .direct-expense__material-card {
         border: 1px solid rgba(255, 255, 255, 0.06);
@@ -606,9 +648,15 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        cursor: pointer;
+        transition: border-color 0.2s ease, transform 0.2s ease,
+          background 0.2s ease;
       }
-      .direct-expense__material-card button {
-        align-self: flex-start;
+      .direct-expense__material-card:hover,
+      .direct-expense__material-card:focus-within {
+        border-color: rgba(212, 175, 55, 0.6);
+        transform: translateY(-2px);
+        background: rgba(212, 175, 55, 0.08);
       }
       .direct-expense__material-meta {
         display: flex;
@@ -2508,7 +2556,14 @@
     return;
   }
 
+  if (paneName === "Sub_PRJ_Materials") {
+    paneElement.classList.add("materials-catalog-pane");
+    renderInteractiveMaterialsTable(paneElement);
+    return;
+  }
+
   paneElement.classList.remove("direct-expense-pane");
+  paneElement.classList.remove("materials-catalog-pane");
 
   if (!trimmedSource) {
     paneElement.innerHTML =
@@ -2539,10 +2594,10 @@
     })
     .getSheetData(trimmedSource);
 }
-        function renderGenericTable(paneElement, data) {
-          if (!paneElement) return;
-          const headers = Array.isArray(data?.headers) ? data.headers : [];
-          const rows = Array.isArray(data?.rows) ? data.rows : [];
+function renderGenericTable(paneElement, data) {
+  if (!paneElement) return;
+  const headers = Array.isArray(data?.headers) ? data.headers : [];
+  const rows = Array.isArray(data?.rows) ? data.rows : [];
 
           const preservedHeader = paneElement.querySelector(".pane-header");
           paneElement.innerHTML = "";
@@ -2600,8 +2655,271 @@
 
           table.appendChild(thead);
           table.appendChild(tbody);
-          paneElement.appendChild(table);
+  paneElement.appendChild(table);
+}
+
+function renderInteractiveMaterialsTable(paneElement) {
+  if (!paneElement) return;
+
+  paneElement.innerHTML =
+    '<p class="muted">جارٍ تحميل كتالوج المواد، يرجى الانتظار...</p>';
+
+  if (!(window.google && google.script && google.script.run)) {
+    paneElement.innerHTML =
+      '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
+    return;
+  }
+
+  const sheetName = "PRJ_Materials";
+
+  google.script.run
+    .withFailureHandler((err) => {
+      console.error("renderInteractiveMaterialsTable failed", err);
+      paneElement.innerHTML =
+        '<p class="error-text">تعذر تحميل كتالوج المواد.</p>';
+      if (typeof showToast === "function") {
+        showToast("تعذر تحميل كتالوج المواد.", "error");
+      }
+    })
+    .withSuccessHandler((result) => {
+      const headers = Array.isArray(result?.headers) ? result.headers : [];
+      const rows = Array.isArray(result?.rows) ? result.rows : [];
+
+      paneElement.innerHTML = "";
+
+      const controls = document.createElement("div");
+      controls.className = "pane-header materials-catalog__controls";
+
+      const addButton = document.createElement("button");
+      addButton.type = "button";
+      addButton.className = "accent-button";
+      addButton.textContent = "إضافة جديد";
+      addButton.addEventListener("click", () => {
+        if (typeof renderForm === "function") {
+          renderForm("FORM_PRJ_AddMaterial");
+        } else if (typeof showToast === "function") {
+          showToast("نموذج إضافة المواد غير متاح حاليًا.", "warning");
         }
+      });
+      controls.appendChild(addButton);
+
+      const searchWrapper = document.createElement("div");
+      searchWrapper.className = "materials-catalog__search";
+      const searchInput = document.createElement("input");
+      searchInput.type = "search";
+      searchInput.placeholder = "ابحث عن مادة...";
+      searchInput.setAttribute("aria-label", "ابحث عن مادة");
+      searchWrapper.appendChild(searchInput);
+      controls.appendChild(searchWrapper);
+
+      paneElement.appendChild(controls);
+
+      if (!headers.length) {
+        const empty = document.createElement("p");
+        empty.className = "muted";
+        empty.textContent = "لا توجد بيانات متاحة للعرض.";
+        paneElement.appendChild(empty);
+        return;
+      }
+
+      const table = document.createElement("table");
+      table.className = "sys-table materials-catalog__table";
+
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+
+      const tbody = document.createElement("tbody");
+
+      const normalizedRows = rows.map((row) => {
+        if (Array.isArray(row)) {
+          return row.slice();
+        }
+        if (row && typeof row === "object") {
+          return headers.map((header, index) => {
+            if (header in row) return row[header];
+            const normalizedKey = String(header || "")
+              .replace(/\s+/g, "_")
+              .replace(/[^a-zA-Z0-9_]/g, "")
+              .toLowerCase();
+            const matchingKey = Object.keys(row).find((key) => {
+              return (
+                String(key || "")
+                  .replace(/\s+/g, "_")
+                  .replace(/[^a-zA-Z0-9_]/g, "")
+                  .toLowerCase() === normalizedKey
+              );
+            });
+            if (matchingKey) {
+              return row[matchingKey];
+            }
+            return row[index];
+          });
+        }
+        return [];
+      });
+
+      const searchColumns = (() => {
+        const indexes = [];
+        headers.forEach((header, idx) => {
+          const normalizedHeader = String(header || "")
+            .toLowerCase()
+            .replace(/\s+/g, " ");
+          if (
+            normalizedHeader.includes("name ar") ||
+            normalizedHeader.includes("name en") ||
+            normalizedHeader.includes("material name") ||
+            normalizedHeader.includes("material id") ||
+            (normalizedHeader.includes("material") && normalizedHeader.includes("id")) ||
+            normalizedHeader.includes("category")
+          ) {
+            indexes.push(idx);
+          }
+        });
+        if (!indexes.length) {
+          return headers.map((_, idx) => idx);
+        }
+        return indexes;
+      })();
+
+      let currentSort = { column: null, direction: "asc" };
+
+      function decorateSortIndicators() {
+        headRow.querySelectorAll("th").forEach((th) => {
+          th.classList.remove("sorted-asc", "sorted-desc");
+        });
+        if (currentSort.column == null) return;
+        const active = headRow.querySelector(
+          `th[data-column-index="${currentSort.column}"]`
+        );
+        if (active) {
+          active.classList.add(
+            currentSort.direction === "asc" ? "sorted-asc" : "sorted-desc"
+          );
+        }
+      }
+
+      function renderRows(rowsToRender) {
+        tbody.innerHTML = "";
+        if (!rowsToRender.length) {
+          const emptyRow = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = Math.max(headers.length, 1);
+          cell.className = "muted";
+          cell.textContent = "لا توجد مواد مطابقة لبحثك.";
+          emptyRow.appendChild(cell);
+          tbody.appendChild(emptyRow);
+          return;
+        }
+
+        rowsToRender.forEach((row) => {
+          const tr = document.createElement("tr");
+          headers.forEach((_, index) => {
+            const td = document.createElement("td");
+            const value = Array.isArray(row) ? row[index] : row?.[index];
+            if (value === true || value === false) {
+              td.innerHTML = renderBooleanBadge(value);
+            } else if (
+              typeof value === "string" &&
+              /^(true|false|yes|no|y|n|1|0)$/i.test(value.trim())
+            ) {
+              td.innerHTML = renderBooleanBadge(value);
+            } else if (value instanceof Date) {
+              td.textContent = formatDateTime(value);
+            } else if (
+              typeof value === "string" &&
+              /^\d{4}-\d{2}-\d{2}T/.test(value)
+            ) {
+              td.textContent = formatDateTime(value);
+            } else {
+              td.innerHTML = escapeHtml(value == null ? "" : String(value));
+            }
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      }
+
+      function compareValues(a, b, index) {
+        const valueA = Array.isArray(a) ? a[index] : a?.[index];
+        const valueB = Array.isArray(b) ? b[index] : b?.[index];
+
+        const numA = Number(valueA);
+        const numB = Number(valueB);
+        if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
+          return numA - numB;
+        }
+
+        return String(valueA ?? "").localeCompare(String(valueB ?? ""), "ar");
+      }
+
+      function applySearch(rowsPool) {
+        const term = String(searchInput.value || "").trim().toLowerCase();
+        if (!term) {
+          return rowsPool.slice();
+        }
+        return rowsPool.filter((row) => {
+          return searchColumns.some((idx) => {
+            const candidate = Array.isArray(row) ? row[idx] : row?.[idx];
+            return String(candidate ?? "").toLowerCase().includes(term);
+          });
+        });
+      }
+
+      function applySort(rowsPool) {
+        if (currentSort.column == null) {
+          return rowsPool.slice();
+        }
+        const sorted = rowsPool.slice().sort((a, b) => {
+          const comparison = compareValues(a, b, currentSort.column);
+          return currentSort.direction === "asc" ? comparison : -comparison;
+        });
+        return sorted;
+      }
+
+      function refreshTable() {
+        const filtered = applySearch(normalizedRows);
+        const sorted = applySort(filtered);
+        renderRows(sorted);
+        decorateSortIndicators();
+      }
+
+      headers.forEach((header, index) => {
+        const th = document.createElement("th");
+        th.textContent = header;
+        th.dataset.columnIndex = index;
+        th.tabIndex = 0;
+        th.addEventListener("click", () => {
+          if (currentSort.column === index) {
+            currentSort.direction = currentSort.direction === "asc" ? "desc" : "asc";
+          } else {
+            currentSort.column = index;
+            currentSort.direction = "asc";
+          }
+          refreshTable();
+        });
+        th.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            th.click();
+          }
+        });
+        headRow.appendChild(th);
+      });
+
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+      table.appendChild(tbody);
+
+      paneElement.appendChild(table);
+
+      searchInput.addEventListener("input", () => {
+        refreshTable();
+      });
+
+      refreshTable();
+    })
+    .getSheetData(sheetName);
+}
 
 function renderPaneHeader(paneElement, paneName) {
   if (!paneElement) return;
@@ -2781,9 +3099,38 @@ function renderPaneHeader(paneElement, paneName) {
             material?.id ||
             "";
 
+          const hydrateMaterial = (material) => {
+            if (Array.isArray(material)) {
+              const [
+                materialId,
+                nameAr,
+                nameEn,
+                category,
+                unit,
+                unitPrice,
+                vatRate,
+              ] = material;
+              return {
+                Material_ID: materialId,
+                Material_Name: nameAr || nameEn || materialId,
+                Material_Name_AR: nameAr,
+                Material_Name_EN: nameEn,
+                Category: category,
+                Unit: unit,
+                Unit_Price: unitPrice,
+                VAT_Rate: vatRate,
+              };
+            }
+            return material || {};
+          };
+
           function populateMaterialsList(materials) {
             materialsList.innerHTML = "";
-            if (!Array.isArray(materials) || !materials.length) {
+            const list = Array.isArray(materials)
+              ? materials.map(hydrateMaterial)
+              : [];
+
+            if (!list.length) {
               const empty = document.createElement("p");
               empty.className = "direct-expense__empty";
               empty.textContent = "لا توجد مواد متاحة.";
@@ -2791,12 +3138,27 @@ function renderPaneHeader(paneElement, paneName) {
               return;
             }
 
-            materials.forEach((material) => {
+            list.forEach((material) => {
+              const materialId = normalizeId(material);
               const card = document.createElement("div");
               card.className = "direct-expense__material-card";
+              card.tabIndex = 0;
+              card.setAttribute("role", "button");
+              card.setAttribute(
+                "aria-label",
+                `إضافة المادة ${
+                  material?.Material_Name_AR ||
+                  material?.Material_Name_EN ||
+                  material?.Material_Name ||
+                  materialId ||
+                  ""
+                }`
+              );
 
               const title = document.createElement("strong");
               title.textContent =
+                material?.Material_Name_AR ||
+                material?.Material_Name_EN ||
                 material?.Material_Name ||
                 material?.Name ||
                 normalizeId(material) ||
@@ -2807,7 +3169,7 @@ function renderPaneHeader(paneElement, paneName) {
               meta.className = "direct-expense__material-meta";
 
               const codeSpan = document.createElement("span");
-              codeSpan.textContent = `#${normalizeId(material) || "--"}`;
+              codeSpan.textContent = `#${materialId || "--"}`;
               meta.appendChild(codeSpan);
 
               if (material?.Category) {
@@ -2828,15 +3190,25 @@ function renderPaneHeader(paneElement, paneName) {
               }
 
               card.appendChild(meta);
-
-              const addButton = document.createElement("button");
-              addButton.type = "button";
-              addButton.className = "accent-button";
-              addButton.textContent = "إضافة للسلة";
-              const materialId = normalizeId(material);
-              addButton.addEventListener("click", () => addToCart(materialId));
-              card.appendChild(addButton);
-
+              const triggerAddToCart = () => {
+                if (!materialId) {
+                  if (typeof showToast === "function") {
+                    showToast(
+                      "لا يمكن إضافة مادة بدون معرف صالح.",
+                      "warning"
+                    );
+                  }
+                  return;
+                }
+                addToCart(materialId);
+              };
+              card.addEventListener("click", triggerAddToCart);
+              card.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  triggerAddToCart();
+                }
+              });
               materialsList.appendChild(card);
             });
           }
@@ -3024,6 +3396,8 @@ function renderPaneHeader(paneElement, paneName) {
               const haystack = [
                 normalizeId(material),
                 material?.Material_Name,
+                material?.Material_Name_AR,
+                material?.Material_Name_EN,
                 material?.MaterialName,
                 material?.Category,
               ]
@@ -3056,7 +3430,8 @@ function renderPaneHeader(paneElement, paneName) {
               showToast("تعذر تحميل كتالوج المواد.", "error");
             })
             .withSuccessHandler((result) => {
-              materialsCatalog = Array.isArray(result) ? result : [];
+              const source = Array.isArray(result) ? result : [];
+              materialsCatalog = source.map(hydrateMaterial);
               populateMaterialsList(materialsCatalog);
             })
             .getMaterialsCatalog();
