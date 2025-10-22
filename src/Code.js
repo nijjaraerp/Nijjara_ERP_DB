@@ -306,16 +306,24 @@ function getSpreadsheet_() {
 
 function getSheet_(name) {
   if (!name) return null;
-  const ss = getSpreadsheet_();
-  if (!ss) return null;
-  const sheet = ss.getSheetByName(name);
-  if (!sheet) {
-    if (!missingSheetsLogged_.has(name)) {
-      missingSheetsLogged_.add(name);
-      debugLog("getSheet_", "missingSheet", { name });
+  try {
+    const ss = getSpreadsheet_();
+    if (!ss) return null;
+    const sheet = ss.getSheetByName(name);
+    if (!sheet) {
+      if (!missingSheetsLogged_.has(name)) {
+        missingSheetsLogged_.add(name);
+        debugLog("getSheet_", "missingSheet", { name });
+      }
     }
+    return sheet;
+  } catch (error) {
+    console.error(
+      `[getSheet_] EXCEPTION: ${error.message} Stack: ${error.stack}`
+    );
+    debugError("getSheet_", error, { name });
+    throw error;
   }
-  return sheet;
 }
 
 function getSheetWithFallback_(...names) {
@@ -328,39 +336,55 @@ function getSheetWithFallback_(...names) {
 }
 
 function getSheetByName_(name) {
-  return getSheet_(name);
+  const FNAME = "getSheetByName_";
+  try {
+    return getSheet_(name);
+  } catch (error) {
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    debugError(FNAME, error, { name });
+    throw error;
+  }
 }
 
 function appendRow_(sheet, rowObject, headers) {
-  if (!sheet) {
-    throw new Error("appendRow_: sheet is required");
-  }
-
-  let effectiveHeaders = Array.isArray(headers) ? headers.slice() : null;
-  if (!effectiveHeaders || !effectiveHeaders.length) {
-    const lastCol = sheet.getLastColumn();
-    effectiveHeaders =
-      lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
-  }
-
-  if (!effectiveHeaders.length) {
-    throw new Error("appendRow_: sheet headers could not be resolved");
-  }
-
-  const rowValues = effectiveHeaders.map((header) => {
-    if (
-      rowObject &&
-      Object.prototype.hasOwnProperty.call(rowObject, header) &&
-      rowObject[header] !== undefined &&
-      rowObject[header] !== null
-    ) {
-      return rowObject[header];
+  const FNAME = "appendRow_";
+  try {
+    if (!sheet) {
+      throw new Error("appendRow_: sheet is required");
     }
-    return "";
-  });
 
-  sheet.appendRow(rowValues);
-  return true;
+    let effectiveHeaders = Array.isArray(headers) ? headers.slice() : null;
+    if (!effectiveHeaders || !effectiveHeaders.length) {
+      const lastCol = sheet.getLastColumn();
+      effectiveHeaders =
+        lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
+    }
+
+    if (!effectiveHeaders.length) {
+      throw new Error("appendRow_: sheet headers could not be resolved");
+    }
+
+    const rowValues = effectiveHeaders.map((header) => {
+      if (
+        rowObject &&
+        Object.prototype.hasOwnProperty.call(rowObject, header) &&
+        rowObject[header] !== undefined &&
+        rowObject[header] !== null
+      ) {
+        return rowObject[header];
+      }
+      return "";
+    });
+
+    sheet.appendRow(rowValues);
+    return true;
+  } catch (error) {
+    const sheetName =
+      sheet && typeof sheet.getName === "function" ? sheet.getName() : null;
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    debugError(FNAME, error, { sheet: sheetName });
+    throw error;
+  }
 }
 
 function resolveDataSourceFromCandidate_(ss, candidate) {
@@ -641,13 +665,16 @@ function doGet(e) {
 }
 
 /** ---- DATA ACCESS ---- */
-function getBootstrapData() {
+function getBootstrapData(userOverride, permissionsOverride) {
   const FNAME = "getBootstrapData";
-  debugLog(FNAME, "start");
+  debugLog(FNAME, "start", {
+    hasOverride: !!userOverride,
+    hasPermissionsOverride: Array.isArray(permissionsOverride),
+  });
 
   try {
-    const currentUser = getCurrentUser();
-    let payload = buildBootstrapPayload_(currentUser);
+    const currentUser = userOverride || getCurrentUser();
+    let payload = buildBootstrapPayload_(currentUser, permissionsOverride);
     if (!payload || typeof payload !== "object") {
       debugLog(FNAME, "invalidPayload", {
         hasPayload: !!payload,
@@ -663,7 +690,11 @@ function getBootstrapData() {
     });
     return sanitizeForClientResponse_(payload);
   } catch (err) {
-    debugError(FNAME, err);
+    console.error(`[${FNAME}] EXCEPTION: ${err.message} Stack: ${err.stack}`);
+    debugError(FNAME, err, {
+      stage: "unexpected",
+      hasOverride: !!userOverride,
+    });
     const fallback = buildGuestBootstrapPayload_();
     fallback.meta = Object.assign({}, fallback.meta, {
       error: true,
@@ -673,10 +704,12 @@ function getBootstrapData() {
   }
 }
 
-function buildBootstrapPayload_(rawUser) {
+function buildBootstrapPayload_(rawUser, permissionsOverride) {
   const sanitizedUser = sanitizeUserForClient_(rawUser);
   const role = sanitizedUser?.Role_Id || sanitizedUser?.role || "GUEST";
-  const permissions = getRolePermissions(role) || [];
+  const permissions = Array.isArray(permissionsOverride)
+    ? permissionsOverride
+    : getRolePermissions(role) || [];
   const filters = getDeptAndRoleFilters() || {
     departments: [],
     roles: [],
@@ -1343,21 +1376,46 @@ function authenticateUser(credentials) {
       obj[header] = matchEntry[index];
       return obj;
     }, {});
+    const userRowIndex = entryIndex + 2;
 
-    if (idx.lastLogin >= 0 && entryIndex >= 0) {
-      try {
-        // Ensure a proper Date object is written to the sheet
-        sh.getRange(entryIndex + 2, idx.lastLogin + 1).setValue(new Date());
-        debugLog(FNAME, "updatedLastLogin", { username, rowIndex: entryIndex + 2 });
-      } catch (err) {
-        debugError(FNAME, err, { stage: "updateLastLogin" });
-      }
-    }
+    console.log(`[${FNAME}] Password verified. Attempting to update last login...`);
+    updateLastLogin_(userObject?.User_Id, userRowIndex, {
+      sheet: sh,
+      columnIndex: idx.lastLogin,
+      username,
+    });
+    console.log(`[${FNAME}] updateLastLogin complete. Attempting to get permissions...`);
 
-    const rawBootstrap = buildBootstrapPayload_(userObject);
+    const permissions = getRolePermissions(userObject?.Role_Id);
+    console.log(
+      `[${FNAME}] Permissions received (${permissions?.length || 0}). Attempting to create session...`
+    );
+
+    const session = createSession_(userObject, "LOGIN");
+    console.log(
+      `[${FNAME}] Session created (ID: ${
+        session?.sessionId || "N/A"
+      }). Attempting audit log...`
+    );
+
+    logAuditEvent_(
+      "LOGIN_SUCCESS",
+      `User ${userObject?.Username || username} logged in.`,
+      {
+        userId: userObject?.User_Id || "",
+        username: userObject?.Username || username,
+        role: userObject?.Role_Id || "",
+        sessionId: session?.sessionId || "",
+      },
+      userObject?.User_Id
+    );
+    console.log(`[${FNAME}] Audit log complete. Attempting bootstrap data...`);
+
     const bootstrap =
-      sanitizeForClientResponse_(rawBootstrap) ||
+      getBootstrapData(userObject, permissions) ||
       sanitizeForClientResponse_(buildGuestBootstrapPayload_());
+    console.log(`[${FNAME}] Bootstrap data generated. Preparing success response...`);
+
     const sanitizedUser =
       sanitizeForClientResponse_(bootstrap?.user) ||
       sanitizeForClientResponse_(sanitizeUserForClient_(userObject)) ||
@@ -1365,15 +1423,11 @@ function authenticateUser(credentials) {
     if (bootstrap && typeof bootstrap === "object") {
       bootstrap.user = sanitizedUser;
     }
-    logAuditEvent("LOGIN_SUCCESS", {
-      userId: sanitizedUser?.User_Id || sanitizedUser?.user_id || "",
-      username: sanitizedUser?.Username || username,
-      role: sanitizedUser?.Role_Id || "",
-    });
 
     debugLog(FNAME, "success", {
       userId: sanitizedUser?.User_Id,
       role: sanitizedUser?.Role_Id,
+      sessionId: session?.sessionId || null,
     });
 
     return sanitizeForClientResponse_({
@@ -1382,6 +1436,7 @@ function authenticateUser(credentials) {
       bootstrap,
       meta: {
         loginAt: new Date().toISOString(),
+        sessionId: session?.sessionId || undefined,
       },
     });
   } catch (err) {
@@ -1389,6 +1444,148 @@ function authenticateUser(credentials) {
     return fail("حدث خطأ غير متوقع أثناء تسجيل الدخول.", {
       reason: "EXCEPTION",
     });
+  }
+}
+
+function updateLastLogin_(userId, rowIndex, options = {}) {
+  const FNAME = "updateLastLogin_";
+  try {
+    if (!rowIndex || rowIndex < 2) {
+      throw new Error("updateLastLogin_: invalid row index");
+    }
+
+    const sheet = options.sheet || getSheet_(CONFIG.SHEETS.USERS);
+    if (!sheet) {
+      throw new Error("updateLastLogin_: users sheet not found");
+    }
+
+    let columnIndex =
+      typeof options.columnIndex === "number" ? options.columnIndex : null;
+    if (columnIndex == null || columnIndex < 0) {
+      const lastCol = sheet.getLastColumn();
+      const headers =
+        lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
+      columnIndex = headers.indexOf("Last_Login");
+      if (columnIndex < 0) {
+        columnIndex = headers.indexOf("LastLogin");
+      }
+    }
+
+    if (columnIndex == null || columnIndex < 0) {
+      throw new Error("updateLastLogin_: Last_Login column not found");
+    }
+
+    sheet.getRange(rowIndex, columnIndex + 1).setValue(new Date());
+    debugLog(FNAME, "updated", {
+      userId,
+      rowIndex,
+      columnIndex,
+      username: options.username || null,
+    });
+    return true;
+  } catch (error) {
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    debugError(FNAME, error, {
+      userId,
+      rowIndex,
+      columnIndex: options?.columnIndex ?? null,
+      username: options?.username || null,
+    });
+    return false;
+  }
+}
+
+function createSession_(user, eventType) {
+  const FNAME = "createSession_";
+  try {
+    const sheet = getSheet_(CONFIG.SHEETS.SESSIONS);
+    if (!sheet) {
+      throw new Error("createSession_: sessions sheet not found");
+    }
+
+    const lastCol = sheet.getLastColumn();
+    if (!lastCol || lastCol <= 0) {
+      throw new Error("createSession_: sessions sheet missing headers");
+    }
+
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0] || [];
+    if (!headers.length) {
+      throw new Error("createSession_: unable to resolve session headers");
+    }
+
+    const sessionId = Utilities.getUuid();
+    const now = new Date();
+    const type = eventType || "LOGIN";
+    const actor = getActorEmail_();
+
+    const payload = {
+      Session_Id: sessionId,
+      SessionID: sessionId,
+      Session: sessionId,
+      User_Id: user?.User_Id || "",
+      UserID: user?.User_Id || "",
+      User: user?.Username || user?.Email || "",
+      Username: user?.Username || "",
+      Email: user?.Email || "",
+      Type: type,
+      Session_Type: type,
+      Category: type,
+      Status: "ACTIVE",
+      Session_Status: "ACTIVE",
+      State: "ACTIVE",
+      Started_At: now,
+      Start_At: now,
+      Created_At: now,
+      CreatedAt: now,
+      Created_By: actor,
+      Actor_Email: actor,
+      Actor: actor,
+      Actor_User_Id: user?.User_Id || "",
+      Notes: `${type} session for ${user?.Username || user?.Email || "user"}`,
+    };
+
+    appendRow_(sheet, payload, headers);
+    debugLog(FNAME, "created", {
+      sessionId,
+      userId: user?.User_Id || null,
+      type,
+    });
+
+    return {
+      sessionId,
+      createdAt: now,
+      type,
+    };
+  } catch (error) {
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    debugError(FNAME, error, {
+      userId: user?.User_Id || null,
+      username: user?.Username || user?.Email || null,
+      type: eventType || "LOGIN",
+    });
+    return null;
+  }
+}
+
+function logAuditEvent_(action, message, payload = {}, userId) {
+  const FNAME = "logAuditEvent_";
+  try {
+    const details = Object.assign({}, payload);
+    if (message && typeof message === "string") {
+      details.message = message;
+    }
+    if (userId) {
+      details.entity = details.entity || "Users";
+      details.entityId = details.entityId || userId;
+    }
+
+    logAuditEvent(action, details);
+    debugLog(FNAME, "logged", { action, userId });
+    return true;
+  } catch (error) {
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    debugError(FNAME, error, { action, userId });
+    return false;
   }
 }
 
@@ -2845,23 +3042,30 @@ function getCurrentUser() {
 }
 
 function getRolePermissions(roleOrId) {
-  debugLog("getRolePermissions", "start", { roleOrId });
-  const sh = getSheet_(CONFIG.SHEETS.ROLE_PERMS);
-  if (!sh) return [];
+  const FNAME = "getRolePermissions";
+  debugLog(FNAME, "start", { roleOrId });
+  try {
+    const sh = getSheet_(CONFIG.SHEETS.ROLE_PERMS);
+    if (!sh) return [];
 
-  const data = sh.getDataRange().getValues();
-  if (!data || data.length < 2) return [];
-  const h = data[0];
-  const iRole =
-    h.indexOf("Role_Id") >= 0 ? h.indexOf("Role_Id") : h.indexOf("Role");
-  if (iRole < 0) return [];
+    const data = sh.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const h = data[0];
+    const iRole =
+      h.indexOf("Role_Id") >= 0 ? h.indexOf("Role_Id") : h.indexOf("Role");
+    if (iRole < 0) return [];
 
-  const rows = data
-    .slice(1)
-    .filter((r) => r[iRole] === roleOrId)
-    .map((row) => h.reduce((o, k, i) => ((o[k] = row[i]), o), {}));
-  debugLog("getRolePermissions", "resolved", { count: rows.length });
-  return rows;
+    const rows = data
+      .slice(1)
+      .filter((r) => r[iRole] === roleOrId)
+      .map((row) => h.reduce((o, k, i) => ((o[k] = row[i]), o), {}));
+    debugLog(FNAME, "resolved", { count: rows.length });
+    return rows;
+  } catch (error) {
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    debugError(FNAME, error, { roleOrId });
+    return [];
+  }
 }
 
 function getUserById(userId) {
@@ -2977,79 +3181,86 @@ function verifyPassword_(storedHash, password) {
 }
 
 function logAuditEvent(action, details) {
-  const sheet = getSheet_(CONFIG.SHEETS.AUDIT);
-  if (!sheet) return false;
-  const actor = getActorEmail_();
-  const lastCol = sheet.getLastColumn();
-  const headers =
-    lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
-  if (!headers || !headers.length) {
-    sheet.appendRow([new Date(), actor, action, JSON.stringify(details || {})]);
-    return true;
-  }
-  const payloadObject =
-    details && typeof details === "object" ? Object.assign({}, details) : null;
-  const row = new Array(headers.length).fill("");
-  const now = new Date(); // Use a Date object for consistent timestamping
-  setRowValue_(
-    headers,
-    row,
-    now,
-    "Timestamp",
-    "Created_At",
-    "CreatedAt",
-    "Date"
-  );
-  setRowValue_(
-    headers,
-    row,
-    actor,
-    "User",
-    "Actor",
-    "Actor_Email",
-    "Created_By"
-  );
-  setRowValue_(headers, row, action, "Action", "Event", "Activity");
-  const detailString = (() => {
-    if (payloadObject) {
+  const FNAME = "logAuditEvent";
+  try {
+    const sheet = getSheet_(CONFIG.SHEETS.AUDIT);
+    if (!sheet) return false;
+    const actor = getActorEmail_();
+    const lastCol = sheet.getLastColumn();
+    const headers =
+      lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
+    if (!headers || !headers.length) {
+      sheet.appendRow([new Date(), actor, action, JSON.stringify(details || {})]);
+      return true;
+    }
+    const payloadObject =
+      details && typeof details === "object" ? Object.assign({}, details) : null;
+    const row = new Array(headers.length).fill("");
+    const now = new Date(); // Use a Date object for consistent timestamping
+    setRowValue_(
+      headers,
+      row,
+      now,
+      "Timestamp",
+      "Created_At",
+      "CreatedAt",
+      "Date"
+    );
+    setRowValue_(
+      headers,
+      row,
+      actor,
+      "User",
+      "Actor",
+      "Actor_Email",
+      "Created_By"
+    );
+    setRowValue_(headers, row, action, "Action", "Event", "Activity");
+    const detailString = (() => {
+      if (payloadObject) {
+        try {
+          return JSON.stringify(payloadObject);
+        } catch (err) {
+          return String(details);
+        }
+      }
+      if (details == null) return "";
+      if (typeof details === "string") return details;
       try {
-        return JSON.stringify(payloadObject);
+        return JSON.stringify(details);
       } catch (err) {
         return String(details);
       }
-    }
-    if (details == null) return "";
-    if (typeof details === "string") return details;
-    try {
-      return JSON.stringify(details);
-    } catch (err) {
-      return String(details);
-    }
-  })();
-  setRowValue_(
-    headers,
-    row,
-    detailString,
-    "Details",
-    "Summary",
-    "Message",
-    "Payload"
-  );
-  const entitySource = payloadObject || {};
-  setRowValue_(headers, row, entitySource.entity || "", "Entity");
-  const entityId =
-    entitySource.entityId ||
-    entitySource.userId ||
-    entitySource.targetId ||
-    entitySource.entity_id ||
-    "";
-  setRowValue_(headers, row, entityId, "Entity_Id", "Target_Id", "EntityID");
-  setRowValue_(headers, row, entitySource.scope || "", "Scope");
-  setRowValue_(headers, row, entitySource.sheet || "", "Sheet");
-  setRowValue_(headers, row, entitySource.userId || "", "User_Id", "UserID");
-  setRowValue_(headers, row, entitySource.actorId || "", "Actor_Id", "ActorID");
-  sheet.appendRow(row);
-  return true;
+    })();
+    setRowValue_(
+      headers,
+      row,
+      detailString,
+      "Details",
+      "Summary",
+      "Message",
+      "Payload"
+    );
+    const entitySource = payloadObject || {};
+    setRowValue_(headers, row, entitySource.entity || "", "Entity");
+    const entityId =
+      entitySource.entityId ||
+      entitySource.userId ||
+      entitySource.targetId ||
+      entitySource.entity_id ||
+      "";
+    setRowValue_(headers, row, entityId, "Entity_Id", "Target_Id", "EntityID");
+    setRowValue_(headers, row, entitySource.scope || "", "Scope");
+    setRowValue_(headers, row, entitySource.sheet || "", "Sheet");
+    setRowValue_(headers, row, entitySource.userId || "", "User_Id", "UserID");
+    setRowValue_(headers, row, entitySource.actorId || "", "Actor_Id", "ActorID");
+    sheet.appendRow(row);
+    return true;
+  } catch (error) {
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    debugError(FNAME, error, { action });
+    return false;
+  }
 }
 
 function include(filename) {
