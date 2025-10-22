@@ -52,6 +52,9 @@ const CONFIG = {
   },
   DEBUG: true,
   DEBUG_MAX_ARRAY_LENGTH: 25,
+  FEATURES: {
+    enableDynamicForms: true,
+  },
 };
 
 const TAB_REGISTER_FALLBACKS = [
@@ -227,6 +230,34 @@ const TAB_REGISTER_FALLBACKS = [
     ],
   },
 ];
+
+const DYNAMIC_FORMS_FALLBACK = Object.freeze({
+  Sub_SYS_Users: {
+    formId: "FORM_SYS_AddUser",
+    titleEn: "Add User",
+    titleAr: "إضافة مستخدم جديد",
+  },
+  Sub_SYS_Roles: {
+    formId: "FORM_SYS_AddRole",
+    titleEn: "Add Role",
+    titleAr: "إضافة دور",
+  },
+  Sub_SYS_Permissions: {
+    formId: "FORM_SYS_AddPermission",
+    titleEn: "Add Permission",
+    titleAr: "إضافة إذن",
+  },
+  Sub_SYS_RolePerms: {
+    formId: "FORM_SYS_MapRolePermission",
+    titleEn: "Map Role Permission",
+    titleAr: "ربط إذن بدور",
+  },
+  Sub_SYS_Properties: {
+    formId: "FORM_SYS_AddUserProperty",
+    titleEn: "Add User Property",
+    titleAr: "إضافة خاصية مستخدم",
+  },
+});
 
 /** ---- DEBUGGING UTILITIES ---- */
 function debugLog(context, message, data) {
@@ -901,7 +932,7 @@ function buildBootstrapPayload_(rawUser, permissionsOverride) {
     filters,
     nav: buildNavigationConfig_(role, permissions),
     tabRegister: getTabRegister(),
-    forms: getDynamicFormsRegister_(),
+    forms: loadDynamicFormsRegisterSafe_(),
     meta: {
       hasUser: !!sanitizedUser,
       permissions: Array.isArray(permissions) ? permissions.length : 0,
@@ -925,13 +956,192 @@ function buildGuestBootstrapPayload_() {
     },
     nav: buildNavigationConfig_("GUEST", []),
     tabRegister: getTabRegister(),
-    forms: getDynamicFormsRegister_(),
+    forms: loadDynamicFormsRegisterSafe_(),
     meta: {
       hasUser: false,
       permissions: 0,
       generatedAt: timestamp,
     },
   };
+}
+
+function loadDynamicFormsRegisterSafe_() {
+  const FNAME = "loadDynamicFormsRegisterSafe_";
+  const fallback = cloneDynamicFormsFallback_();
+
+  try {
+    const features = CONFIG?.FEATURES || {};
+    if (features.enableDynamicForms === false) {
+      debugLog(FNAME, "disabledByConfig");
+      return fallback;
+    }
+
+    if (typeof getDynamicFormsRegister_ !== "function") {
+      debugLog(FNAME, "missingLoader");
+      return fallback;
+    }
+
+    const register = getDynamicFormsRegister_();
+    if (!register || typeof register !== "object") {
+      debugLog(FNAME, "invalidRegister", {
+        type: register == null ? "null" : typeof register,
+      });
+      return fallback;
+    }
+
+    const safeRegister = cloneDynamicFormsFallback_();
+    Object.keys(register).forEach((key) => {
+      if (!key) return;
+      const entry = register[key];
+      if (!entry || typeof entry !== "object") return;
+      const formId =
+        entry.formId ||
+        entry.formID ||
+        entry.Form_Id ||
+        entry.FormID ||
+        entry.id ||
+        entry.Id;
+      if (!formId) return;
+
+      safeRegister[key] = {
+        ...entry,
+        formId: String(formId).trim(),
+      };
+    });
+
+    const keys = Object.keys(safeRegister);
+    debugLog(FNAME, "resolved", {
+      count: keys.length,
+    });
+
+    return safeRegister;
+  } catch (err) {
+    debugError(FNAME, err);
+    return fallback;
+  }
+}
+
+function cloneDynamicFormsFallback_() {
+  const clone = Object.create(null);
+  const source = DYNAMIC_FORMS_FALLBACK || {};
+  Object.keys(source).forEach((key) => {
+    if (!key) return;
+    const entry = source[key] || {};
+    const formId = entry.formId ? String(entry.formId).trim() : "";
+    clone[key] = {
+      ...entry,
+      formId,
+    };
+  });
+  return clone;
+}
+
+function getDynamicFormsRegister_() {
+  const FNAME = "getDynamicFormsRegister_";
+  debugLog(FNAME, "start");
+
+  try {
+    const { headers, rows } = loadSheetData_(CONFIG.SHEETS.DYNAMIC_FORMS);
+
+    if (!rows.length) {
+      debugLog(FNAME, "noRows");
+      return Object.create(null);
+    }
+
+    const idx = {
+      pane: findHeaderIndex_(
+        headers,
+        "Pane",
+        "Pane_Name",
+        "Pane_Key",
+        "PaneId",
+        "Pane_ID",
+        "PaneID"
+      ),
+      formId: findHeaderIndex_(
+        headers,
+        "Form_Id",
+        "FormId",
+        "FormID",
+        "Form_Key",
+        "Form",
+        "FormCode"
+      ),
+      titleEn: findHeaderIndex_(
+        headers,
+        "Title_EN",
+        "Form_Title_EN",
+        "Form_Title",
+        "Label_EN",
+        "LabelEn"
+      ),
+      titleAr: findHeaderIndex_(
+        headers,
+        "Title_AR",
+        "Form_Title_AR",
+        "Label_AR",
+        "LabelAr"
+      ),
+      permission: findHeaderIndex_(
+        headers,
+        "Permission_Key",
+        "Permission",
+        "Required_Permission",
+        "PermissionKey"
+      ),
+      type: findHeaderIndex_(
+        headers,
+        "Form_Type",
+        "Type",
+        "Record_Type",
+        "RecordType"
+      ),
+      isActive: findHeaderIndex_(
+        headers,
+        "IsActive",
+        "Active",
+        "Enabled",
+        "Is_Active"
+      ),
+    };
+
+    const readString = (row, index) => {
+      if (index == null || index < 0) return "";
+      const value = getValueAt_(row, index);
+      if (value == null) return "";
+      if (value instanceof Date) return value.toISOString();
+      return String(value).trim();
+    };
+
+    const register = Object.create(null);
+
+    rows.forEach((row) => {
+      if (!row) return;
+      if (idx.isActive >= 0 && !isTruthyFlag_(getValueAt_(row, idx.isActive))) {
+        return;
+      }
+
+      const paneKey = readString(row, idx.pane);
+      const formId = readString(row, idx.formId);
+      if (!paneKey || !formId) return;
+
+      register[paneKey] = {
+        formId,
+        titleEn: readString(row, idx.titleEn),
+        titleAr: readString(row, idx.titleAr),
+        permission: readString(row, idx.permission),
+        type: readString(row, idx.type) || "FORM",
+      };
+    });
+
+    const keys = Object.keys(register);
+    debugLog(FNAME, "resolved", { count: keys.length });
+
+    return register;
+  } catch (err) {
+    debugError(FNAME, err);
+    return Object.create(null);
+  }
 }
 
 function buildNavigationConfig_(role, permissions) {
