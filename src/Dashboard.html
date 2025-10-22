@@ -2274,18 +2274,21 @@
           if (id === "system-management-view") {
             loadTab(currentSysPane || "overview");
           } else if (id === "projects-workspace") {
+            // Restore workspace navigation rendering for Projects
             renderWorkspaceNav(
               "Tab_PRJ_Management",
               "prj-side-nav",
               document.querySelector("#projects-workspace .workspace-content")
             );
           } else if (id === "finance-workspace") {
+            // Restore workspace navigation rendering for Finance
             renderWorkspaceNav(
               "Tab_FIN_Management",
               "fin-side-nav",
               document.querySelector("#finance-workspace .workspace-content")
             );
           } else if (id === "hr-workspace") {
+            // Restore workspace navigation rendering for HR
             renderWorkspaceNav(
               "Tab_HR_Management",
               "hr-side-nav",
@@ -3181,6 +3184,7 @@ function renderPaneHeader(paneElement, paneName) {
           selectedUsers.clear();
           normalizedUsersCache = [];
           renderNav(data?.nav || []);
+          // Restore module cards grid rendering after login bootstrap
           renderSysNav(
             data?.tabRegister ||
               data?.tabs ||
