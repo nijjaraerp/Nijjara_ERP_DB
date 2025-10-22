@@ -52,7 +52,212 @@ const CONFIG = {
   },
   DEBUG: true,
   DEBUG_MAX_ARRAY_LENGTH: 25,
+  FEATURES: {
+    enableDynamicForms: true,
+  },
 };
+
+const TAB_REGISTER_FALLBACKS = [
+  {
+    tabId: "Tab_PRJ_Management",
+    tabLabelEn: "Projects",
+    tabLabelAr: "إدارة المشاريع",
+    sortOrder: 20,
+    permissions: "PRJ_VIEW_PROJECTS",
+    subTabs: [
+      {
+        subId: "Sub_PRJ_Projects",
+        subLabelEn: "Projects",
+        subLabelAr: "قائمة المشاريع",
+        route: "/projects",
+        sortOrder: 1,
+        sourceSheet: CONFIG.SHEETS.PRJ_MAIN,
+      },
+      {
+        subId: "Sub_PRJ_Tasks",
+        subLabelEn: "Tasks",
+        subLabelAr: "المهام",
+        route: "/projects/tasks",
+        sortOrder: 2,
+        sourceSheet: CONFIG.SHEETS.PRJ_TASKS,
+      },
+      {
+        subId: "Sub_PRJ_Costs",
+        subLabelEn: "Costs",
+        subLabelAr: "التكاليف",
+        route: "/projects/costs",
+        sortOrder: 3,
+        sourceSheet: CONFIG.SHEETS.PRJ_COSTS,
+      },
+      {
+        subId: "Sub_PRJ_Materials",
+        subLabelEn: "Materials",
+        subLabelAr: "المواد",
+        route: "/projects/materials",
+        sortOrder: 4,
+        sourceSheet: CONFIG.SHEETS.PRJ_MATERIALS,
+      },
+      {
+        subId: "Sub_PRJ_Revenue",
+        subLabelEn: "Revenue",
+        subLabelAr: "الإيرادات",
+        route: "/projects/revenue",
+        sortOrder: 5,
+        sourceSheet: CONFIG.SHEETS.PRJ_PROJECT_REVENUE,
+      },
+    ],
+  },
+  {
+    tabId: "Tab_FIN_Management",
+    tabLabelEn: "Finance",
+    tabLabelAr: "المالية",
+    sortOrder: 30,
+    permissions: "FIN_VIEW_REPORTS",
+    subTabs: [
+      {
+        subId: "Sub_FIN_Journal",
+        subLabelEn: "Journal",
+        subLabelAr: "دفتر اليومية",
+        route: "/finance/journal",
+        sortOrder: 1,
+        sourceSheet: CONFIG.SHEETS.FIN_JOURNAL,
+      },
+      {
+        subId: "Sub_FIN_Revenues",
+        subLabelEn: "Revenues",
+        subLabelAr: "الإيرادات",
+        route: "/finance/revenues",
+        sortOrder: 2,
+        sourceSheet: CONFIG.SHEETS.FIN_REVENUES,
+      },
+      {
+        subId: "Sub_FIN_Direct",
+        subLabelEn: "Direct Expenses",
+        subLabelAr: "المصروفات المباشرة",
+        route: "/finance/direct-expenses",
+        sortOrder: 3,
+        sourceSheet: CONFIG.SHEETS.FIN_DIRECT_EXP,
+      },
+      {
+        subId: "Sub_FIN_Indirect_Once",
+        subLabelEn: "One-time Indirect",
+        subLabelAr: "المصروفات غير المباشرة (مرة واحدة)",
+        route: "/finance/indirect-once",
+        sortOrder: 4,
+        sourceSheet: CONFIG.SHEETS.FIN_INDIRECT_ONCE,
+      },
+      {
+        subId: "Sub_FIN_Indirect_Repeated",
+        subLabelEn: "Recurring Indirect",
+        subLabelAr: "المصروفات غير المباشرة (متكررة)",
+        route: "/finance/indirect-recurring",
+        sortOrder: 5,
+        sourceSheet: CONFIG.SHEETS.FIN_INDIRECT_REPEATED,
+      },
+      {
+        subId: "Sub_FIN_Custody",
+        subLabelEn: "Custody",
+        subLabelAr: "العهد",
+        route: "/finance/custody",
+        sortOrder: 6,
+        sourceSheet: CONFIG.SHEETS.FIN_CUSTODY,
+      },
+    ],
+  },
+  {
+    tabId: "Tab_HR_Management",
+    tabLabelEn: "HR",
+    tabLabelAr: "الموارد البشرية",
+    sortOrder: 40,
+    permissions: "HR_VIEW_EMPLOYEES",
+    subTabs: [
+      {
+        subId: "Sub_HR_Employees",
+        subLabelEn: "Employees",
+        subLabelAr: "الموظفون",
+        route: "/hr/employees",
+        sortOrder: 1,
+        sourceSheet: CONFIG.SHEETS.HR_EMPLOYEES,
+      },
+      {
+        subId: "Sub_HR_Attendance",
+        subLabelEn: "Attendance",
+        subLabelAr: "الحضور",
+        route: "/hr/attendance",
+        sortOrder: 2,
+        sourceSheet: CONFIG.SHEETS.HR_ATTENDANCE,
+      },
+      {
+        subId: "Sub_HR_Leave",
+        subLabelEn: "Leave",
+        subLabelAr: "الإجازات",
+        route: "/hr/leave",
+        sortOrder: 3,
+        sourceSheet: CONFIG.SHEETS.HR_LEAVE,
+      },
+      {
+        subId: "Sub_HR_Leave_Requests",
+        subLabelEn: "Leave Requests",
+        subLabelAr: "طلبات الإجازة",
+        route: "/hr/leave-requests",
+        sortOrder: 4,
+        sourceSheet: CONFIG.SHEETS.HR_LEAVE_REQUESTS,
+      },
+      {
+        subId: "Sub_HR_Advances",
+        subLabelEn: "Advances",
+        subLabelAr: "السلف",
+        route: "/hr/advances",
+        sortOrder: 5,
+        sourceSheet: CONFIG.SHEETS.HR_ADVANCES,
+      },
+      {
+        subId: "Sub_HR_Deductions",
+        subLabelEn: "Deductions",
+        subLabelAr: "الخصومات",
+        route: "/hr/deductions",
+        sortOrder: 6,
+        sourceSheet: CONFIG.SHEETS.HR_DEDUCTIONS,
+      },
+      {
+        subId: "Sub_HR_Payroll",
+        subLabelEn: "Payroll",
+        subLabelAr: "الرواتب",
+        route: "/hr/payroll",
+        sortOrder: 7,
+        sourceSheet: CONFIG.SHEETS.HR_PAYROLL,
+      },
+    ],
+  },
+];
+
+const DYNAMIC_FORMS_FALLBACK = Object.freeze({
+  Sub_SYS_Users: {
+    formId: "FORM_SYS_AddUser",
+    titleEn: "Add User",
+    titleAr: "إضافة مستخدم جديد",
+  },
+  Sub_SYS_Roles: {
+    formId: "FORM_SYS_AddRole",
+    titleEn: "Add Role",
+    titleAr: "إضافة دور",
+  },
+  Sub_SYS_Permissions: {
+    formId: "FORM_SYS_AddPermission",
+    titleEn: "Add Permission",
+    titleAr: "إضافة إذن",
+  },
+  Sub_SYS_RolePerms: {
+    formId: "FORM_SYS_MapRolePermission",
+    titleEn: "Map Role Permission",
+    titleAr: "ربط إذن بدور",
+  },
+  Sub_SYS_Properties: {
+    formId: "FORM_SYS_AddUserProperty",
+    titleEn: "Add User Property",
+    titleAr: "إضافة خاصية مستخدم",
+  },
+});
 
 /** ---- DEBUGGING UTILITIES ---- */
 function debugLog(context, message, data) {
@@ -727,7 +932,7 @@ function buildBootstrapPayload_(rawUser, permissionsOverride) {
     filters,
     nav: buildNavigationConfig_(role, permissions),
     tabRegister: getTabRegister(),
-    forms: getDynamicFormsRegister_(),
+    forms: loadDynamicFormsRegisterSafe_(),
     meta: {
       hasUser: !!sanitizedUser,
       permissions: Array.isArray(permissions) ? permissions.length : 0,
@@ -751,13 +956,192 @@ function buildGuestBootstrapPayload_() {
     },
     nav: buildNavigationConfig_("GUEST", []),
     tabRegister: getTabRegister(),
-    forms: getDynamicFormsRegister_(),
+    forms: loadDynamicFormsRegisterSafe_(),
     meta: {
       hasUser: false,
       permissions: 0,
       generatedAt: timestamp,
     },
   };
+}
+
+function loadDynamicFormsRegisterSafe_() {
+  const FNAME = "loadDynamicFormsRegisterSafe_";
+  const fallback = cloneDynamicFormsFallback_();
+
+  try {
+    const features = CONFIG?.FEATURES || {};
+    if (features.enableDynamicForms === false) {
+      debugLog(FNAME, "disabledByConfig");
+      return fallback;
+    }
+
+    if (typeof getDynamicFormsRegister_ !== "function") {
+      debugLog(FNAME, "missingLoader");
+      return fallback;
+    }
+
+    const register = getDynamicFormsRegister_();
+    if (!register || typeof register !== "object") {
+      debugLog(FNAME, "invalidRegister", {
+        type: register == null ? "null" : typeof register,
+      });
+      return fallback;
+    }
+
+    const safeRegister = cloneDynamicFormsFallback_();
+    Object.keys(register).forEach((key) => {
+      if (!key) return;
+      const entry = register[key];
+      if (!entry || typeof entry !== "object") return;
+      const formId =
+        entry.formId ||
+        entry.formID ||
+        entry.Form_Id ||
+        entry.FormID ||
+        entry.id ||
+        entry.Id;
+      if (!formId) return;
+
+      safeRegister[key] = {
+        ...entry,
+        formId: String(formId).trim(),
+      };
+    });
+
+    const keys = Object.keys(safeRegister);
+    debugLog(FNAME, "resolved", {
+      count: keys.length,
+    });
+
+    return safeRegister;
+  } catch (err) {
+    debugError(FNAME, err);
+    return fallback;
+  }
+}
+
+function cloneDynamicFormsFallback_() {
+  const clone = Object.create(null);
+  const source = DYNAMIC_FORMS_FALLBACK || {};
+  Object.keys(source).forEach((key) => {
+    if (!key) return;
+    const entry = source[key] || {};
+    const formId = entry.formId ? String(entry.formId).trim() : "";
+    clone[key] = {
+      ...entry,
+      formId,
+    };
+  });
+  return clone;
+}
+
+function getDynamicFormsRegister_() {
+  const FNAME = "getDynamicFormsRegister_";
+  debugLog(FNAME, "start");
+
+  try {
+    const { headers, rows } = loadSheetData_(CONFIG.SHEETS.DYNAMIC_FORMS);
+
+    if (!rows.length) {
+      debugLog(FNAME, "noRows");
+      return Object.create(null);
+    }
+
+    const idx = {
+      pane: findHeaderIndex_(
+        headers,
+        "Pane",
+        "Pane_Name",
+        "Pane_Key",
+        "PaneId",
+        "Pane_ID",
+        "PaneID"
+      ),
+      formId: findHeaderIndex_(
+        headers,
+        "Form_Id",
+        "FormId",
+        "FormID",
+        "Form_Key",
+        "Form",
+        "FormCode"
+      ),
+      titleEn: findHeaderIndex_(
+        headers,
+        "Title_EN",
+        "Form_Title_EN",
+        "Form_Title",
+        "Label_EN",
+        "LabelEn"
+      ),
+      titleAr: findHeaderIndex_(
+        headers,
+        "Title_AR",
+        "Form_Title_AR",
+        "Label_AR",
+        "LabelAr"
+      ),
+      permission: findHeaderIndex_(
+        headers,
+        "Permission_Key",
+        "Permission",
+        "Required_Permission",
+        "PermissionKey"
+      ),
+      type: findHeaderIndex_(
+        headers,
+        "Form_Type",
+        "Type",
+        "Record_Type",
+        "RecordType"
+      ),
+      isActive: findHeaderIndex_(
+        headers,
+        "IsActive",
+        "Active",
+        "Enabled",
+        "Is_Active"
+      ),
+    };
+
+    const readString = (row, index) => {
+      if (index == null || index < 0) return "";
+      const value = getValueAt_(row, index);
+      if (value == null) return "";
+      if (value instanceof Date) return value.toISOString();
+      return String(value).trim();
+    };
+
+    const register = Object.create(null);
+
+    rows.forEach((row) => {
+      if (!row) return;
+      if (idx.isActive >= 0 && !isTruthyFlag_(getValueAt_(row, idx.isActive))) {
+        return;
+      }
+
+      const paneKey = readString(row, idx.pane);
+      const formId = readString(row, idx.formId);
+      if (!paneKey || !formId) return;
+
+      register[paneKey] = {
+        formId,
+        titleEn: readString(row, idx.titleEn),
+        titleAr: readString(row, idx.titleAr),
+        permission: readString(row, idx.permission),
+        type: readString(row, idx.type) || "FORM",
+      };
+    });
+
+    const keys = Object.keys(register);
+    debugLog(FNAME, "resolved", { count: keys.length });
+
+    return register;
+  } catch (err) {
+    debugError(FNAME, err);
+    return Object.create(null);
+  }
 }
 
 function buildNavigationConfig_(role, permissions) {
@@ -2107,7 +2491,6 @@ function getTabRegister() {
     }
   });
 
-  let totalSubTabs = 0;
   const result = Array.from(tabsMap.values())
     .map((tab) => {
       tab.subTabs = tab.subTabs
@@ -2133,7 +2516,6 @@ function getTabRegister() {
           if (aOrder !== bOrder) return aOrder - bOrder;
           return String(a.subId || "").localeCompare(String(b.subId || ""));
         });
-      totalSubTabs += tab.subTabs.length;
       delete tab._subMap;
       if (
         tab.sortOrder == null || !Number.isFinite(Number(tab.sortOrder))
@@ -2164,13 +2546,193 @@ function getTabRegister() {
       return String(a.tabId || "").localeCompare(String(b.tabId || ""));
     });
 
+  const merged = mergeTabRegisterFallbacks_(result);
+
   debugLog(FNAME, "resolved", {
-    tabs: result.length,
-    subTabs: totalSubTabs,
+    tabs: merged.length,
+    subTabs: merged.reduce(
+      (count, tab) => count + (Array.isArray(tab.subTabs) ? tab.subTabs.length : 0),
+      0
+    ),
     source: sheet ? sheet.getName() : sourceName || "<unknown>",
   });
 
-  return result;
+  return merged;
+}
+
+function mergeTabRegisterFallbacks_(tabs) {
+  const parseSortOrder = (value) => {
+    if (value == null || value === "") return null;
+    const num = Number(value);
+    return Number.isFinite(num) ? num : null;
+  };
+
+  const cloned = Array.isArray(tabs)
+    ? tabs.map((tab) => ({
+        tabId: tab.tabId,
+        tabLabelEn: tab.tabLabelEn || "",
+        tabLabelAr: tab.tabLabelAr || "",
+        route: tab.route || "",
+        sortOrder: parseSortOrder(tab.sortOrder),
+        sourceSheet: tab.sourceSheet || "",
+        permissions: tab.permissions || "",
+        subTabs: Array.isArray(tab.subTabs)
+          ? tab.subTabs.map((sub) => ({
+              subId: sub.subId,
+              subLabelEn: sub.subLabelEn || "",
+              subLabelAr: sub.subLabelAr || "",
+              route: sub.route || "",
+              sortOrder: parseSortOrder(sub.sortOrder),
+              sourceSheet: sub.sourceSheet || "",
+            }))
+          : [],
+      }))
+    : [];
+
+  const tabMap = new Map();
+  cloned.forEach((tab) => {
+    const key = String(tab.tabId || "").toLowerCase();
+    if (!key) return;
+    tabMap.set(key, tab);
+  });
+
+  TAB_REGISTER_FALLBACKS.forEach((fallback) => {
+    const normalizedFallback = {
+      tabId: fallback.tabId,
+      tabLabelEn: fallback.tabLabelEn || "",
+      tabLabelAr: fallback.tabLabelAr || "",
+      route: fallback.route || "",
+      sortOrder: parseSortOrder(fallback.sortOrder),
+      sourceSheet: fallback.sourceSheet || "",
+      permissions: fallback.permissions || "",
+      subTabs: Array.isArray(fallback.subTabs)
+        ? fallback.subTabs.map((sub) => ({
+            subId: sub.subId,
+            subLabelEn: sub.subLabelEn || "",
+            subLabelAr: sub.subLabelAr || "",
+            route: sub.route || "",
+            sortOrder: parseSortOrder(sub.sortOrder),
+            sourceSheet: sub.sourceSheet || "",
+          }))
+        : [],
+    };
+
+    const key = String(normalizedFallback.tabId || "").toLowerCase();
+    if (!key) return;
+
+    if (!tabMap.has(key)) {
+      tabMap.set(key, normalizedFallback);
+      return;
+    }
+
+    const existing = tabMap.get(key);
+    if (!existing.tabLabelEn && normalizedFallback.tabLabelEn) {
+      existing.tabLabelEn = normalizedFallback.tabLabelEn;
+    }
+    if (!existing.tabLabelAr && normalizedFallback.tabLabelAr) {
+      existing.tabLabelAr = normalizedFallback.tabLabelAr;
+    }
+    if (
+      (existing.sortOrder == null || !Number.isFinite(existing.sortOrder)) &&
+      normalizedFallback.sortOrder != null
+    ) {
+      existing.sortOrder = normalizedFallback.sortOrder;
+    }
+    if (!existing.permissions && normalizedFallback.permissions) {
+      existing.permissions = normalizedFallback.permissions;
+    }
+
+    if (!Array.isArray(existing.subTabs)) {
+      existing.subTabs = [];
+    }
+
+    const subMap = new Map(
+      existing.subTabs.map((sub) => [
+        String(sub.subId || "").toLowerCase(),
+        sub,
+      ])
+    );
+
+    normalizedFallback.subTabs.forEach((sub) => {
+      const subKey = String(sub.subId || "").toLowerCase();
+      if (!subKey) return;
+
+      if (!subMap.has(subKey)) {
+        const clone = { ...sub };
+        existing.subTabs.push(clone);
+        subMap.set(subKey, clone);
+        return;
+      }
+
+      const current = subMap.get(subKey);
+      if (!current.subLabelEn && sub.subLabelEn) {
+        current.subLabelEn = sub.subLabelEn;
+      }
+      if (!current.subLabelAr && sub.subLabelAr) {
+        current.subLabelAr = sub.subLabelAr;
+      }
+      if (
+        (current.sortOrder == null || !Number.isFinite(current.sortOrder)) &&
+        sub.sortOrder != null
+      ) {
+        current.sortOrder = sub.sortOrder;
+      }
+      if (!current.route && sub.route) {
+        current.route = sub.route;
+      }
+      if (!current.sourceSheet && sub.sourceSheet) {
+        current.sourceSheet = sub.sourceSheet;
+      }
+    });
+
+    existing.subTabs.sort((a, b) => {
+      const aOrder =
+        a.sortOrder != null && Number.isFinite(a.sortOrder)
+          ? a.sortOrder
+          : Number.MAX_SAFE_INTEGER;
+      const bOrder =
+        b.sortOrder != null && Number.isFinite(b.sortOrder)
+          ? b.sortOrder
+          : Number.MAX_SAFE_INTEGER;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return String(a.subId || "").localeCompare(String(b.subId || ""));
+    });
+  });
+
+  const merged = Array.from(tabMap.values()).map((tab) => ({
+    tabId: tab.tabId,
+    tabLabelEn: tab.tabLabelEn || "",
+    tabLabelAr: tab.tabLabelAr || "",
+    route: tab.route || "",
+    sortOrder: parseSortOrder(tab.sortOrder),
+    sourceSheet: tab.sourceSheet || "",
+    permissions: tab.permissions || "",
+    subTabs: Array.isArray(tab.subTabs)
+      ? tab.subTabs.map((sub) => ({
+          subId: sub.subId,
+          subLabelEn: sub.subLabelEn || "",
+          subLabelAr: sub.subLabelAr || "",
+          route: sub.route || "",
+          sortOrder: parseSortOrder(sub.sortOrder),
+          sourceSheet: sub.sourceSheet || "",
+        }))
+      : [],
+  }));
+
+  merged.sort((a, b) => {
+    const aOrder =
+      a.sortOrder != null && Number.isFinite(a.sortOrder)
+        ? a.sortOrder
+        : Number.MAX_SAFE_INTEGER;
+    const bOrder =
+      b.sortOrder != null && Number.isFinite(b.sortOrder)
+        ? b.sortOrder
+        : Number.MAX_SAFE_INTEGER;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+    return String(a.tabId || "").localeCompare(String(b.tabId || ""));
+  });
+
+  return merged;
 }
 
 function renderPaneHeader(paneElement, paneName) {
