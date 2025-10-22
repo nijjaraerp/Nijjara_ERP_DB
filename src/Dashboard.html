@@ -3185,6 +3185,7 @@ function renderPaneHeader(paneElement, paneName) {
           normalizedUsersCache = [];
           renderNav(data?.nav || []);
           // Restore module cards grid rendering after login bootstrap
+          renderModuleGrid(data?.nav || []);
           renderSysNav(
             data?.tabRegister ||
               data?.tabs ||
@@ -3192,7 +3193,6 @@ function renderPaneHeader(paneElement, paneName) {
               data?.tabConfig ||
               undefined
           );
-          renderModuleGrid(data?.nav || []);
           const identityFromServer =
             data?.user &&
             (data.user.Full_Name || data.user.Username || data.user.Email)
