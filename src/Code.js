@@ -29,6 +29,7 @@ const CONFIG = {
     PRJ_COSTS: "PRJ_Costs",
     PRJ_CLIENTS: "PRJ_Clients",
     PRJ_MATERIALS: "PRJ_Materials",
+    PRJ_MATERIALS_VIEW: "PV_PRJ_Materials",
     PRJ_ALLOCATIONS: "PRJ_InDirExp_Allocations",
     PRJ_DASHBOARD: "PRJ_Dashboard",
 
@@ -931,6 +932,10 @@ function buildBootstrapPayload_(rawUser, permissionsOverride) {
     role,
     permissions,
     filters,
+    dropdowns: {
+      paymentStatus: getDropdownOptions("DD_Payment_Status"),
+      paymentMethod: getDropdownOptions("DD_Payment_Method"),
+    },
     nav: buildNavigationConfig_(role, permissions),
     tabRegister: getTabRegister(),
     forms: loadDynamicFormsRegisterSafe_(),
@@ -954,6 +959,10 @@ function buildGuestBootstrapPayload_() {
       departments: [],
       roles: [],
       roleOptions: [],
+    },
+    dropdowns: {
+      paymentStatus: [],
+      paymentMethod: [],
     },
     nav: buildNavigationConfig_("GUEST", []),
     tabRegister: getTabRegister(),
@@ -1303,6 +1312,287 @@ function getMaterialsCatalog() {
   }
 }
 
+function getMaterialsViewData() {
+  const FNAME = "getMaterialsViewData";
+  debugLog(FNAME, "start");
+
+  try {
+    const { headers = [], rows = [], sourceName } = loadSheetData_(
+      CONFIG.SHEETS.PRJ_MATERIALS_VIEW,
+      CONFIG.SHEETS.PRJ_MATERIALS
+    );
+
+    const payload = {
+      headers: Array.isArray(headers) ? headers : [],
+      rows: Array.isArray(rows) ? rows : [],
+      source: sourceName || "",
+    };
+
+    const sanitized = sanitizeForClientResponse_(payload);
+    debugLog(FNAME, "resolved", {
+      headers: payload.headers.length,
+      rows: payload.rows.length,
+      source: payload.source,
+    });
+    return sanitized;
+  } catch (err) {
+    debugError(FNAME, err);
+    throw err;
+  }
+}
+
+function getMaterialSheetContext_() {
+  const sheet = getSheet_(CONFIG.SHEETS.PRJ_MATERIALS);
+  if (!sheet) {
+    throw new Error("PRJ_Materials sheet not found");
+  }
+
+  const data = sheet.getDataRange().getValues();
+  if (!data || data.length < 2) {
+    throw new Error("PRJ_Materials sheet is empty");
+  }
+
+  const headers = data[0];
+  const rows = data.slice(1);
+  const indexes = {
+    id: findHeaderIndex_(
+      headers,
+      "Material_ID",
+      "MaterialId",
+      "ID",
+      "معرف_الخامات",
+      "معرف الخامات",
+      "معرف المادة"
+    ),
+    active: findHeaderIndex_(
+      headers,
+      "Active",
+      "IsActive",
+      "Enabled",
+      "Status",
+      "مفعل",
+      "الحالة"
+    ),
+    price: findHeaderIndex_(
+      headers,
+      "Default_Price",
+      "DefaultPrice",
+      "Unit_Price",
+      "UnitPrice",
+      "السعر",
+      "سعر_افتراضي"
+    ),
+    updatedAt: findHeaderIndex_(headers, "Updated_At", "UpdatedAt", "Last_Updated"),
+    updatedBy: findHeaderIndex_(headers, "Updated_By", "UpdatedBy", "Updated_By_User"),
+  };
+
+  if (indexes.id < 0) {
+    throw new Error("Material identifier column not found");
+  }
+  if (indexes.active < 0) {
+    throw new Error("Material active column not found");
+  }
+
+  return { sheet, headers, rows, indexes };
+}
+
+function mutateMaterialActiveState_(materialIds, desiredState) {
+  const ids = Array.isArray(materialIds)
+    ? materialIds
+        .map((value) => normalizeKeyValue_(value))
+        .filter((value) => value !== "")
+    : [];
+
+  if (!ids.length) {
+    return { updated: 0, results: [] };
+  }
+
+  const { sheet, rows, indexes } = getMaterialSheetContext_();
+  const actor = getActorEmail_();
+  const results = [];
+
+  ids.forEach((materialId) => {
+    const rowIndex = rows.findIndex((row) =>
+      keysEqual_(getValueAt_(row, indexes.id), materialId)
+    );
+
+    if (rowIndex < 0) {
+      results.push({
+        materialId,
+        updated: false,
+        reason: "NOT_FOUND",
+      });
+      return;
+    }
+
+    const rowNumber = rowIndex + 2;
+    const currentValue = getValueAt_(rows[rowIndex], indexes.active);
+    const currentState = isTruthyFlag_(currentValue);
+    const targetState =
+      typeof desiredState === "boolean" ? desiredState : !currentState;
+
+    sheet.getRange(rowNumber, indexes.active + 1).setValue(targetState);
+    rows[rowIndex][indexes.active] = targetState;
+
+    const timestamp = new Date();
+    if (indexes.updatedAt >= 0) {
+      sheet.getRange(rowNumber, indexes.updatedAt + 1).setValue(timestamp);
+    }
+    if (indexes.updatedBy >= 0) {
+      sheet.getRange(rowNumber, indexes.updatedBy + 1).setValue(actor);
+    }
+
+    results.push({
+      materialId,
+      updated: true,
+      isActive: targetState,
+    });
+  });
+
+  const updatedCount = results.filter((entry) => entry.updated).length;
+  return { updated: updatedCount, results };
+}
+
+function toggleMaterialActiveStatus(materialId) {
+  const FNAME = "toggleMaterialActiveStatus";
+  debugLog(FNAME, "start", { materialId });
+
+  const normalizedId = normalizeKeyValue_(materialId);
+  if (!normalizedId) {
+    throw new Error("Material identifier is required");
+  }
+
+  try {
+    const mutation = mutateMaterialActiveState_([normalizedId]);
+    const result = mutation.results.find((entry) => entry.materialId === normalizedId);
+    if (!result || !result.updated) {
+      return sanitizeForClientResponse_({
+        success: false,
+        materialId: normalizedId,
+        message: "تعذر تحديث حالة المادة.",
+      });
+    }
+
+    debugLog(FNAME, "updated", { materialId: normalizedId, isActive: result.isActive });
+    return sanitizeForClientResponse_({
+      success: true,
+      materialId: normalizedId,
+      isActive: result.isActive,
+    });
+  } catch (err) {
+    debugError(FNAME, err, { materialId });
+    throw err;
+  }
+}
+
+function archiveMaterial(materialId) {
+  const FNAME = "archiveMaterial";
+  debugLog(FNAME, "start", { materialId });
+
+  const normalizedId = normalizeKeyValue_(materialId);
+  if (!normalizedId) {
+    throw new Error("Material identifier is required");
+  }
+
+  try {
+    const mutation = mutateMaterialActiveState_([normalizedId], false);
+    const result = mutation.results.find((entry) => entry.materialId === normalizedId);
+    const success = Boolean(result && result.updated);
+    debugLog(FNAME, "complete", { materialId: normalizedId, success });
+    return sanitizeForClientResponse_({
+      success,
+      materialId: normalizedId,
+      isActive: result ? result.isActive : false,
+      updated: mutation.updated,
+    });
+  } catch (err) {
+    debugError(FNAME, err, { materialId });
+    throw err;
+  }
+}
+
+function bulkUpdateMaterialStatus(materialIds = [], status = true) {
+  const FNAME = "bulkUpdateMaterialStatus";
+  debugLog(FNAME, "start", {
+    count: Array.isArray(materialIds) ? materialIds.length : 0,
+    status,
+  });
+
+  const desiredState = isTruthyFlag_(status);
+
+  try {
+    const mutation = mutateMaterialActiveState_(materialIds, desiredState);
+    debugLog(FNAME, "complete", {
+      updated: mutation.updated,
+      desiredState,
+    });
+    return sanitizeForClientResponse_({
+      success: mutation.updated > 0,
+      updated: mutation.updated,
+      results: mutation.results,
+      desiredState,
+    });
+  } catch (err) {
+    debugError(FNAME, err, { count: Array.isArray(materialIds) ? materialIds.length : 0 });
+    throw err;
+  }
+}
+
+function updateMaterialPrice(materialId, newPrice) {
+  const FNAME = "updateMaterialPrice";
+  debugLog(FNAME, "start", { materialId, hasPrice: newPrice !== undefined });
+
+  const normalizedId = normalizeKeyValue_(materialId);
+  if (!normalizedId) {
+    throw new Error("Material identifier is required");
+  }
+
+  const numericPrice = Number(newPrice);
+  if (!Number.isFinite(numericPrice) || numericPrice < 0) {
+    throw new Error("قيمة السعر غير صالحة");
+  }
+
+  try {
+    const { sheet, rows, indexes } = getMaterialSheetContext_();
+    if (indexes.price < 0) {
+      throw new Error("لم يتم العثور على عمود السعر في كتالوج المواد");
+    }
+
+    const rowIndex = rows.findIndex((row) =>
+      keysEqual_(getValueAt_(row, indexes.id), normalizedId)
+    );
+    if (rowIndex < 0) {
+      return sanitizeForClientResponse_({
+        success: false,
+        materialId: normalizedId,
+        message: "المادة غير موجودة.",
+      });
+    }
+
+    const rowNumber = rowIndex + 2;
+    sheet.getRange(rowNumber, indexes.price + 1).setValue(numericPrice);
+    rows[rowIndex][indexes.price] = numericPrice;
+
+    const timestamp = new Date();
+    if (indexes.updatedAt >= 0) {
+      sheet.getRange(rowNumber, indexes.updatedAt + 1).setValue(timestamp);
+    }
+    if (indexes.updatedBy >= 0) {
+      sheet.getRange(rowNumber, indexes.updatedBy + 1).setValue(getActorEmail_());
+    }
+
+    debugLog(FNAME, "complete", { materialId: normalizedId, price: numericPrice });
+    return sanitizeForClientResponse_({
+      success: true,
+      materialId: normalizedId,
+      price: numericPrice,
+    });
+  } catch (err) {
+    debugError(FNAME, err, { materialId });
+    throw err;
+  }
+}
+
 function getProjectsForDropdown() {
   const FNAME = "getProjectsForDropdown";
   debugLog(FNAME, "start");
@@ -1355,10 +1645,72 @@ function getDirectExpenseViewData() {
       CONFIG.SHEETS.FIN_DIRECT_EXP_VIEW,
       CONFIG.SHEETS.FIN_DIRECT_EXP
     );
+    const projectSource = loadSheetData_(CONFIG.SHEETS.PRJ_MAIN);
+    const projectHeaders = Array.isArray(projectSource.headers)
+      ? projectSource.headers
+      : [];
+    const projectRows = Array.isArray(projectSource.rows) ? projectSource.rows : [];
+    const projectIdIndex = findHeaderIndex_(
+      projectHeaders,
+      "Project_ID",
+      "ProjectId",
+      "ID",
+      "Code"
+    );
+    const projectNameIndex = findHeaderIndex_(
+      projectHeaders,
+      "Project_Name",
+      "ProjectName",
+      "Name",
+      "Title",
+      "Project"
+    );
+
+    const projectLookup = new Map();
+    if (projectIdIndex >= 0 && projectNameIndex >= 0) {
+      projectRows.forEach((row) => {
+        const id = normalizeKeyValue_(getValueAt_(row, projectIdIndex));
+        if (!id) return;
+        const name = getValueAt_(row, projectNameIndex);
+        projectLookup.set(id, name || id);
+      });
+    }
+
+    const projectColumnIndex = findHeaderIndex_(
+      headers,
+      "Project_ID",
+      "ProjectId",
+      "Project",
+      "Project Code",
+      "كود_المشروع",
+      "معرف_المشروع"
+    );
+
+    const processedRows = Array.isArray(rows)
+      ? rows.map((row) => {
+          if (!Array.isArray(row)) return row;
+          if (projectColumnIndex >= 0 && projectLookup.size) {
+            const projectValue = normalizeKeyValue_(
+              getValueAt_(row, projectColumnIndex)
+            );
+            if (projectValue) {
+              const name = projectLookup.get(projectValue);
+              if (name) {
+                const cloned = row.slice();
+                cloned[projectColumnIndex] = name;
+                return cloned;
+              }
+            }
+          }
+          return row.slice();
+        })
+      : [];
+
     const payload = {
       headers: Array.isArray(headers) ? headers : [],
-      rows: Array.isArray(rows) ? rows : [],
+      rows: processedRows,
     };
+
     const sanitized = sanitizeForClientResponse_(payload);
     debugLog(FNAME, "resolved", {
       headers: payload.headers.length,
