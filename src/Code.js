@@ -732,8 +732,12 @@ function loadSheetData_(...names) {
 
     const [headerRow, ...dataRows] = values;
     const headers = headerRow.map((header, index) => {
-      if (header == null || header === "") {
+      if (header == null) {
         return `Column_${index + 1}`;
+      }
+      if (typeof header === "string") {
+        const trimmed = header.trim();
+        return trimmed || `Column_${index + 1}`;
       }
       return header;
     });
@@ -755,16 +759,20 @@ function loadSheetData_(...names) {
   }
 }
 
+function normalizeHeaderKey_(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_\-]+/g, "");
+}
+
 function findHeaderIndex_(headers, ...candidates) {
   if (!headers || !headers.length) return -1;
-  const normalized = headers.map((h) =>
-    String(h || "")
-      .trim()
-      .toLowerCase()
-  );
+  const normalized = headers.map((h) => normalizeHeaderKey_(h));
   for (const candidate of candidates) {
     if (!candidate) continue;
-    const idx = normalized.indexOf(String(candidate).trim().toLowerCase());
+    const key = normalizeHeaderKey_(candidate);
+    const idx = normalized.indexOf(key);
     if (idx >= 0) return idx;
   }
   return -1;
@@ -1292,7 +1300,17 @@ function getMaterialsCatalog() {
       return sanitizeForClientResponse_([]);
     }
 
-    const idxActive = findHeaderIndex_(headers, "Active", "IsActive");
+    const idxActive = findHeaderIndex_(
+      headers,
+      "Active",
+      "IsActive",
+      "Active?",
+      "Is Active",
+      "Status",
+      "الحالة",
+      "نشط",
+      "نشط؟"
+    );
     const catalog = rows
       .filter((row) =>
         idxActive < 0 ? true : isTruthyFlag_(getValueAt_(row, idxActive))
@@ -1300,6 +1318,12 @@ function getMaterialsCatalog() {
       .map((row) =>
         headers.reduce((acc, header, index) => {
           acc[header] = row[index];
+          if (typeof header === "string") {
+            const underscored = header.replace(/\s+/g, "_");
+            if (underscored && !(underscored in acc)) {
+              acc[underscored] = row[index];
+            }
+          }
           return acc;
         }, {})
       );

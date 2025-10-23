@@ -660,7 +660,12 @@
       .direct-expense__section[hidden] {
         display: none !important;
       }
-      .direct-expense__header,
+      .direct-expense__header {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.75rem 1rem;
+        align-items: end;
+      }
       .direct-expense__footer {
         display: flex;
         flex-wrap: wrap;
@@ -669,10 +674,15 @@
         justify-content: flex-start;
       }
       .direct-expense__meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        align-items: flex-end;
+        display: grid;
+        grid-template-columns: minmax(260px, 2fr) minmax(200px, 1fr);
+        gap: 0.75rem 1rem;
+        align-items: stretch;
+      }
+      @media (max-width: 900px) {
+        .direct-expense__meta {
+          grid-template-columns: 1fr;
+        }
       }
       .direct-expense__field {
         display: flex;
@@ -718,6 +728,9 @@
         display: flex;
         flex-direction: column;
         gap: 1rem;
+      }
+      .direct-expense__cart {
+        overflow: hidden;
       }
       .direct-expense__catalog h3,
       .direct-expense__cart h3 {
@@ -775,11 +788,30 @@
         font-size: 0.85rem;
         color: var(--color-accent);
       }
+      .direct-expense__cart-items {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.2);
+        overflow-x: auto;
+        overflow-y: hidden;
+      }
       .direct-expense__cart-items table {
         width: 100%;
+        min-width: 680px;
+        border-collapse: separate;
+        border-spacing: 0;
       }
       .direct-expense__cart-items thead th {
         background: rgba(255, 255, 255, 0.05);
+      }
+      .direct-expense__cart-items table th,
+      .direct-expense__cart-items table td {
+        padding: 0.5rem;
+      }
+      .direct-expense__cart-items table th:last-child,
+      .direct-expense__cart-items table td:last-child {
+        width: 1%;
+        text-align: center;
       }
       .direct-expense__totals {
         border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -841,6 +873,13 @@
         gap: 0.75rem;
         align-items: center;
         flex-wrap: wrap;
+      }
+      .direct-expense__field--attachments .direct-expense__attachments {
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .direct-expense__field--attachments .direct-expense__attachment-list {
+        margin-top: 0.5rem;
       }
       .direct-expense__attachment-item {
         display: flex;
@@ -1430,8 +1469,8 @@
       /* --- Readable selects (fix white-on-white) --- */
       select,
       select option {
-        background-color: rgba(0, 0, 0, 0.25) !important;
-        color: var(--color-text-primary) !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
       }
       select:focus {
         outline: 2px solid var(--theme-accent-24);
@@ -1441,14 +1480,20 @@
       /* --- Direct Expense: header meta arranged horizontally --- */
       .direct-expense__header {
         display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 0.75rem 1rem;
+        align-items: end;
       }
       .direct-expense__meta {
         display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        grid-template-columns: minmax(260px, 2fr) minmax(200px, 1fr);
         gap: 0.75rem 1rem;
-        align-items: end;
+        align-items: stretch;
+      }
+      @media (max-width: 900px) {
+        .direct-expense__meta {
+          grid-template-columns: 1fr;
+        }
       }
 
       /* Add spacing before Notes and between sections */
@@ -1515,18 +1560,30 @@
 /* --- Readable selects (fix white-on-white) --- */
 select,
 select option {
-  background-color: rgba(0,0,0,0.25) !important;
-  color: var(--color-text-primary) !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
 }
 select:focus {
   outline: 2px solid var(--theme-accent-24);
 }
 
-/* --- Direct Expense: header meta arranged horizontally --- */
+/* --- Direct Expense: header/meta layout --- */
 .direct-expense__header {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 0.75rem 1rem;
+  align-items: end;
+}
+.direct-expense__meta {
+  display: grid !important;
+  grid-template-columns: minmax(260px, 2fr) minmax(200px, 1fr);
+  gap: 0.75rem 1rem;
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  .direct-expense__meta {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Add spacing before Notes and between sections */
@@ -1534,14 +1591,44 @@ select:focus {
 .direct-expense__main { margin-top: 0.5rem; }
 
 /* --- Cart table fixes: middle-align + no overflow --- */
+.direct-expense__cart-items {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.direct-expense__cart {
+  overflow: hidden;
+}
+.direct-expense__cart-items table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
 .direct-expense__cart-items table th,
 .direct-expense__cart-items table td {
   vertical-align: middle;
   white-space: nowrap;
+  padding: 0.5rem;
+}
+.direct-expense__cart-items table th:last-child,
+.direct-expense__cart-items table td:last-child {
+  width: 1%;
+  text-align: center;
 }
 .direct-expense__cart-items input[type="number"] {
   width: 110px;
   text-align: center;
+}
+
+.direct-expense__field--attachments .direct-expense__attachments {
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.direct-expense__field--attachments .direct-expense__attachment-list {
+  margin-top: 0.5rem;
 }
 
 /* Align Delete button inside cell */
@@ -4780,7 +4867,6 @@ function renderDirectExpenseForm(paneElement, options = {}) {
 
           headerSection.appendChild(projectField);
           headerSection.appendChild(dateField);
-          paneElement.appendChild(headerSection);
 
           const dropdowns =
             (typeof bootstrapData === "object" && bootstrapData?.dropdowns) ||
@@ -4814,6 +4900,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           });
           paymentMethodField.appendChild(paymentMethodLabel);
           paymentMethodField.appendChild(paymentMethodSelect);
+          headerSection.appendChild(paymentMethodField);
 
           const paymentStatusField = document.createElement("div");
           paymentStatusField.className = "direct-expense__field";
@@ -4834,6 +4921,9 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           });
           paymentStatusField.appendChild(paymentStatusLabel);
           paymentStatusField.appendChild(paymentStatusSelect);
+          headerSection.appendChild(paymentStatusField);
+
+          paneElement.appendChild(headerSection);
 
           const notesField = document.createElement("div");
           notesField.className = "direct-expense__field direct-expense__field--wide";
@@ -4846,9 +4936,36 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           notesField.appendChild(notesLabel);
           notesField.appendChild(notesInput);
 
-          metaSection.appendChild(paymentMethodField);
-          metaSection.appendChild(paymentStatusField);
+          const attachmentsField = document.createElement("div");
+          attachmentsField.className =
+            "direct-expense__field direct-expense__field--attachments";
+          const attachmentsLabel = document.createElement("label");
+          attachmentsLabel.setAttribute("for", "de-attachments");
+          attachmentsLabel.textContent = "المرفقات";
+          const attachmentsControls = document.createElement("div");
+          attachmentsControls.className = "direct-expense__attachments";
+          const attachmentsInput = document.createElement("input");
+          attachmentsInput.type = "file";
+          attachmentsInput.id = "de-attachments";
+          attachmentsInput.multiple = true;
+          attachmentsInput.className = "direct-expense__file-input";
+          attachmentsInput.style.display = "none";
+          const attachmentsButton = document.createElement("label");
+          attachmentsButton.className =
+            "accent-button direct-expense__attachments-btn";
+          attachmentsButton.setAttribute("for", "de-attachments");
+          attachmentsButton.textContent = "إضافة مرفقات";
+          attachmentsControls.appendChild(attachmentsInput);
+          attachmentsControls.appendChild(attachmentsButton);
+          const attachmentList = document.createElement("div");
+          attachmentList.id = "de-attachment-list";
+          attachmentList.className = "direct-expense__attachment-list";
+          attachmentsField.appendChild(attachmentsLabel);
+          attachmentsField.appendChild(attachmentsControls);
+          attachmentsField.appendChild(attachmentList);
+
           metaSection.appendChild(notesField);
+          metaSection.appendChild(attachmentsField);
           paneElement.appendChild(metaSection);
 
           const mainSection = document.createElement("div");
@@ -4937,31 +5054,6 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           vatToggleText.textContent = "تضمين ضريبة القيمة المضافة (Include VAT)";
           vatToggleWrapper.appendChild(vatToggleText);
 
-          const attachmentsInput = document.createElement("input");
-          attachmentsInput.type = "file";
-          attachmentsInput.id = "de-attachments";
-          attachmentsInput.multiple = true;
-          attachmentsInput.className = "direct-expense__file-input";
-          attachmentsInput.style.display = "none";
-          const attachmentsButton = document.createElement("label");
-          attachmentsButton.className = "accent-button direct-expense__attachments-btn";
-          attachmentsButton.setAttribute("for", "de-attachments");
-          attachmentsButton.textContent = "إضافة مرفقات";
-          const attachmentList = document.createElement("div");
-          attachmentList.id = "de-attachment-list";
-          attachmentList.className = "direct-expense__attachment-list";
-          const attachmentsControls = document.createElement("div");
-          attachmentsControls.className = "direct-expense__attachments";
-          attachmentsControls.appendChild(attachmentsInput);
-          attachmentsControls.appendChild(attachmentsButton);
-          const attachmentsSection = document.createElement("div");
-          attachmentsSection.className = "direct-expense__attachments-section";
-          const attachmentsTitle = document.createElement("h3");
-          attachmentsTitle.textContent = "المرفقات";
-          attachmentsSection.appendChild(attachmentsTitle);
-          attachmentsSection.appendChild(attachmentsControls);
-          attachmentsSection.appendChild(attachmentList);
-
           cartContainer.appendChild(cartTitle);
           cartContainer.appendChild(cartItemsTable);
           cartContainer.appendChild(cartTotals);
@@ -4969,7 +5061,6 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           mainSection.appendChild(catalogContainer);
           mainSection.appendChild(cartContainer);
           paneElement.appendChild(mainSection);
-          paneElement.appendChild(attachmentsSection);
 
           const footerSection = document.createElement("div");
           footerSection.className = "direct-expense__footer";
