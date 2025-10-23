@@ -1386,7 +1386,78 @@
         -ms-overflow-style: none;
       }
     </style>
-  </head>
+  
+<style>
+/* --- Compact pills for tabs (Direct Expense + Materials) --- */
+.dyn-tabs.direct-expense__tabs .nav-item,
+.dyn-tabs.materials-module__tabs .nav-item {
+  padding: 0.35rem 0.7rem;
+  line-height: 1.1;
+  border-radius: 999px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Place tabs side-by-side tightly */
+.dyn-tabs.direct-expense__tabs,
+.dyn-tabs.materials-module__tabs {
+  gap: 0.4rem;
+}
+
+/* --- Readable selects (fix white-on-white) --- */
+select,
+select option {
+  background-color: rgba(0,0,0,0.25) !important;
+  color: var(--color-text-primary) !important;
+}
+select:focus {
+  outline: 2px solid var(--theme-accent-24);
+}
+
+/* --- Direct Expense: header meta arranged horizontally --- */
+.direct-expense__header {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+/* Add spacing before Notes and between sections */
+.direct-expense__field--wide { margin-top: 0.25rem; }
+.direct-expense__main { margin-top: 0.5rem; }
+
+/* --- Cart table fixes: middle-align + no overflow --- */
+.direct-expense__cart-items table th,
+.direct-expense__cart-items table td {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.direct-expense__cart-items input[type="number"] {
+  width: 110px;
+  text-align: center;
+}
+
+/* Align Delete button inside cell */
+.direct-expense__remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+/* --- Materials module compact tabs (match Direct Expense) --- */
+.materials-module__tabs .nav-item {
+  padding: 0.35rem 0.7rem;
+}
+
+/* Avoid overlapping highlight appearance */
+.materials-module__tabs .nav-item.active,
+.direct-expense__tabs .nav-item.active {
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.2) inset;
+}
+</style>
+
+</head>
   <body>
     <!-- Login -->
     <div id="login-screen" class="view active">
@@ -4719,6 +4790,30 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           const cartTotals = document.createElement("div");
           cartTotals.id = "cart-totals";
           cartTotals.className = "direct-expense__totals";
+          // Live totals updater (no full re-render)
+          function updateCartTotalsOnly() {
+            try {
+              const totalsBox = document.getElementById("cart-totals");
+              if (!totalsBox) return;
+              const strongs = totalsBox.querySelectorAll(".direct-expense__totals-row strong");
+              if (strongs.length !== 3) return;
+              let subtotal = 0, vatTotal = 0, grandTotal = 0;
+              const rate = Number(typeof VAT_RATE !== "undefined" ? VAT_RATE : 0.14) || 0.14;
+              (cart || []).forEach((item) => {
+                const amount = (Number(item?.quantity) || 0) * (Number(item?.unitPrice) || 0);
+                const vat = item?.vatApplied ? amount * (Number(item?.vatRate ?? rate)) : 0;
+                subtotal += amount;
+                vatTotal += vat;
+                grandTotal += amount + vat;
+              });
+              strongs[0].textContent = formatCurrencyValue(subtotal);
+              strongs[1].textContent = formatCurrencyValue(vatTotal);
+              strongs[2].textContent = formatCurrencyValue(grandTotal);
+            } catch (e) {
+              console.warn("[updateCartTotalsOnly] failed", e);
+            }
+          }
+
           const vatToggleWrapper = document.createElement("label");
           vatToggleWrapper.className = "direct-expense__vat-toggle";
           vatToggleWrapper.setAttribute("for", "de-vat-toggle");
@@ -5190,13 +5285,19 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 priceInput.min = "0";
                 priceInput.step = "0.01";
                 priceInput.value = unitPrice.toString();
-                const handlePriceInput = () => {
+                
+                const handlePriceChange = () => {
                   const value = Number(priceInput.value);
                   item.unitPrice = Number.isFinite(value) && value >= 0 ? value : 0;
                   renderCart();
                 };
-                priceInput.addEventListener("input", handlePriceInput);
-                priceInput.addEventListener("change", handlePriceInput);
+                priceInput.addEventListener("input", () => {
+                  const value = Number(priceInput.value);
+                  item.unitPrice = Number.isFinite(value) && value >= 0 ? value : 0;
+                  updateCartTotalsOnly();
+                });
+                priceInput.addEventListener("change", handlePriceChange);
+
                 priceCell.appendChild(priceInput);
                 row.appendChild(priceCell);
 
@@ -5206,13 +5307,19 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 qtyInput.min = "0";
                 qtyInput.step = "0.01";
                 qtyInput.value = quantity.toString();
-                const handleQuantityInput = () => {
+                
+                const handleQuantityChange = () => {
                   const value = Number(qtyInput.value);
                   item.quantity = Number.isFinite(value) && value > 0 ? value : 1;
                   renderCart();
                 };
-                qtyInput.addEventListener("input", handleQuantityInput);
-                qtyInput.addEventListener("change", handleQuantityInput);
+                qtyInput.addEventListener("input", () => {
+                  const value = Number(qtyInput.value);
+                  item.quantity = Number.isFinite(value) && value > 0 ? value : 1;
+                  updateCartTotalsOnly();
+                });
+                qtyInput.addEventListener("change", handleQuantityChange);
+
                 qtyCell.appendChild(qtyInput);
                 row.appendChild(qtyCell);
 
@@ -5290,13 +5397,15 @@ function renderDirectExpenseForm(paneElement, options = {}) {
             applyMaterialFilters();
           });
 
+          
           vatToggle.addEventListener("change", () => {
             isVatEnabled = vatToggle.checked;
-            cart.forEach((item) => {
-              item.vatApplied = isVatEnabled;
-            });
+            cart.forEach((item) => { item.vatApplied = isVatEnabled; });
+            const y = window.scrollY;
             renderCart();
+            window.scrollTo({ top: y });
           });
+
 
           attachmentsInput.addEventListener("change", (event) => {
             const files = Array.from(event.target.files || []);
