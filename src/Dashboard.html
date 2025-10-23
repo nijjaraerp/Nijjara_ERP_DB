@@ -1336,6 +1336,26 @@
         outline: 2px solid var(--theme-accent);
         outline-offset: 2px;
       }
+      .dyn-tabs.direct-expense__tabs .nav-item,
+      .dyn-tabs.materials-module__tabs .nav-item {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--color-text-secondary);
+        transition: background 0.2s ease, color 0.2s ease,
+          border-color 0.2s ease;
+      }
+      .dyn-tabs.direct-expense__tabs .nav-item:hover,
+      .dyn-tabs.materials-module__tabs .nav-item:hover {
+        color: var(--color-text-primary);
+        border-color: rgba(212, 175, 55, 0.3);
+      }
+      .dyn-tabs.direct-expense__tabs .nav-item.active,
+      .dyn-tabs.materials-module__tabs .nav-item.active {
+        background: var(--theme-accent-16);
+        border-color: var(--theme-accent);
+        color: var(--color-text-primary);
+        box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.2);
+      }
       .dyn-pages {
         border: 1px solid var(--color-border);
         border-radius: 12px;
@@ -2992,7 +3012,7 @@ select:focus {
           navEl.dataset.rendered = "true";
         }
 
-     function loadGenericTab(paneName, sourceSheet, contentElement) {
+    function loadGenericTab(paneName, sourceSheet, contentElement) {
   if (!contentElement || !paneName) return;
 
   const paneId = String(paneName);
@@ -3017,6 +3037,29 @@ select:focus {
     }
   });
 
+  paneElement.classList.remove("direct-expense-pane");
+  paneElement.classList.remove("materials-catalog-pane");
+
+  if (paneName === "Sub_PRJ_Materials") {
+    if (typeof renderMaterialsModule === "function") {
+      renderMaterialsModule(paneElement);
+    } else {
+      paneElement.innerHTML =
+        '<p class="error-text">واجهة كتالوج المواد غير متاحة حالياً.</p>';
+    }
+    return;
+  }
+
+  if (paneName === "Sub_FIN_Direct") {
+    if (typeof renderDirectExpenseShell === "function") {
+      renderDirectExpenseShell(paneElement);
+    } else {
+      paneElement.innerHTML =
+        '<p class="error-text">واجهة المصروفات غير متاحة حالياً.</p>';
+    }
+    return;
+  }
+
   const formsRegister =
     (bootstrapData && bootstrapData.forms) || Object.create(null);
   const formMeta = formsRegister[paneName];
@@ -3035,33 +3078,6 @@ select:focus {
       formsKeys: Object.keys(formsRegister),
       formMeta,
     });
-  }
-
-  paneElement.classList.remove("direct-expense-pane");
-  paneElement.classList.remove("materials-catalog-pane");
-
-  if (paneName === "Sub_FIN_Direct") {
-    if (typeof renderDirectExpenseShell === "function") {
-      renderDirectExpenseShell(paneElement);
-    } else {
-      paneElement.innerHTML =
-        '<p class="error-text">واجهة المصروفات غير متاحة حالياً.</p>';
-    }
-    return;
-  }
-
-  if (paneName === "Sub_PRJ_Materials") {
-    if (typeof renderMaterialsModule === "function") {
-      renderMaterialsModule(paneElement, {
-        paneName,
-        sourceSheet: trimmedSource,
-        formMeta,
-      });
-    } else {
-      paneElement.innerHTML =
-        '<p class="error-text">واجهة كتالوج المواد غير متاحة حالياً.</p>';
-    }
-    return;
   }
 
   if (!trimmedSource) {
@@ -3157,13 +3173,18 @@ function renderGenericTable(paneElement, data) {
   paneElement.appendChild(table);
 }
 
-function renderMaterialsModule(paneElement, options = {}) {
+function renderMaterialsModule(paneElement) {
   if (!paneElement) return;
 
-  const paneName = options?.paneName || "Sub_PRJ_Materials";
-  const sourceSheet = options?.sourceSheet || "";
-  const formMeta = options?.formMeta || null;
+  const paneName =
+    (paneElement.dataset && paneElement.dataset.genericPane) ||
+    "Sub_PRJ_Materials";
+  const formsRegister =
+    (bootstrapData && bootstrapData.forms) || Object.create(null);
+  const formMeta = formsRegister[paneName] || null;
+  const formId = formMeta?.formId || "FORM_PRJ_AddMaterial";
 
+  paneElement.dataset.materialsFormId = formId;
   paneElement.classList.add("materials-catalog-pane");
   paneElement.innerHTML = "";
 
@@ -3181,23 +3202,25 @@ function renderMaterialsModule(paneElement, options = {}) {
 
   const viewTab = document.createElement("button");
   viewTab.type = "button";
+  viewTab.id = "mat-view-tab-btn";
   viewTab.className = "nav-item active";
   viewTab.textContent = "عرض المواد";
   tabs.appendChild(viewTab);
 
   const addTab = document.createElement("button");
   addTab.type = "button";
+  addTab.id = "mat-add-tab-btn";
   addTab.className = "nav-item";
   addTab.textContent = "إضافة مادة";
   tabs.appendChild(addTab);
 
   const viewContainer = document.createElement("div");
-  viewContainer.id = "materials-view-content";
+  viewContainer.id = "mat-view-content";
   viewContainer.className = "materials-module__section";
   viewContainer.dataset.viewLoaded = "false";
 
   const addContainer = document.createElement("div");
-  addContainer.id = "materials-add-content";
+  addContainer.id = "mat-add-content";
   addContainer.className = "materials-module__section";
   addContainer.hidden = true;
 
@@ -3227,9 +3250,6 @@ function renderMaterialsModule(paneElement, options = {}) {
     return { handler, context };
   };
 
-  const formId =
-    formMeta?.formId ||
-    (bootstrapData?.forms?.[paneName]?.formId ?? "FORM_PRJ_AddMaterial");
   const activateTab = (target) => {
     if (target === "view") {
       viewTab.classList.add("active");
@@ -3237,7 +3257,6 @@ function renderMaterialsModule(paneElement, options = {}) {
       viewContainer.hidden = false;
       addContainer.hidden = true;
       loadMaterialsViewData(viewContainer, {
-        sourceSheet: sourceSheet || "",
         formId,
       });
     } else {
@@ -3291,7 +3310,7 @@ function renderMaterialsModule(paneElement, options = {}) {
 
 function loadMaterialsViewData(container, options = {}) {
   if (!container) return;
-  const { reload = false, onComplete, sourceSheet } = options;
+  const { reload = false, onComplete, formId } = options;
   const alreadyLoaded = container.dataset.viewLoaded === "true";
   if (alreadyLoaded && !reload) {
     if (typeof onComplete === "function") onComplete();
@@ -3322,12 +3341,11 @@ function loadMaterialsViewData(container, options = {}) {
     .withSuccessHandler((result) => {
       container.dataset.viewLoaded = "true";
       renderMaterialsTable(container, result, {
-        formId: options.formId,
+        formId,
         onRefresh: () =>
           loadMaterialsViewData(container, {
             reload: true,
-            sourceSheet,
-            formId: options.formId,
+            formId,
           }),
       });
       if (typeof onComplete === "function") onComplete(result);
@@ -3339,6 +3357,10 @@ function renderMaterialsTable(container, data, options = {}) {
 
   const headers = Array.isArray(data?.headers) ? data.headers : [];
   const rows = Array.isArray(data?.rows) ? data.rows : [];
+  const formId =
+    options?.formId ||
+    (container.closest?.(".materials-catalog-pane")?.dataset?.materialsFormId ??
+      "FORM_PRJ_AddMaterial");
 
   container.innerHTML = "";
 
@@ -3892,7 +3914,7 @@ function renderMaterialsTable(container, data, options = {}) {
     }
 
     try {
-      resolved.handler.call(resolved.context, options?.formId || "FORM_PRJ_AddMaterial", entry.record);
+      resolved.handler.call(resolved.context, formId, entry.record);
     } catch (err) {
       console.error("renderForm edit invocation failed", err);
       if (typeof showToast === "function") {
@@ -4061,11 +4083,13 @@ function renderDirectExpenseShell(paneElement) {
 
   const viewTab = document.createElement("button");
   viewTab.type = "button";
+  viewTab.id = "de-view-tab-btn";
   viewTab.className = "nav-item active";
   viewTab.textContent = "عرض المصروفات";
 
   const addTab = document.createElement("button");
   addTab.type = "button";
+  addTab.id = "de-add-tab-btn";
   addTab.className = "nav-item";
   addTab.textContent = "إضافة مصروف";
 
