@@ -1385,6 +1385,94 @@
       body {
         -ms-overflow-style: none;
       }
+
+      /* --- Compact pills for tabs (Direct Expense + Materials) --- */
+      .dyn-tabs.direct-expense__tabs .nav-item,
+      .dyn-tabs.materials-module__tabs .nav-item {
+        width: auto;
+        min-width: 0;
+        padding: 0.35rem 0.7rem;
+        line-height: 1.1;
+        border-radius: 999px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+
+      /* Place tabs side-by-side tightly */
+      .dyn-tabs.direct-expense__tabs,
+      .dyn-tabs.materials-module__tabs {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        align-items: center;
+      }
+
+      /* --- Readable selects (fix white-on-white) --- */
+      select,
+      select option {
+        background-color: rgba(0, 0, 0, 0.25) !important;
+        color: var(--color-text-primary) !important;
+      }
+      select:focus {
+        outline: 2px solid var(--theme-accent-24);
+        outline-offset: 1px;
+      }
+
+      /* --- Direct Expense: header meta arranged horizontally --- */
+      .direct-expense__header {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem 1rem;
+      }
+      .direct-expense__meta {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.75rem 1rem;
+        align-items: end;
+      }
+
+      /* Add spacing before Notes and between sections */
+      .direct-expense__field--wide {
+        margin-top: 0.25rem;
+      }
+      .direct-expense__main {
+        margin-top: 0.5rem;
+      }
+
+      /* --- Cart table fixes: middle-align + no overflow --- */
+      .direct-expense__cart-items table th,
+      .direct-expense__cart-items table td {
+        vertical-align: middle;
+        white-space: nowrap;
+      }
+      .direct-expense__cart-items table td {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .direct-expense__cart-items input[type="number"] {
+        width: 110px;
+        text-align: center;
+      }
+
+      /* Align Delete button inside cell */
+      .direct-expense__remove-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 100%;
+        white-space: nowrap;
+      }
+
+      /* --- Materials module compact tabs (match Direct Expense) --- */
+      .materials-module__tabs .nav-item {
+        padding: 0.35rem 0.7rem;
+      }
+
+      /* Remove any odd overlay/overlap effect */
+      .materials-module__tabs .nav-item.active,
+      .direct-expense__tabs .nav-item.active {
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
+      }
     </style>
   </head>
   <body>
@@ -5115,6 +5203,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           }
 
           function renderCart() {
+            const previousScrollTop = window.scrollY;
             cartItemsTable.innerHTML = "";
             cartTotals.innerHTML = "";
 
@@ -5179,6 +5268,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 grandTotal += totalWithVat;
 
                 const row = document.createElement("tr");
+                row.dataset.index = String(index);
 
                 const materialCell = document.createElement("td");
                 materialCell.textContent = item.materialName;
@@ -5190,13 +5280,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 priceInput.min = "0";
                 priceInput.step = "0.01";
                 priceInput.value = unitPrice.toString();
-                const handlePriceInput = () => {
-                  const value = Number(priceInput.value);
-                  item.unitPrice = Number.isFinite(value) && value >= 0 ? value : 0;
-                  renderCart();
-                };
-                priceInput.addEventListener("input", handlePriceInput);
-                priceInput.addEventListener("change", handlePriceInput);
+                priceInput.dataset.field = "price";
                 priceCell.appendChild(priceInput);
                 row.appendChild(priceCell);
 
@@ -5206,26 +5290,23 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 qtyInput.min = "0";
                 qtyInput.step = "0.01";
                 qtyInput.value = quantity.toString();
-                const handleQuantityInput = () => {
-                  const value = Number(qtyInput.value);
-                  item.quantity = Number.isFinite(value) && value > 0 ? value : 1;
-                  renderCart();
-                };
-                qtyInput.addEventListener("input", handleQuantityInput);
-                qtyInput.addEventListener("change", handleQuantityInput);
+                qtyInput.dataset.field = "quantity";
                 qtyCell.appendChild(qtyInput);
                 row.appendChild(qtyCell);
 
                 const amountCell = document.createElement("td");
                 amountCell.textContent = formatCurrencyValue(amount);
+                amountCell.dataset.field = "amount";
                 row.appendChild(amountCell);
 
                 const vatCell = document.createElement("td");
                 vatCell.textContent = formatCurrencyValue(vatAmount);
+                vatCell.dataset.field = "vat";
                 row.appendChild(vatCell);
 
                 const totalCell = document.createElement("td");
                 totalCell.textContent = formatCurrencyValue(totalWithVat);
+                totalCell.dataset.field = "total";
                 row.appendChild(totalCell);
 
                 const actionsCell = document.createElement("td");
@@ -5265,7 +5346,127 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               row.appendChild(valueSpan);
               cartTotals.appendChild(row);
             });
+
+            window.scrollTo({ top: previousScrollTop });
           }
+
+          function recomputeRowAndTotals(rootElement, items) {
+            if (!rootElement) return;
+            const table = rootElement.querySelector(
+              ".direct-expense__cart-items table"
+            );
+            const totalsBox = rootElement.querySelector("#cart-totals");
+            if (!table || !totalsBox) return;
+
+            let subtotal = 0;
+            let vatTotal = 0;
+            let grandTotal = 0;
+
+            table.querySelectorAll("tbody tr").forEach((row) => {
+              const index = Number(row.dataset.index);
+              if (!Number.isFinite(index) || index < 0 || index >= items.length) {
+                return;
+              }
+
+              const currentItem = items[index];
+              if (!currentItem) return;
+
+              const priceInputEl = row.querySelector('input[data-field="price"]');
+              const qtyInputEl = row.querySelector('input[data-field="quantity"]');
+
+              const priceValue = Number(priceInputEl?.value);
+              const qtyValue = Number(qtyInputEl?.value);
+
+              const unitPrice =
+                Number.isFinite(priceValue) && priceValue >= 0 ? priceValue : 0;
+              const quantity =
+                Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
+
+              const baseRate = Number.isFinite(currentItem.baseVatRate)
+                ? Number(currentItem.baseVatRate)
+                : VAT_RATE;
+              const effectiveVatRate = isVatEnabled ? baseRate : 0;
+
+              currentItem.unitPrice = unitPrice;
+              currentItem.quantity = quantity;
+              currentItem.vatApplied = isVatEnabled;
+              currentItem.vatRate = effectiveVatRate;
+
+              const amount = quantity * unitPrice;
+              const vatAmount = amount * effectiveVatRate;
+              const totalWithVat = amount + vatAmount;
+
+              currentItem.amount = amount;
+              currentItem.vatAmount = vatAmount;
+              currentItem.totalWithVat = totalWithVat;
+
+              subtotal += amount;
+              vatTotal += vatAmount;
+              grandTotal += totalWithVat;
+
+              const amountCell = row.querySelector('[data-field="amount"]');
+              if (amountCell) amountCell.textContent = formatCurrencyValue(amount);
+              const vatCell = row.querySelector('[data-field="vat"]');
+              if (vatCell) vatCell.textContent = formatCurrencyValue(vatAmount);
+              const totalCell = row.querySelector('[data-field="total"]');
+              if (totalCell)
+                totalCell.textContent = formatCurrencyValue(totalWithVat);
+            });
+
+            const totalsRows = totalsBox.querySelectorAll(
+              ".direct-expense__totals-row strong"
+            );
+            if (totalsRows.length >= 3) {
+              totalsRows[0].textContent = formatCurrencyValue(subtotal);
+              totalsRows[1].textContent = formatCurrencyValue(vatTotal);
+              totalsRows[2].textContent = formatCurrencyValue(grandTotal);
+            }
+          }
+
+          cartItemsTable.addEventListener("input", (event) => {
+            const input = event.target;
+            if (!(input instanceof HTMLInputElement)) return;
+            if (input.type !== "number") return;
+            const field = input.dataset.field;
+            if (field !== "price" && field !== "quantity") return;
+
+            const row = input.closest("tr");
+            if (!row) return;
+            const index = Number(row.dataset.index);
+            if (!Number.isFinite(index) || index < 0 || index >= cart.length) {
+              return;
+            }
+
+            const value = Number(input.value);
+            if (field === "price") {
+              cart[index].unitPrice =
+                Number.isFinite(value) && value >= 0 ? value : 0;
+            } else if (field === "quantity") {
+              cart[index].quantity =
+                Number.isFinite(value) && value > 0 ? value : 1;
+            }
+
+            recomputeRowAndTotals(paneElement, cart);
+          });
+
+          cartItemsTable.addEventListener("change", (event) => {
+            const input = event.target;
+            if (!(input instanceof HTMLInputElement)) return;
+            if (input.type !== "number") return;
+            const field = input.dataset.field;
+            if (field !== "price" && field !== "quantity") return;
+
+            const row = input.closest("tr");
+            if (!row) return;
+            const index = Number(row.dataset.index);
+            if (!Number.isFinite(index) || index < 0 || index >= cart.length) {
+              return;
+            }
+
+            const scrollTopBeforeRender = window.scrollY;
+            renderCart();
+            window.scrollTo({ top: scrollTopBeforeRender });
+          });
 
           searchInput.addEventListener("input", () => {
             applyMaterialFilters();
