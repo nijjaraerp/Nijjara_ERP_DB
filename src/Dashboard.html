@@ -571,33 +571,60 @@
       .direct-expense-pane {
         display: flex;
         flex-direction: column;
-        gap: 1rem;
+        gap: 1.5rem;
+      }
+      .direct-expense__tabs {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .direct-expense__section {
+        display: block;
+      }
+      .direct-expense__section[hidden] {
+        display: none !important;
       }
       .direct-expense__header,
       .direct-expense__footer {
         display: flex;
         flex-wrap: wrap;
         gap: 1rem;
-        align-items: center;
+        align-items: flex-end;
         justify-content: flex-start;
+      }
+      .direct-expense__meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
       }
       .direct-expense__field {
         display: flex;
         flex-direction: column;
         gap: 0.35rem;
         min-width: 200px;
+        flex: 1 1 200px;
+      }
+      .direct-expense__field--wide {
+        flex-basis: 100%;
       }
       .direct-expense__field label {
         font-size: 0.9rem;
         color: var(--color-text-secondary);
       }
       .direct-expense__field select,
-      .direct-expense__field input {
+      .direct-expense__field input,
+      .direct-expense__field textarea {
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid var(--color-border);
         border-radius: 10px;
         padding: 0.6rem 0.75rem;
         color: var(--color-text-primary);
+        width: 100%;
+      }
+      .direct-expense__field textarea {
+        resize: vertical;
+        min-height: 72px;
       }
       .direct-expense__main {
         display: flex;
@@ -607,11 +634,11 @@
       .direct-expense__catalog,
       .direct-expense__cart {
         flex: 1;
-        min-width: 280px;
+        min-width: 300px;
         border: 1px solid var(--color-border);
         border-radius: 12px;
         background: rgba(30, 30, 30, 0.9);
-        padding: 1rem;
+        padding: 1.1rem;
         display: flex;
         flex-direction: column;
         gap: 1rem;
@@ -620,21 +647,24 @@
       .direct-expense__cart h3 {
         font-size: 1.1rem;
       }
-      .direct-expense__search {
+      .direct-expense__filters {
         width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
       }
-      .direct-expense__search input {
-        width: 100%;
-        padding: 0.6rem 0.75rem;
-        border-radius: 10px;
-        border: 1px solid var(--color-border);
-        background: rgba(0, 0, 0, 0.3);
-        color: var(--color-text-primary);
+      .direct-expense__filters input,
+      .direct-expense__filters select {
+        flex: 1 1 160px;
+      }
+      .direct-expense__filters input[type="search"] {
+        max-width: 260px;
       }
       .direct-expense__materials-list {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.6rem;
         max-height: 420px;
         overflow-y: auto;
         padding-inline-end: 0.5rem;
@@ -643,11 +673,10 @@
       .direct-expense__material-card {
         border: 1px solid rgba(255, 255, 255, 0.06);
         border-radius: 10px;
-        padding: 0.75rem;
+        padding: 0.65rem 0.75rem;
         background: rgba(0, 0, 0, 0.25);
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
+        display: grid;
+        gap: 0.35rem;
         cursor: pointer;
         transition: border-color 0.2s ease, transform 0.2s ease,
           background 0.2s ease;
@@ -658,12 +687,17 @@
         transform: translateY(-2px);
         background: rgba(212, 175, 55, 0.08);
       }
-      .direct-expense__material-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem 1rem;
-        font-size: 0.85rem;
+      .direct-expense__material-id {
+        font-size: 0.8rem;
         color: var(--color-text-secondary);
+      }
+      .direct-expense__material-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      .direct-expense__material-price {
+        font-size: 0.85rem;
+        color: var(--color-accent);
       }
       .direct-expense__cart-items table {
         width: 100%;
@@ -697,6 +731,56 @@
       .direct-expense__remove-btn:hover {
         background: rgba(231, 76, 60, 0.12);
       }
+      .direct-expense__attachments-block {
+        display: grid;
+        gap: 0.65rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        padding-top: 0.75rem;
+      }
+      .direct-expense__attachment-list,
+      .direct-expense__attachments-list {
+        display: grid;
+        gap: 0.45rem;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .direct-expense__attachments-btn {
+        width: fit-content;
+      }
+      .direct-expense__attachments {
+        display: contents;
+      }
+      .direct-expense__attachment-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.45rem 0.6rem;
+        border: 1px dashed var(--color-border);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .direct-expense__attachment-item span {
+        font-size: 0.85rem;
+        color: var(--color-text-primary);
+      }
+      .direct-expense__attachment-label {
+        flex: 1;
+        background: transparent;
+        border: 1px solid transparent;
+        border-bottom: 1px solid var(--color-border);
+        padding: 0.35rem 0.5rem;
+        color: var(--color-text-primary);
+      }
+      .direct-expense__vat-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--color-text-secondary);
+      }
+      .direct-expense__vat-toggle input {
+        width: auto;
+      }
       .direct-expense__footer button {
         min-width: 180px;
       }
@@ -704,6 +788,110 @@
         color: var(--color-text-secondary);
         text-align: center;
         padding: 1rem 0;
+      }
+      .direct-expense__view-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      .direct-expense__view-controls input[type="search"] {
+        flex: 1 1 260px;
+        min-width: 220px;
+        padding: 0.55rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid var(--color-border);
+        background: rgba(0, 0, 0, 0.3);
+        color: var(--color-text-primary);
+      }
+      .direct-expense__table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .direct-expense__table th {
+        cursor: pointer;
+        position: relative;
+      }
+      .direct-expense__table th.sorted-asc::after,
+      .direct-expense__table th.sorted-desc::after {
+        content: "";
+        position: absolute;
+        inset-inline-end: 0.75rem;
+        border: 5px solid transparent;
+      }
+      .direct-expense__table th.sorted-asc::after {
+        border-bottom-color: var(--color-accent);
+        top: 45%;
+      }
+      .direct-expense__table th.sorted-desc::after {
+        border-top-color: var(--color-accent);
+        bottom: 45%;
+      }
+      .direct-expense__table tbody tr {
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+      .direct-expense__table tbody tr:hover {
+        background: rgba(212, 175, 55, 0.12);
+      }
+      .direct-expense__modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.72);
+        display: grid;
+        place-items: center;
+        z-index: 2000;
+        padding: 2rem 1.5rem;
+      }
+      .direct-expense__modal {
+        width: min(680px, 96vw);
+        max-height: 90vh;
+        overflow-y: auto;
+        background: rgba(18, 18, 18, 0.95);
+        border: 1px solid var(--color-border);
+        border-radius: 14px;
+        padding: 1.5rem;
+        display: grid;
+        gap: 1rem;
+      }
+      .direct-expense__modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+      }
+      .direct-expense__modal-body {
+        display: grid;
+        gap: 1rem;
+      }
+      .direct-expense__modal-grid {
+        display: grid;
+        gap: 0.5rem 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+      .direct-expense__modal-grid dt {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+      }
+      .direct-expense__modal-grid dd {
+        margin: 0;
+        font-weight: 600;
+      }
+      .ghost-button--sm {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.85rem;
+      }
+      .notice-card {
+        border: 1px dashed var(--color-border);
+        border-radius: 12px;
+        padding: 1rem;
+        line-height: 1.6;
+        color: var(--color-text-secondary);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .notice-card strong {
+        color: var(--color-accent);
       }
       .icon-row {
         display: flex;
@@ -1798,6 +1986,47 @@
         const permissionsTbody = document.getElementById("permissions-tbody");
         const rolePermsTbody = document.getElementById("role-perms-tbody");
         const propertiesTbody = document.getElementById("properties-tbody");
+        const workspaceConfigs = {
+          "projects-workspace": {
+            tabId: "Tab_PRJ_Management",
+            nav: prjSideNav,
+            navId: "prj-side-nav",
+            contentSelector: "#projects-workspace .workspace-content",
+          },
+          "finance-workspace": {
+            tabId: "Tab_FIN_Management",
+            nav: finSideNav,
+            navId: "fin-side-nav",
+            contentSelector: "#finance-workspace .workspace-content",
+          },
+          "hr-workspace": {
+            tabId: "Tab_HR_Management",
+            nav: hrSideNav,
+            navId: "hr-side-nav",
+            contentSelector: "#hr-workspace .workspace-content",
+          },
+        };
+        let lastWorkspaceNavRendered = null;
+        let currencyFormatter;
+        try {
+          currencyFormatter = new Intl.NumberFormat("ar-EG", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+        } catch (err) {
+          currencyFormatter = null;
+        }
+        const formatCurrencyValue = (value) => {
+          const number = Number(value) || 0;
+          if (currencyFormatter) {
+            try {
+              return currencyFormatter.format(number);
+            } catch (err) {
+              // fallback below
+            }
+          }
+          return number.toFixed(2);
+        };
         const sessionsTbody = document.getElementById("sessions-tbody");
         const auditTbody = document.getElementById("audit-tbody");
         const NAV_VIEW_MAP = {
@@ -2279,34 +2508,24 @@
         }
 
         function switchView(id) {
-          const workspaceStates = [
-            {
-              viewId: "projects-workspace",
-              nav: prjSideNav,
-              content: document.querySelector(
-                "#projects-workspace .workspace-content"
-              ),
-            },
-            {
-              viewId: "finance-workspace",
-              nav: finSideNav,
-              content: document.querySelector(
-                "#finance-workspace .workspace-content"
-              ),
-            },
-            {
-              viewId: "hr-workspace",
-              nav: hrSideNav,
-              content: document.querySelector(
-                "#hr-workspace .workspace-content"
-              ),
-            },
-          ];
-
-          workspaceStates.forEach((config) => {
-            if (config.viewId !== id) {
-              if (config.nav) config.nav.innerHTML = "";
-              if (config.content) config.content.innerHTML = "";
+          Object.keys(workspaceConfigs).forEach((key) => {
+            if (key === id) return;
+            const config = workspaceConfigs[key];
+            if (!config) return;
+            const navEl =
+              config.nav || (config.navId ? document.getElementById(config.navId) : null);
+            if (navEl) {
+              navEl.innerHTML = "";
+              config.nav = navEl;
+            }
+            const contentEl =
+              config.content ||
+              (config.contentSelector
+                ? document.querySelector(config.contentSelector)
+                : null);
+            if (contentEl) {
+              config.content = contentEl;
+              contentEl.innerHTML = "";
             }
           });
 
@@ -2320,28 +2539,44 @@
             );
           });
           if (id === "system-management-view") {
+            lastWorkspaceNavRendered = null;
             loadTab(currentSysPane || "overview");
-          } else if (id === "projects-workspace") {
-            // Restore workspace navigation rendering for Projects
-            renderWorkspaceNav(
-              "Tab_PRJ_Management",
-              "prj-side-nav",
-              document.querySelector("#projects-workspace .workspace-content")
-            );
-          } else if (id === "finance-workspace") {
-            // Restore workspace navigation rendering for Finance
-            renderWorkspaceNav(
-              "Tab_FIN_Management",
-              "fin-side-nav",
-              document.querySelector("#finance-workspace .workspace-content")
-            );
-          } else if (id === "hr-workspace") {
-            // Restore workspace navigation rendering for HR
-            renderWorkspaceNav(
-              "Tab_HR_Management",
-              "hr-side-nav",
-              document.querySelector("#hr-workspace .workspace-content")
-            );
+            return;
+          }
+
+          const workspaceConfig = workspaceConfigs[id];
+          if (workspaceConfig) {
+            const navEl =
+              workspaceConfig.nav ||
+              (workspaceConfig.navId
+                ? document.getElementById(workspaceConfig.navId)
+                : null);
+            if (navEl) {
+              workspaceConfig.nav = navEl;
+            }
+
+            const contentEl =
+              workspaceConfig.content ||
+              (workspaceConfig.contentSelector
+                ? document.querySelector(workspaceConfig.contentSelector)
+                : null);
+            if (contentEl) {
+              workspaceConfig.content = contentEl;
+            }
+
+            if (
+              navEl &&
+              (navEl.childElementCount === 0 || lastWorkspaceNavRendered !== id)
+            ) {
+              renderWorkspaceNav(
+                workspaceConfig.tabId,
+                navEl.id || workspaceConfig.navId,
+                contentEl
+              );
+              lastWorkspaceNavRendered = id;
+            }
+          } else {
+            lastWorkspaceNavRendered = null;
           }
         }
         function createNavButton(label, target) {
@@ -2484,9 +2719,12 @@
             if (sub.route) button.dataset.route = sub.route;
             const subSource = (sub.sourceSheet || "").trim();
             button.dataset.sourceSheet = subSource;
-            button.addEventListener("click", () =>
-              loadGenericTab(sub.subId, subSource, contentElement)
-            );
+            button.addEventListener("click", () => {
+              navEl
+                .querySelectorAll(".nav-item")
+                .forEach((item) => item.classList.toggle("active", item === button));
+              loadGenericTab(sub.subId, subSource, contentElement);
+            });
             navEl.appendChild(button);
           });
 
@@ -2544,11 +2782,12 @@
     });
   }
 
-  // Special-case rendering (from main branch)
+  paneElement.classList.remove("direct-expense-pane");
+  paneElement.classList.remove("materials-catalog-pane");
+
   if (paneName === "Sub_FIN_Direct") {
-    paneElement.classList.add("direct-expense-pane");
-    if (typeof renderDirectExpenseForm === "function") {
-      renderDirectExpenseForm(paneElement);
+    if (typeof renderDirectExpenseShell === "function") {
+      renderDirectExpenseShell(paneElement);
     } else {
       paneElement.innerHTML =
         '<p class="error-text">واجهة المصروفات غير متاحة حالياً.</p>';
@@ -2556,14 +2795,21 @@
     return;
   }
 
-  if (paneName === "Sub_PRJ_Materials") {
-    paneElement.classList.add("materials-catalog-pane");
-    renderInteractiveMaterialsTable(paneElement);
+  if (
+    paneName === "Sub_PRJ_Materials" &&
+    (!trimmedSource || trimmedSource === "PRJ_Materials")
+  ) {
+    paneElement.innerHTML = "";
+    if (formMeta) {
+      renderPaneHeader(paneElement, paneName);
+    }
+    const notice = document.createElement("div");
+    notice.className = "notice-card";
+    notice.innerHTML =
+      '<strong>إجراء مطلوب:</strong> يرجى إنشاء ورقة عرض مخصّصة للمواد (مثال: <code>PV_PRJ_Materials_View</code>) تضم رؤوس الأعمدة العربية وتعبئتها عبر دالة <code>QUERY</code> من ورقة <code>PRJ_Materials</code>. بعد ذلك حدّث حقل <code>Source_Sheet</code> في سجل <code>SYS_Tab_Register</code> للتبويب <code>Sub_PRJ_Materials</code> ليشير إلى الورقة الجديدة، ثم أعد تحميل التبويب.';
+    paneElement.appendChild(notice);
     return;
   }
-
-  paneElement.classList.remove("direct-expense-pane");
-  paneElement.classList.remove("materials-catalog-pane");
 
   if (!trimmedSource) {
     paneElement.innerHTML =
@@ -3022,13 +3268,672 @@ function renderPaneHeader(paneElement, paneName) {
 
   header.appendChild(addButton);
 }
-        function renderDirectExpenseForm(paneElement) {
-          if (!paneElement) return;
-          paneElement.innerHTML = "";
+function renderDirectExpenseShell(paneElement) {
+  if (!paneElement) return;
 
-          let cart = [];
-          let materialsCatalog = [];
-          let attachments = [];
+  paneElement.classList.add("direct-expense-pane");
+  paneElement.innerHTML = "";
+
+  const tabs = document.createElement("div");
+  tabs.className = "dyn-tabs direct-expense__tabs";
+
+  const viewTab = document.createElement("button");
+  viewTab.type = "button";
+  viewTab.className = "nav-item active";
+  viewTab.textContent = "عرض المصروفات";
+
+  const addTab = document.createElement("button");
+  addTab.type = "button";
+  addTab.className = "nav-item";
+  addTab.textContent = "إضافة مصروف";
+
+  tabs.appendChild(viewTab);
+  tabs.appendChild(addTab);
+
+  const viewContainer = document.createElement("div");
+  viewContainer.id = "de-view-content";
+  viewContainer.className = "direct-expense__section";
+  viewContainer.dataset.viewLoaded = "false";
+
+  const addContainer = document.createElement("div");
+  addContainer.id = "de-add-content";
+  addContainer.className = "direct-expense__section";
+  addContainer.hidden = true;
+
+  paneElement.appendChild(tabs);
+  paneElement.appendChild(viewContainer);
+  paneElement.appendChild(addContainer);
+
+  let addInitialized = false;
+
+  const activateTab = (target) => {
+    if (target === "view") {
+      viewTab.classList.add("active");
+      addTab.classList.remove("active");
+      viewContainer.hidden = false;
+      addContainer.hidden = true;
+      loadDirectExpenseViewData(viewContainer);
+    } else {
+      viewTab.classList.remove("active");
+      addTab.classList.add("active");
+      viewContainer.hidden = true;
+      addContainer.hidden = false;
+      if (!addInitialized) {
+        renderDirectExpenseForm(addContainer, {
+          onSaved: () => {
+            viewContainer.dataset.viewLoaded = "false";
+            loadDirectExpenseViewData(viewContainer, { reload: true, silent: true });
+          },
+        });
+        addInitialized = true;
+      }
+    }
+  };
+
+  viewTab.addEventListener("click", () => activateTab("view"));
+  addTab.addEventListener("click", () => activateTab("add"));
+
+  activateTab("view");
+}
+
+function loadDirectExpenseViewData(container, options = {}) {
+  if (!container) return;
+  const { reload = false, onComplete, silent = false } = options;
+  const alreadyLoaded = container.dataset.viewLoaded === "true";
+  if (alreadyLoaded && !reload) {
+    if (typeof onComplete === "function") onComplete();
+    return;
+  }
+
+  container.dataset.viewLoaded = "false";
+  if (!silent) {
+    container.innerHTML =
+      '<p class="muted">جارٍ تحميل المصروفات، يرجى الانتظار...</p>';
+  }
+
+  if (!(window.google && google.script && google.script.run)) {
+    container.innerHTML =
+      '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
+    if (typeof onComplete === "function") onComplete();
+    return;
+  }
+
+  google.script.run
+    .withFailureHandler((err) => {
+      console.error("getDirectExpenseViewData failed", err);
+      container.innerHTML =
+        '<p class="error-text">تعذر تحميل المصروفات.</p>';
+      if (typeof showToast === "function") {
+        showToast("تعذر تحميل المصروفات.", "error");
+      }
+      if (typeof onComplete === "function") onComplete(err);
+    })
+    .withSuccessHandler((result) => {
+      container.dataset.viewLoaded = "true";
+      renderDirectExpenseTable(container, result, {
+        onRefresh: () =>
+          loadDirectExpenseViewData(container, { reload: true, silent: false }),
+      });
+      if (typeof onComplete === "function") onComplete(result);
+    })
+    .getDirectExpenseViewData();
+}
+
+function renderDirectExpenseTable(container, data, options = {}) {
+  if (!container) return;
+
+  const headers = Array.isArray(data?.headers) ? data.headers : [];
+  const rows = Array.isArray(data?.rows) ? data.rows : [];
+
+  container.innerHTML = "";
+
+  if (!headers.length) {
+    const empty = document.createElement("p");
+    empty.className = "direct-expense__empty";
+    empty.textContent = "لا توجد مصروفات مسجلة حالياً.";
+    container.appendChild(empty);
+    return;
+  }
+
+  const resolveExpenseIdentifier = (record, fallbackIndex) => {
+    if (!record || typeof record !== "object") {
+      return String(fallbackIndex);
+    }
+    const normalized = Object.keys(record).reduce((acc, key) => {
+      acc[String(key || "").trim().toLowerCase()] = record[key];
+      return acc;
+    }, {});
+    const candidates = [
+      "expense_id",
+      "expenseid",
+      "directexpense_id",
+      "direct_expense_id",
+      "direct expense id",
+      "id",
+      "record_id",
+      "expense code",
+    ];
+    for (const key of candidates) {
+      if (Object.prototype.hasOwnProperty.call(normalized, key)) {
+        const value = normalized[key];
+        if (value !== undefined && value !== null && String(value).trim() !== "") {
+          return value;
+        }
+      }
+    }
+    return String(fallbackIndex);
+  };
+
+  const currencyColumns = headers.map((header) =>
+    /amount|total|price|cost|vat|قيمة|سعر|إجمالي|اجمالي|ضريبة/i.test(
+      String(header || "")
+    )
+  );
+
+  const records = rows.map((row, index) => {
+    const record = {};
+    headers.forEach((header, columnIndex) => {
+      record[header] = row[columnIndex];
+    });
+    const identifier = resolveExpenseIdentifier(record, index);
+    const searchText = Object.values(record)
+      .concat(identifier)
+      .filter((value) => value !== undefined && value !== null)
+      .map((value) => String(value).toLowerCase())
+      .join(" ");
+    return { record, identifier, index, searchText };
+  });
+
+  const totalRecords = records.length;
+  const state = { search: "", sortIndex: -1, sortDir: "asc" };
+
+  const controls = document.createElement("div");
+  controls.className = "direct-expense__view-controls";
+
+  const searchInput = document.createElement("input");
+  searchInput.type = "search";
+  searchInput.placeholder = "ابحث في المصروفات...";
+  controls.appendChild(searchInput);
+
+  const refreshButton = document.createElement("button");
+  refreshButton.type = "button";
+  refreshButton.className = "ghost-button ghost-button--sm";
+  refreshButton.textContent = "تحديث";
+  refreshButton.addEventListener("click", () => {
+    if (typeof options.onRefresh === "function") {
+      options.onRefresh();
+    } else {
+      loadDirectExpenseViewData(container, { reload: true });
+    }
+  });
+  controls.appendChild(refreshButton);
+
+  const countBadge = document.createElement("span");
+  countBadge.className = "muted";
+  controls.appendChild(countBadge);
+
+  container.appendChild(controls);
+
+  const table = document.createElement("table");
+  table.className = "sys-table direct-expense__table";
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  const headerCells = [];
+
+  const updateSortIndicators = () => {
+    headerCells.forEach((cell, index) => {
+      cell.classList.toggle(
+        "sorted-asc",
+        state.sortIndex === index && state.sortDir === "asc"
+      );
+      cell.classList.toggle(
+        "sorted-desc",
+        state.sortIndex === index && state.sortDir === "desc"
+      );
+    });
+  };
+
+  const toggleSort = (index) => {
+    if (state.sortIndex === index) {
+      state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+    } else {
+      state.sortIndex = index;
+      state.sortDir = "asc";
+    }
+    updateSortIndicators();
+    applyFilters();
+  };
+
+  headers.forEach((header, headerIndex) => {
+    const th = document.createElement("th");
+    th.textContent = header;
+    th.tabIndex = 0;
+    th.addEventListener("click", () => toggleSort(headerIndex));
+    th.addEventListener("keypress", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        toggleSort(headerIndex);
+      }
+    });
+    headerCells.push(th);
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  table.appendChild(tbody);
+  container.appendChild(table);
+
+  const updateCount = (visibleCount) => {
+    countBadge.textContent = `عدد السجلات: ${visibleCount} من ${totalRecords}`;
+  };
+
+  const toComparable = (value) => {
+    if (value === null || value === undefined || value === "") {
+      return { rank: 3, value: "" };
+    }
+    if (value instanceof Date) {
+      return { rank: 0, value: value.getTime() };
+    }
+    if (typeof value === "number") {
+      return { rank: 0, value };
+    }
+    if (typeof value === "boolean") {
+      return { rank: 1, value: value ? 1 : 0 };
+    }
+    const str = String(value).trim();
+    if (!str) return { rank: 3, value: "" };
+    const numeric = Number(str.replace(/,/g, ""));
+    if (!Number.isNaN(numeric) && str !== "") {
+      return { rank: 0, value: numeric };
+    }
+    const dateValue = Date.parse(str);
+    if (!Number.isNaN(dateValue)) {
+      return { rank: 0, value: dateValue };
+    }
+    return { rank: 2, value: str.toLowerCase() };
+  };
+
+  const renderRows = (entries) => {
+    tbody.innerHTML = "";
+    updateCount(entries.length);
+
+    if (!entries.length) {
+      const emptyRow = document.createElement("tr");
+      const emptyCell = document.createElement("td");
+      emptyCell.colSpan = headers.length;
+      emptyCell.className = "direct-expense__empty";
+      emptyCell.textContent = "لا توجد نتائج مطابقة.";
+      emptyRow.appendChild(emptyCell);
+      tbody.appendChild(emptyRow);
+      return;
+    }
+
+    entries.forEach((entry) => {
+      const row = document.createElement("tr");
+      row.dataset.expenseId = entry.identifier != null ? String(entry.identifier) : "";
+
+      headers.forEach((header, index) => {
+        const td = document.createElement("td");
+        const value = entry.record[header];
+        if (value === true || value === false) {
+          td.innerHTML = renderBooleanBadge(value);
+        } else if (
+          typeof value === "string" &&
+          /^(true|false|yes|no|y|n|1|0)$/i.test(value.trim())
+        ) {
+          td.innerHTML = renderBooleanBadge(value);
+        } else if (value instanceof Date) {
+          td.textContent = formatDateTime(value);
+        } else if (
+          typeof value === "string" &&
+          /^\d{4}-\d{2}-\d{2}T/.test(value)
+        ) {
+          td.textContent = formatDateTime(value);
+        } else if (currencyColumns[index]) {
+          const numericValue = Number(value);
+          td.textContent = Number.isFinite(numericValue)
+            ? formatCurrencyValue(numericValue)
+            : String(value ?? "");
+        } else {
+          td.textContent = value == null ? "" : String(value);
+        }
+        row.appendChild(td);
+      });
+
+      row.addEventListener("click", () =>
+        showExpenseDetailsPopup(entry.identifier, entry.record)
+      );
+      tbody.appendChild(row);
+    });
+  };
+
+  const applyFilters = () => {
+    const term = state.search.trim().toLowerCase();
+    let filtered = records.slice();
+    if (term) {
+      filtered = filtered.filter((entry) => entry.searchText.includes(term));
+    }
+    if (state.sortIndex >= 0) {
+      const dir = state.sortDir === "asc" ? 1 : -1;
+      const header = headers[state.sortIndex];
+      filtered.sort((a, b) => {
+        const aComparable = toComparable(a.record[header]);
+        const bComparable = toComparable(b.record[header]);
+        if (aComparable.rank !== bComparable.rank) {
+          return (aComparable.rank - bComparable.rank) * dir;
+        }
+        if (aComparable.value === bComparable.value) return 0;
+        return aComparable.value > bComparable.value ? dir : -dir;
+      });
+    }
+    renderRows(filtered);
+    return filtered;
+  };
+
+  searchInput.addEventListener("input", () => {
+    state.search = String(searchInput.value || "");
+    applyFilters();
+  });
+
+  updateSortIndicators();
+  applyFilters();
+}
+
+function showExpenseDetailsPopup(expenseId, fallbackRecord) {
+  const existing = document.querySelector(".direct-expense__modal-overlay");
+  if (existing && existing.parentElement) {
+    existing.parentElement.removeChild(existing);
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "direct-expense__modal-overlay";
+  const dialog = document.createElement("div");
+  dialog.className = "direct-expense__modal";
+  overlay.appendChild(dialog);
+
+  const header = document.createElement("div");
+  header.className = "direct-expense__modal-header";
+  const title = document.createElement("h3");
+  title.textContent = "تفاصيل المصروف";
+  header.appendChild(title);
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "ghost-button ghost-button--sm";
+  closeButton.textContent = "إغلاق";
+  header.appendChild(closeButton);
+  dialog.appendChild(header);
+
+  const body = document.createElement("div");
+  body.className = "direct-expense__modal-body";
+  const status = document.createElement("p");
+  status.className = "muted";
+  status.textContent = "جارٍ تحميل التفاصيل...";
+  body.appendChild(status);
+  dialog.appendChild(body);
+
+  const handleClose = () => {
+    document.removeEventListener("keydown", handleKeydown);
+    if (overlay.parentElement) {
+      overlay.parentElement.removeChild(overlay);
+    }
+  };
+
+  const handleKeydown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      handleClose();
+    }
+  };
+
+  closeButton.addEventListener("click", handleClose);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) {
+      handleClose();
+    }
+  });
+  document.addEventListener("keydown", handleKeydown);
+
+  document.body.appendChild(overlay);
+
+  if (!(window.google && google.script && google.script.run)) {
+    status.textContent = "خدمة Google Apps Script غير متاحة.";
+    return;
+  }
+
+  const targetId =
+    expenseId != null && expenseId !== ""
+      ? expenseId
+      : fallbackRecord && typeof fallbackRecord === "object"
+      ? fallbackRecord.Expense_ID || fallbackRecord.ID || ""
+      : "";
+
+  const renderExpenseDetails = (
+    detailsResult,
+    attachments,
+    resolvedId,
+    fallback
+  ) => {
+    body.innerHTML = "";
+
+    const records = Array.isArray(detailsResult?.details)
+      ? detailsResult.details
+      : [];
+    const headers = Array.isArray(detailsResult?.headers)
+      ? detailsResult.headers
+      : [];
+    const primaryRecord =
+      (records.length && records[0]) ||
+      (fallback && typeof fallback === "object" ? fallback : {});
+
+    const resolveValue = (record, candidates) => {
+      if (!record || typeof record !== "object") return "";
+      for (const candidate of candidates) {
+        const key = String(candidate || "").trim();
+        if (key && key in record && record[key] !== undefined) {
+          return record[key];
+        }
+        const lowerKey = key.toLowerCase();
+        const match = Object.keys(record).find(
+          (rk) => rk && String(rk).toLowerCase() === lowerKey
+        );
+        if (match && record[match] !== undefined) {
+          return record[match];
+        }
+      }
+      return "";
+    };
+
+    const metaFields = [
+      { label: "رقم المصروف", keys: ["Expense_ID", "ExpenseId", "ID", "Record_ID"] },
+      {
+        label: "المشروع",
+        keys: ["Project_Name", "Project", "Project_ID", "ProjectId", "Project Code"],
+      },
+      { label: "التاريخ", keys: ["Date", "Transaction_Date", "Posting_Date"] },
+      {
+        label: "طريقة الدفع",
+        keys: ["Payment_Method", "Pay_Method", "PaymentMethod", "Method"],
+      },
+      {
+        label: "حالة الدفع",
+        keys: ["Payment_Status", "Pay_Status", "Status"],
+      },
+      { label: "ملاحظات", keys: ["Notes", "Note", "Remarks"] },
+    ];
+
+    const metaList = document.createElement("dl");
+    metaList.className = "direct-expense__modal-grid";
+    metaFields.forEach(({ label, keys }) => {
+      const value = resolveValue(primaryRecord, keys);
+      if (value === undefined || value === null || value === "") return;
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      const normalizedKeys = keys.map((k) => String(k || "").toLowerCase());
+      if (normalizedKeys.some((k) => k.includes("date"))) {
+        dd.textContent = formatDateTime(value);
+      } else {
+        dd.textContent = String(value);
+      }
+      metaList.appendChild(dt);
+      metaList.appendChild(dd);
+    });
+    if (metaList.children.length) {
+      body.appendChild(metaList);
+    }
+
+    if (records.length) {
+      const itemsTable = document.createElement("table");
+      itemsTable.className = "sys-table direct-expense__table";
+      const itemsHead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      const itemColumns = [
+        { label: "المادة", keys: ["Material_Name", "Material", "Item_Name"] },
+        { label: "الوحدة", keys: ["Unit", "Default_Unit"] },
+        { label: "الكمية", keys: ["Qty", "Quantity"] },
+        { label: "السعر", keys: ["Unit_Price", "Price"] },
+        { label: "الإجمالي", keys: ["Amount", "Line_Amount"] },
+        { label: "الضريبة", keys: ["VAT_Amount", "Tax_Amount"] },
+        {
+          label: "الإجمالي مع الضريبة",
+          keys: ["Total_With_VAT", "TotalWithVat", "Total"],
+        },
+      ];
+      itemColumns.forEach((column) => {
+        const th = document.createElement("th");
+        th.textContent = column.label;
+        headRow.appendChild(th);
+      });
+      itemsHead.appendChild(headRow);
+      itemsTable.appendChild(itemsHead);
+      const itemsBody = document.createElement("tbody");
+      itemsTable.appendChild(itemsBody);
+
+      records.forEach((record) => {
+        const row = document.createElement("tr");
+        itemColumns.forEach((column, columnIndex) => {
+          const td = document.createElement("td");
+          const rawValue = resolveValue(record, column.keys);
+          if (rawValue === undefined || rawValue === null || rawValue === "") {
+            td.textContent = "—";
+          } else if (column.label.includes("التاريخ")) {
+            td.textContent = formatDateTime(rawValue);
+          } else if (column.label.includes("السعر") || columnIndex >= 3) {
+            const numeric = Number(rawValue);
+            td.textContent = Number.isFinite(numeric)
+              ? formatCurrencyValue(numeric)
+              : String(rawValue);
+          } else if (column.label.includes("الكمية")) {
+            const numeric = Number(rawValue);
+            td.textContent = Number.isFinite(numeric)
+              ? numeric.toLocaleString("ar-EG", { maximumFractionDigits: 2 })
+              : String(rawValue);
+          } else {
+            td.textContent = String(rawValue);
+          }
+          row.appendChild(td);
+        });
+        itemsBody.appendChild(row);
+      });
+
+      body.appendChild(itemsTable);
+    } else {
+      const noDetails = document.createElement("p");
+      noDetails.className = "direct-expense__empty";
+      noDetails.textContent = "لا تتوفر تفاصيل إضافية لهذا المصروف.";
+      body.appendChild(noDetails);
+    }
+
+    const attachmentsSection = document.createElement("div");
+    attachmentsSection.className = "direct-expense__attachments-block";
+    const attachmentsHeader = document.createElement("h4");
+    attachmentsHeader.textContent = "المرفقات";
+    attachmentsSection.appendChild(attachmentsHeader);
+
+    const attachmentList = document.createElement("ul");
+    attachmentList.className = "direct-expense__attachment-list";
+
+    if (attachments && attachments.length) {
+      attachments.forEach((attachment) => {
+        const item = document.createElement("li");
+        const link = document.createElement("a");
+        const url =
+          attachment?.Drive_URL || attachment?.URL || attachment?.Link || "";
+        const label =
+          attachment?.Label || attachment?.File_Name || attachment?.Name || "مرفق";
+
+        link.textContent = label;
+        if (url) {
+          link.href = url;
+          link.target = "_blank";
+          link.rel = "noopener";
+        } else {
+          link.href = "#";
+          link.addEventListener("click", (event) => event.preventDefault());
+        }
+        item.appendChild(link);
+        attachmentList.appendChild(item);
+      });
+      attachmentsSection.appendChild(attachmentList);
+    } else {
+      const emptyAttachments = document.createElement("p");
+      emptyAttachments.className = "direct-expense__empty";
+      emptyAttachments.textContent = "لا توجد مرفقات مرتبطة بهذا المصروف.";
+      attachmentsSection.appendChild(emptyAttachments);
+    }
+
+    body.appendChild(attachmentsSection);
+
+    if (resolvedId) {
+      title.textContent = `تفاصيل المصروف (${resolvedId})`;
+    }
+  };
+
+  google.script.run
+    .withFailureHandler((err) => {
+      console.error("getDirectExpenseDetailsById failed", err);
+      status.textContent = "تعذر تحميل تفاصيل المصروف.";
+      if (typeof showToast === "function") {
+        showToast("تعذر تحميل تفاصيل المصروف.", "error");
+      }
+    })
+    .withSuccessHandler((details) => {
+      const resolvedId =
+        (details && details.expenseId) ||
+        targetId ||
+        (fallbackRecord && fallbackRecord.Expense_ID) ||
+        "";
+
+      const renderWithAttachments = (attachments) => {
+        renderExpenseDetails(details, attachments, resolvedId, fallbackRecord);
+      };
+
+      if (resolvedId) {
+        google.script.run
+          .withFailureHandler((err) => {
+            console.error("getAttachmentsForEntity failed", err);
+            renderWithAttachments([]);
+          })
+          .withSuccessHandler((attachments) => {
+            renderWithAttachments(Array.isArray(attachments) ? attachments : []);
+          })
+          .getAttachmentsForEntity(resolvedId, "DirectExpense");
+      } else {
+        renderWithAttachments([]);
+      }
+    })
+    .getDirectExpenseDetailsById(targetId || "");
+}
+function renderDirectExpenseForm(paneElement, options = {}) {
+  if (!paneElement) return;
+  paneElement.innerHTML = "";
+  const { onSaved } = options || {};
+
+  let cart = [];
+  let materialsCatalog = [];
+  let attachments = [];
           let selectedCategory = "";
           let selectedSubcategory = "";
           let isVatEnabled = false;
@@ -3067,6 +3972,47 @@ function renderPaneHeader(paneElement, paneName) {
           headerSection.appendChild(dateField);
           paneElement.appendChild(headerSection);
 
+          const metaSection = document.createElement("div");
+          metaSection.className = "direct-expense__meta";
+
+          const paymentMethodField = document.createElement("div");
+          paymentMethodField.className = "direct-expense__field";
+          const paymentMethodLabel = document.createElement("label");
+          paymentMethodLabel.setAttribute("for", "de-payment-method");
+          paymentMethodLabel.textContent = "طريقة الدفع";
+          const paymentMethodInput = document.createElement("input");
+          paymentMethodInput.type = "text";
+          paymentMethodInput.id = "de-payment-method";
+          paymentMethodField.appendChild(paymentMethodLabel);
+          paymentMethodField.appendChild(paymentMethodInput);
+
+          const paymentStatusField = document.createElement("div");
+          paymentStatusField.className = "direct-expense__field";
+          const paymentStatusLabel = document.createElement("label");
+          paymentStatusLabel.setAttribute("for", "de-payment-status");
+          paymentStatusLabel.textContent = "حالة الدفع";
+          const paymentStatusInput = document.createElement("input");
+          paymentStatusInput.type = "text";
+          paymentStatusInput.id = "de-payment-status";
+          paymentStatusField.appendChild(paymentStatusLabel);
+          paymentStatusField.appendChild(paymentStatusInput);
+
+          const notesField = document.createElement("div");
+          notesField.className = "direct-expense__field direct-expense__field--wide";
+          const notesLabel = document.createElement("label");
+          notesLabel.setAttribute("for", "de-notes");
+          notesLabel.textContent = "ملاحظات";
+          const notesInput = document.createElement("textarea");
+          notesInput.id = "de-notes";
+          notesInput.rows = 3;
+          notesField.appendChild(notesLabel);
+          notesField.appendChild(notesInput);
+
+          metaSection.appendChild(paymentMethodField);
+          metaSection.appendChild(paymentStatusField);
+          metaSection.appendChild(notesField);
+          paneElement.appendChild(metaSection);
+
           const mainSection = document.createElement("div");
           mainSection.className = "direct-expense__main";
 
@@ -3074,13 +4020,13 @@ function renderPaneHeader(paneElement, paneName) {
           catalogContainer.className = "direct-expense__catalog";
           const catalogTitle = document.createElement("h3");
           catalogTitle.textContent = "كتالوج المواد";
-          const searchWrapper = document.createElement("div");
-          searchWrapper.className = "direct-expense__search";
+          const filtersWrapper = document.createElement("div");
+          filtersWrapper.className = "direct-expense__filters";
           const searchInput = document.createElement("input");
           searchInput.type = "search";
           searchInput.id = "material-search";
           searchInput.placeholder = "ابحث عن مادة...";
-          searchWrapper.appendChild(searchInput);
+          filtersWrapper.appendChild(searchInput);
 
           const categorySelect = document.createElement("select");
           categorySelect.id = "de-category-select";
@@ -3089,7 +4035,7 @@ function renderPaneHeader(paneElement, paneName) {
           categoryDefault.value = "";
           categoryDefault.textContent = "جميع الفئات";
           categorySelect.appendChild(categoryDefault);
-          searchWrapper.appendChild(categorySelect);
+          filtersWrapper.appendChild(categorySelect);
 
           const subcategorySelect = document.createElement("select");
           subcategorySelect.id = "de-subcategory-select";
@@ -3098,14 +4044,14 @@ function renderPaneHeader(paneElement, paneName) {
           subcategoryDefault.value = "";
           subcategoryDefault.textContent = "كل الأصناف الفرعية";
           subcategorySelect.appendChild(subcategoryDefault);
-          searchWrapper.appendChild(subcategorySelect);
+          filtersWrapper.appendChild(subcategorySelect);
           const materialsList = document.createElement("div");
           materialsList.id = "materials-list";
           materialsList.className = "direct-expense__materials-list";
           materialsList.innerHTML =
             '<p class="muted">جارٍ تحميل كتالوج المواد...</p>';
           catalogContainer.appendChild(catalogTitle);
-          catalogContainer.appendChild(searchWrapper);
+          catalogContainer.appendChild(filtersWrapper);
           catalogContainer.appendChild(materialsList);
 
           const cartContainer = document.createElement("div");
@@ -3128,19 +4074,7 @@ function renderPaneHeader(paneElement, paneName) {
           const vatToggleText = document.createElement("span");
           vatToggleText.textContent = "تضمين ضريبة القيمة المضافة (Include VAT)";
           vatToggleWrapper.appendChild(vatToggleText);
-          cartContainer.appendChild(cartTitle);
-          cartContainer.appendChild(cartItemsTable);
-          cartContainer.appendChild(cartTotals);
 
-          mainSection.appendChild(catalogContainer);
-          mainSection.appendChild(cartContainer);
-          paneElement.appendChild(mainSection);
-
-          const footerSection = document.createElement("div");
-          footerSection.className = "direct-expense__footer";
-
-          const attachmentsWrapper = document.createElement("div");
-          attachmentsWrapper.className = "direct-expense__attachments";
           const attachmentsInput = document.createElement("input");
           attachmentsInput.type = "file";
           attachmentsInput.id = "de-attachments";
@@ -3154,30 +4088,37 @@ function renderPaneHeader(paneElement, paneName) {
           const attachmentList = document.createElement("div");
           attachmentList.id = "de-attachment-list";
           attachmentList.className = "direct-expense__attachment-list";
-          attachmentsWrapper.appendChild(attachmentsInput);
-          attachmentsWrapper.appendChild(attachmentsButton);
-          attachmentsWrapper.appendChild(attachmentList);
+          const attachmentsHeader = document.createElement("div");
+          attachmentsHeader.className = "direct-expense__attachments";
+          attachmentsHeader.appendChild(attachmentsInput);
+          attachmentsHeader.appendChild(attachmentsButton);
+          const attachmentsBlock = document.createElement("div");
+          attachmentsBlock.className = "direct-expense__attachments-block";
+          const attachmentsTitle = document.createElement("h4");
+          attachmentsTitle.textContent = "المرفقات";
+          attachmentsBlock.appendChild(attachmentsTitle);
+          attachmentsBlock.appendChild(attachmentsHeader);
+          attachmentsBlock.appendChild(attachmentList);
+
+          cartContainer.appendChild(cartTitle);
+          cartContainer.appendChild(cartItemsTable);
+          cartContainer.appendChild(cartTotals);
+          cartContainer.appendChild(attachmentsBlock);
+
+          mainSection.appendChild(catalogContainer);
+          mainSection.appendChild(cartContainer);
+          paneElement.appendChild(mainSection);
+
+          const footerSection = document.createElement("div");
+          footerSection.className = "direct-expense__footer";
 
           const submitButton = document.createElement("button");
           submitButton.type = "button";
           submitButton.id = "submit-cart-btn";
           submitButton.className = "accent-button";
           submitButton.textContent = "حفظ المصروفات";
-          footerSection.appendChild(attachmentsWrapper);
           footerSection.appendChild(submitButton);
           paneElement.appendChild(footerSection);
-
-          const formatCurrency = (value) => {
-            const number = Number(value) || 0;
-            try {
-              return new Intl.NumberFormat("ar-EG", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              }).format(number);
-            } catch (err) {
-              return number.toFixed(2);
-            }
-          };
 
           const normalizeId = (material) =>
             material?.Material_ID ||
@@ -3299,28 +4240,15 @@ function renderPaneHeader(paneElement, paneName) {
                 `إضافة المادة ${displayName || "مادة"}`
               );
 
+              const idBadge = document.createElement("span");
+              idBadge.className = "direct-expense__material-id";
+              idBadge.textContent = materialId ? `#${materialId}` : "—";
+              card.appendChild(idBadge);
+
               const title = document.createElement("strong");
+              title.className = "direct-expense__material-name";
               title.textContent = displayName || "مادة";
               card.appendChild(title);
-
-              const meta = document.createElement("div");
-              meta.className = "direct-expense__material-meta";
-
-              const codeSpan = document.createElement("span");
-              codeSpan.textContent = `#${materialId || "--"}`;
-              meta.appendChild(codeSpan);
-
-              if (material?.Category) {
-                const categorySpan = document.createElement("span");
-                categorySpan.textContent = `الفئة: ${material.Category}`;
-                meta.appendChild(categorySpan);
-              }
-
-              if (material?.Subcategory) {
-                const subcategorySpan = document.createElement("span");
-                subcategorySpan.textContent = `التصنيف الفرعي: ${material.Subcategory}`;
-                meta.appendChild(subcategorySpan);
-              }
 
               const unitPrice =
                 Number(
@@ -3330,16 +4258,10 @@ function renderPaneHeader(paneElement, paneName) {
                     0
                 ) || 0;
               const priceSpan = document.createElement("span");
-              priceSpan.textContent = `السعر الافتراضي: ${formatCurrency(unitPrice)}`;
-              meta.appendChild(priceSpan);
+              priceSpan.className = "direct-expense__material-price";
+              priceSpan.textContent = `السعر: ${formatCurrencyValue(unitPrice)}`;
+              card.appendChild(priceSpan);
 
-              if (material?.Default_Unit) {
-                const unitSpan = document.createElement("span");
-                unitSpan.textContent = `الوحدة: ${material.Default_Unit}`;
-                meta.appendChild(unitSpan);
-              }
-
-              card.appendChild(meta);
               const triggerAddToCart = () => {
                 if (!materialId) {
                   if (typeof showToast === "function") {
@@ -3613,11 +4535,13 @@ function renderPaneHeader(paneElement, paneName) {
                 priceInput.min = "0";
                 priceInput.step = "0.01";
                 priceInput.value = unitPrice.toString();
-                priceInput.addEventListener("change", () => {
+                const handlePriceInput = () => {
                   const value = Number(priceInput.value);
                   item.unitPrice = Number.isFinite(value) && value >= 0 ? value : 0;
                   renderCart();
-                });
+                };
+                priceInput.addEventListener("input", handlePriceInput);
+                priceInput.addEventListener("change", handlePriceInput);
                 priceCell.appendChild(priceInput);
                 row.appendChild(priceCell);
 
@@ -3627,24 +4551,26 @@ function renderPaneHeader(paneElement, paneName) {
                 qtyInput.min = "0";
                 qtyInput.step = "0.01";
                 qtyInput.value = quantity.toString();
-                qtyInput.addEventListener("change", () => {
+                const handleQuantityInput = () => {
                   const value = Number(qtyInput.value);
                   item.quantity = Number.isFinite(value) && value > 0 ? value : 1;
                   renderCart();
-                });
+                };
+                qtyInput.addEventListener("input", handleQuantityInput);
+                qtyInput.addEventListener("change", handleQuantityInput);
                 qtyCell.appendChild(qtyInput);
                 row.appendChild(qtyCell);
 
                 const amountCell = document.createElement("td");
-                amountCell.textContent = formatCurrency(amount);
+                amountCell.textContent = formatCurrencyValue(amount);
                 row.appendChild(amountCell);
 
                 const vatCell = document.createElement("td");
-                vatCell.textContent = formatCurrency(vatAmount);
+                vatCell.textContent = formatCurrencyValue(vatAmount);
                 row.appendChild(vatCell);
 
                 const totalCell = document.createElement("td");
-                totalCell.textContent = formatCurrency(totalWithVat);
+                totalCell.textContent = formatCurrencyValue(totalWithVat);
                 row.appendChild(totalCell);
 
                 const actionsCell = document.createElement("td");
@@ -3679,7 +4605,7 @@ function renderPaneHeader(paneElement, paneName) {
               const labelSpan = document.createElement("span");
               labelSpan.textContent = label;
               const valueSpan = document.createElement("strong");
-              valueSpan.textContent = formatCurrency(value);
+              valueSpan.textContent = formatCurrencyValue(value);
               row.appendChild(labelSpan);
               row.appendChild(valueSpan);
               cartTotals.appendChild(row);
@@ -3829,6 +4755,9 @@ function renderPaneHeader(paneElement, paneName) {
                 project: projectSelect.value,
                 date: dateInput.value,
                 vatIncluded: isVatEnabled,
+                paymentMethod: paymentMethodInput.value.trim(),
+                paymentStatus: paymentStatusInput.value.trim(),
+                notes: notesInput.value.trim(),
               },
               items: cart.map((item) => ({
                 materialId: item.materialId,
@@ -3871,6 +4800,13 @@ function renderPaneHeader(paneElement, paneName) {
                     response.message || "تم حفظ المصروفات بنجاح.",
                     "success"
                   );
+                  if (typeof onSaved === "function") {
+                    try {
+                      onSaved(response);
+                    } catch (callbackError) {
+                      console.error("onSaved callback failed", callbackError);
+                    }
+                  }
                 } else {
                   showToast(
                     (response && response.message) ||

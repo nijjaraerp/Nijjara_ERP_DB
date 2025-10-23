@@ -34,6 +34,7 @@ const CONFIG = {
 
     // Finance
     FIN_DIRECT_EXP: "FIN_DirectExpenses",
+    FIN_DIRECT_EXP_VIEW: "PV_FIN_DirectExpenses_View",
     FIN_INDIRECT_ONCE: "FIN_InDirExpense_Once",
     FIN_INDIRECT_REPEATED: "FIN_InDirExpense_Repeated",
     FIN_PROJECT_REVENUE: "FIN_Project_Revenue",
@@ -1345,6 +1346,196 @@ function getProjectsForDropdown() {
   }
 }
 
+function getDirectExpenseViewData() {
+  const FNAME = "getDirectExpenseViewData";
+  debugLog(FNAME, "start");
+
+  try {
+    const { headers = [], rows = [] } = loadSheetData_(
+      CONFIG.SHEETS.FIN_DIRECT_EXP_VIEW,
+      CONFIG.SHEETS.FIN_DIRECT_EXP
+    );
+    const payload = {
+      headers: Array.isArray(headers) ? headers : [],
+      rows: Array.isArray(rows) ? rows : [],
+    };
+    const sanitized = sanitizeForClientResponse_(payload);
+    debugLog(FNAME, "resolved", {
+      headers: payload.headers.length,
+      rows: payload.rows.length,
+    });
+    return sanitized;
+  } catch (err) {
+    debugError(FNAME, err);
+    throw err;
+  }
+}
+
+function getDirectExpenseDetailsById(expenseId) {
+  const FNAME = "getDirectExpenseDetailsById";
+  debugLog(FNAME, "start", { expenseId });
+
+  if (expenseId === undefined || expenseId === null || expenseId === "") {
+    return sanitizeForClientResponse_({
+      found: false,
+      expenseId: expenseId ?? "",
+      headers: [],
+      details: [],
+    });
+  }
+
+  try {
+    const { headers = [], rows = [] } = loadSheetData_(
+      CONFIG.SHEETS.FIN_DIRECT_EXP
+    );
+    if (!headers.length || !rows.length) {
+      return sanitizeForClientResponse_({
+        found: false,
+        expenseId,
+        headers,
+        details: [],
+      });
+    }
+
+    const candidateIndexes = [
+      findHeaderIndex_(
+        headers,
+        "Expense_ID",
+        "ExpenseId",
+        "Expense ID",
+        "DirectExpense_ID",
+        "Direct_Expense_ID"
+      ),
+      findHeaderIndex_(headers, "ID"),
+      findHeaderIndex_(headers, "Record_ID", "RecordId"),
+    ].filter((idx) => idx >= 0);
+
+    let identifierIndex = candidateIndexes.length ? candidateIndexes[0] : -1;
+    if (identifierIndex < 0) {
+      identifierIndex = headers.findIndex((header) => {
+        const normalized = String(header || "")
+          .trim()
+          .toLowerCase();
+        return normalized.includes("expense") && normalized.includes("id");
+      });
+    }
+
+    const normalizedTarget = normalizeKeyValue_(expenseId);
+    const matches = rows
+      .map((row, rowIndex) => ({ row, rowIndex }))
+      .filter(({ row, rowIndex }) => {
+        if (normalizedTarget === "") return false;
+        if (identifierIndex >= 0) {
+          const candidate = normalizeKeyValue_(
+            getValueAt_(row, identifierIndex)
+          );
+          if (candidate && candidate === normalizedTarget) {
+            return true;
+          }
+        }
+        return normalizeKeyValue_(rowIndex) === normalizedTarget;
+      });
+
+    const details = matches.map(({ row }) => {
+      const record = {};
+      headers.forEach((header, index) => {
+        record[header] = row[index];
+      });
+      return record;
+    });
+
+    return sanitizeForClientResponse_({
+      found: details.length > 0,
+      expenseId,
+      headers,
+      details,
+    });
+  } catch (err) {
+    debugError(FNAME, err, { expenseId });
+    throw err;
+  }
+}
+
+function getAttachmentsForEntity(entityId, entityKey) {
+  const FNAME = "getAttachmentsForEntity";
+  const normalizedEntity = normalizeKeyValue_(entityKey || "");
+  const normalizedId = normalizeKeyValue_(entityId);
+  debugLog(FNAME, "start", { entityId, entityKey });
+
+  try {
+    const { headers = [], rows = [] } = loadSheetData_(CONFIG.SHEETS.DOCUMENTS);
+    if (!headers.length || !rows.length) {
+      return sanitizeForClientResponse_([]);
+    }
+
+    const idxEntity = findHeaderIndex_(headers, "Entity");
+    const idxEntityId = findHeaderIndex_(
+      headers,
+      "Entity_ID",
+      "EntityId",
+      "Entity ID"
+    );
+    const idxLabel = findHeaderIndex_(headers, "Label", "Document_Label");
+    const idxFileName = findHeaderIndex_(
+      headers,
+      "File_Name",
+      "Filename",
+      "FileName"
+    );
+    const idxUrl = findHeaderIndex_(headers, "Drive_URL", "File_URL", "URL");
+    const idxDriveId = findHeaderIndex_(
+      headers,
+      "Drive_File_ID",
+      "File_ID",
+      "DriveId"
+    );
+    const idxUploadedBy = findHeaderIndex_(
+      headers,
+      "Uploaded_By",
+      "Created_By",
+      "Uploader"
+    );
+    const idxUploadedAt = findHeaderIndex_(
+      headers,
+      "Created_At",
+      "Uploaded_At",
+      "Timestamp"
+    );
+
+    const attachments = rows
+      .map((row) => {
+        const rowEntity = idxEntity >= 0 ? getValueAt_(row, idxEntity) : "";
+        const rowEntityId = idxEntityId >= 0 ? getValueAt_(row, idxEntityId) : "";
+        if (normalizedEntity && normalizeKeyValue_(rowEntity) !== normalizedEntity) {
+          return null;
+        }
+        if (normalizedId && normalizeKeyValue_(rowEntityId) !== normalizedId) {
+          return null;
+        }
+        if (!normalizedEntity && !normalizedId) {
+          return null;
+        }
+        return {
+          Entity: rowEntity,
+          Entity_ID: rowEntityId,
+          Label: idxLabel >= 0 ? getValueAt_(row, idxLabel) : "",
+          File_Name: idxFileName >= 0 ? getValueAt_(row, idxFileName) : "",
+          Drive_URL: idxUrl >= 0 ? getValueAt_(row, idxUrl) : "",
+          Drive_File_ID: idxDriveId >= 0 ? getValueAt_(row, idxDriveId) : "",
+          Uploaded_By: idxUploadedBy >= 0 ? getValueAt_(row, idxUploadedBy) : "",
+          Created_At: idxUploadedAt >= 0 ? getValueAt_(row, idxUploadedAt) : "",
+        };
+      })
+      .filter(Boolean);
+
+    debugLog(FNAME, "resolved", { count: attachments.length });
+    return sanitizeForClientResponse_(attachments);
+  } catch (err) {
+    debugError(FNAME, err, { entityId, entityKey });
+    throw err;
+  }
+}
+
 function saveDirectExpenses(payload) {
   const FNAME = "saveDirectExpenses";
   debugLog(FNAME, "start", {
@@ -1376,8 +1567,31 @@ function saveDirectExpenses(payload) {
     headerData.projectCode ||
     "";
   const rawDate = headerData.date || headerData.Date || "";
-  const headerNotes = headerData.notes || headerData.Notes || "";
-  const headerPayStatus = headerData.payStatus || headerData.Pay_Status || "";
+  const headerNotes =
+    headerData.notes || headerData.Notes || headerData.note || "";
+  const headerPaymentMethod =
+    headerData.paymentMethod ||
+    headerData.Payment_Method ||
+    headerData.payMethod ||
+    headerData.method ||
+    "";
+  const headerPayStatus =
+    headerData.payStatus ||
+    headerData.paymentStatus ||
+    headerData.Pay_Status ||
+    headerData.Payment_Status ||
+    "";
+
+  const assignToHeader = (rowObject, value, ...candidates) => {
+    if (!rowObject || !Array.isArray(headers) || !candidates.length) {
+      return;
+    }
+    const index = findHeaderIndex_(headers, ...candidates);
+    if (index >= 0) {
+      const headerName = headers[index];
+      rowObject[headerName] = value ?? "";
+    }
+  };
 
   let normalizedDate = null;
   if (rawDate) {
@@ -1431,9 +1645,21 @@ function saveDirectExpenses(payload) {
       item.totalWithVat != null && item.totalWithVat !== ""
         ? Number(item.totalWithVat)
         : amount + vatAmount;
+    const paymentMethod =
+      item.paymentMethod ||
+      item.Payment_Method ||
+      item.payMethod ||
+      headerPaymentMethod ||
+      "";
     const payStatus =
-      item.payStatus || item.Pay_Status || headerPayStatus || "";
-    const notes = item.notes || item.Notes || headerNotes || "";
+      item.payStatus ||
+      item.paymentStatus ||
+      item.Pay_Status ||
+      item.Payment_Status ||
+      headerPayStatus ||
+      "";
+    const notes =
+      item.notes || item.Notes || item.note || headerNotes || "";
 
     const newRow = {
       Project_ID: projectId,
@@ -1448,9 +1674,28 @@ function saveDirectExpenses(payload) {
       VAT_Rate: vatRateNum,
       VAT_Amount: vatAmount,
       Total_With_VAT: totalWithVat,
+      Payment_Method: paymentMethod,
       Pay_Status: payStatus,
       Notes: notes,
     };
+
+    assignToHeader(
+      newRow,
+      paymentMethod,
+      "Payment_Method",
+      "Pay_Method",
+      "PaymentMethod",
+      "Payment Method"
+    );
+    assignToHeader(
+      newRow,
+      payStatus,
+      "Payment_Status",
+      "Pay_Status",
+      "PaymentStatus",
+      "Status"
+    );
+    assignToHeader(newRow, notes, "Notes", "Note", "Remarks");
 
     appendRow_(sheet, newRow, headers);
     insertedCount += 1;
