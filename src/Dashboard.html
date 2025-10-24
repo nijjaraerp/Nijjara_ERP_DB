@@ -591,6 +591,91 @@
       .materials-module__section {
         display: block;
       }
+      .materials-form-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .materials-form__title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+      }
+      .materials-form__hint {
+        font-size: 0.9rem;
+        color: var(--color-text-secondary);
+      }
+      .materials-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        padding: 1.5rem;
+        border-radius: 16px;
+        border: 1px solid var(--color-border);
+        background: rgba(18, 18, 18, 0.85);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
+      }
+      .materials-form__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem 1.25rem;
+      }
+      .materials-form__field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+      .materials-form__field--full {
+        grid-column: 1 / -1;
+      }
+      .materials-form__label {
+        font-size: 0.95rem;
+        color: var(--color-text-secondary);
+      }
+      .materials-form__input,
+      .materials-form__select,
+      .materials-form textarea {
+        width: 100%;
+        padding: 0.65rem 0.8rem;
+        border-radius: 10px;
+        border: 1px solid var(--color-border);
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--color-text-primary);
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .materials-form__input:focus,
+      .materials-form__select:focus,
+      .materials-form textarea:focus {
+        border-color: rgba(212, 175, 55, 0.7);
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+        outline: none;
+      }
+      .materials-form__toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+        color: var(--color-text-secondary);
+      }
+      .materials-form__toggle input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--color-accent);
+      }
+      .materials-form__actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+      .materials-form__actions .accent-button[disabled] {
+        opacity: 0.65;
+        cursor: progress;
+      }
+      .materials-form__note {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+      }
       .materials-module__bulk {
         display: flex;
         gap: 0.5rem;
@@ -790,22 +875,22 @@
       }
       .direct-expense__cart-items {
         border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
+        border-radius: 12px;
         background: rgba(0, 0, 0, 0.2);
         overflow-x: auto;
         overflow-y: hidden;
         padding: 0.35rem;
       }
-      #cart-items-table {
+      .direct-expense__cart-table {
         width: 100%;
-        min-width: 640px;
+        min-width: 560px;
         border-collapse: separate;
         border-spacing: 0;
         background: rgba(10, 10, 10, 0.4);
-        border-radius: 10px;
+        border-radius: 12px;
         overflow: hidden;
       }
-      #cart-items-table thead th {
+      .direct-expense__cart-table thead th {
         background: rgba(255, 255, 255, 0.08);
         color: var(--color-text-primary);
         font-weight: 600;
@@ -813,31 +898,44 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         text-align: center;
       }
-      #cart-items-table tbody td {
-        padding: 0.6rem 0.75rem;
+      .direct-expense__cart-table tbody td {
+        padding: 0.55rem 0.75rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        vertical-align: middle;
         text-align: center;
       }
-      #cart-items-table tbody tr:last-child td {
+      .direct-expense__cart-table tbody tr:last-child td {
         border-bottom: none;
       }
-      #cart-items-table td:first-child,
-      #cart-items-table th:first-child {
-        text-align: start;
-      }
-      #cart-items-table td:last-child,
-      #cart-items-table th:last-child {
+      .direct-expense__cart-table td:last-child,
+      .direct-expense__cart-table th:last-child {
         width: 1%;
         white-space: nowrap;
         text-align: center;
       }
-      #cart-items-table input[type="number"] {
+      .direct-expense__cart-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.5rem;
+        margin-bottom: 0.35rem;
+      }
+      .direct-expense__cart-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      .direct-expense__cart-code {
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+      }
+      .direct-expense__cart-input {
         width: 100%;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 8px;
         padding: 0.35rem 0.5rem;
         color: var(--color-text-primary);
+        text-align: center;
       }
       .direct-expense__totals {
         border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -879,14 +977,14 @@
       }
       .direct-expense__attachments-block {
         display: grid;
-        gap: 0.65rem;
+        gap: 0.75rem;
         border-top: 1px solid rgba(255, 255, 255, 0.08);
         padding-top: 0.75rem;
       }
       .direct-expense__attachment-list,
       .direct-expense__attachments-list {
         display: grid;
-        gap: 0.45rem;
+        gap: 0.6rem;
         list-style: none;
         padding: 0;
         margin: 0;
@@ -907,26 +1005,57 @@
       .direct-expense__field--attachments .direct-expense__attachment-list {
         margin-top: 0.5rem;
       }
-      .direct-expense__attachment-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.45rem 0.6rem;
-        border: 1px dashed var(--color-border);
-        border-radius: 10px;
-        background: rgba(255, 255, 255, 0.03);
+      .direct-expense__attachment-card {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.25);
+        padding: 0.75rem 0.85rem;
+        display: grid;
+        gap: 0.45rem;
       }
-      .direct-expense__attachment-item span {
-        font-size: 0.85rem;
-        color: var(--color-text-primary);
+      .direct-expense__attachment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .direct-expense__attachment-title {
+        font-weight: 600;
+      }
+      .direct-expense__attachment-remove {
+        background: transparent;
+        border: 1px solid rgba(231, 76, 60, 0.6);
+        color: #e74c3c;
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+      .direct-expense__attachment-remove:hover {
+        background: rgba(231, 76, 60, 0.15);
+      }
+      .direct-expense__attachment-meta {
+        font-size: 0.8rem;
+        color: var(--color-text-secondary);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .direct-expense__attachment-field {
+        display: grid;
+        gap: 0.35rem;
       }
       .direct-expense__attachment-label {
-        flex: 1;
-        background: transparent;
-        border: 1px solid transparent;
-        border-bottom: 1px solid var(--color-border);
-        padding: 0.35rem 0.5rem;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        padding: 0.4rem 0.55rem;
         color: var(--color-text-primary);
+        width: 100%;
+      }
+      .direct-expense__attachment-field span {
+        font-size: 0.75rem;
+        color: var(--color-text-secondary);
       }
       .direct-expense__vat-toggle {
         display: inline-flex;
@@ -1531,16 +1660,16 @@
       }
 
       /* --- Cart table fixes: middle-align + no overflow --- */
-      .direct-expense__cart-items table th,
-      .direct-expense__cart-items table td {
+      .direct-expense__cart-table th,
+      .direct-expense__cart-table td {
         vertical-align: middle;
         white-space: nowrap;
       }
-      .direct-expense__cart-items table td {
+      .direct-expense__cart-table td {
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .direct-expense__cart-items input[type="number"] {
+      .direct-expense__cart-input {
         width: 110px;
         text-align: center;
       }
@@ -1619,7 +1748,7 @@ select:focus {
 /* --- Cart table fixes: middle-align + no overflow --- */
 .direct-expense__cart-items {
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgba(0, 0, 0, 0.2);
   overflow-x: auto;
   overflow-y: hidden;
@@ -1627,24 +1756,24 @@ select:focus {
 .direct-expense__cart {
   overflow: hidden;
 }
-.direct-expense__cart-items table {
+.direct-expense__cart-table {
   width: 100%;
-  min-width: 680px;
+  min-width: 580px;
   border-collapse: separate;
   border-spacing: 0;
 }
-.direct-expense__cart-items table th,
-.direct-expense__cart-items table td {
+.direct-expense__cart-table th,
+.direct-expense__cart-table td {
   vertical-align: middle;
   white-space: nowrap;
   padding: 0.5rem;
 }
-.direct-expense__cart-items table th:last-child,
-.direct-expense__cart-items table td:last-child {
+.direct-expense__cart-table th:last-child,
+.direct-expense__cart-table td:last-child {
   width: 1%;
   text-align: center;
 }
-.direct-expense__cart-items input[type="number"] {
+.direct-expense__cart-input {
   width: 110px;
   text-align: center;
 }
@@ -2503,6 +2632,56 @@ select:focus {
           },
         ];
         let bootstrapData = {};
+
+        const TRUTHY_FLAG_SET = new Set([
+          "true",
+          "yes",
+          "1",
+          "y",
+          "t",
+          "enabled",
+          "enable",
+          "active",
+          "نشط",
+          "مفعل",
+          "مُفعّل",
+          "نعم",
+          "متاح",
+        ]);
+        const FALSY_FLAG_SET = new Set([
+          "false",
+          "no",
+          "0",
+          "n",
+          "f",
+          "disabled",
+          "inactive",
+          "غير نشط",
+          "معطل",
+          "لا",
+          "غير مفعل",
+          "غير مُفعّل",
+        ]);
+
+        function isTruthyFlag(value) {
+          if (value === true) return true;
+          if (value === false) return false;
+          if (typeof value === "number") {
+            if (!Number.isFinite(value)) return false;
+            return value !== 0;
+          }
+          const normalized = String(value ?? "")
+            .trim()
+            .toLowerCase();
+          if (!normalized) return false;
+          if (TRUTHY_FLAG_SET.has(normalized)) return true;
+          if (FALSY_FLAG_SET.has(normalized)) return false;
+          return false;
+        }
+
+        function isTruthyFlag_(value) {
+          return isTruthyFlag(value);
+        }
         const selectedUsers = new Set();
         let resetUserId = null;
         let currentProfileUserId = null;
@@ -3363,6 +3542,265 @@ function renderMaterialsModule(paneElement) {
     return { handler, context };
   };
 
+  const renderFallbackMaterialsForm = () => {
+    addContainer.classList.add("materials-form-wrapper");
+    addContainer.innerHTML = "";
+
+    const title = document.createElement("h3");
+    title.className = "materials-form__title";
+    title.textContent =
+      formMeta?.titleAr || formMeta?.titleEn || "إضافة مادة جديدة";
+    addContainer.appendChild(title);
+
+    const hint = document.createElement("p");
+    hint.className = "materials-form__hint";
+    hint.textContent =
+      "يتم استخدام النموذج المدمج لإضافة المواد مباشرة إلى كتالوج المشاريع.";
+    addContainer.appendChild(hint);
+
+    const form = document.createElement("form");
+    form.className = "materials-form";
+    addContainer.appendChild(form);
+
+    const grid = document.createElement("div");
+    grid.className = "materials-form__grid";
+    form.appendChild(grid);
+
+    const createField = (labelText, input, options = {}) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "materials-form__field";
+      if (options.fullWidth) {
+        wrapper.classList.add("materials-form__field--full");
+      }
+      const label = document.createElement("label");
+      label.className = "materials-form__label";
+      label.textContent = labelText;
+      wrapper.appendChild(label);
+      if (input.tagName === "SELECT") {
+        input.classList.add("materials-form__select");
+      } else {
+        input.classList.add("materials-form__input");
+      }
+      if (options.placeholder) {
+        input.placeholder = options.placeholder;
+      }
+      wrapper.appendChild(input);
+      if (options.note) {
+        const noteEl = document.createElement("span");
+        noteEl.className = "materials-form__note";
+        noteEl.textContent = options.note;
+        wrapper.appendChild(noteEl);
+      }
+      grid.appendChild(wrapper);
+      return input;
+    };
+
+    const materialIdInput = createField(
+      "معرّف المادة",
+      Object.assign(document.createElement("input"), {
+        type: "text",
+        autocomplete: "off",
+      }),
+      { placeholder: "مثال: MAT-001" }
+    );
+    materialIdInput.required = true;
+
+    const nameArInput = createField(
+      "الاسم بالعربية",
+      Object.assign(document.createElement("input"), { type: "text" }),
+      { placeholder: "اسم المادة بالعربية" }
+    );
+
+    const nameEnInput = createField(
+      "الاسم بالإنجليزية",
+      Object.assign(document.createElement("input"), { type: "text" }),
+      { placeholder: "Material Name (EN)" }
+    );
+
+    const categoryInput = createField(
+      "الفئة",
+      Object.assign(document.createElement("input"), { type: "text" }),
+      { placeholder: "مثال: أخشاب" }
+    );
+
+    const subcategoryInput = createField(
+      "الفئة الفرعية",
+      Object.assign(document.createElement("input"), { type: "text" }),
+      { placeholder: "مثال: خشب موسكي" }
+    );
+
+    const subcategory2Input = createField(
+      "فئة تفصيلية إضافية",
+      Object.assign(document.createElement("input"), { type: "text" }),
+      {
+        placeholder: "اختياري",
+        note: "يمكن ترك الحقل فارغًا إذا لم يكن هناك تصنيف إضافي.",
+      }
+    );
+
+    const unitInput = createField(
+      "الوحدة الافتراضية",
+      Object.assign(document.createElement("input"), { type: "text" }),
+      { placeholder: "مثل: م٢، م٣، حبة" }
+    );
+
+    const priceInput = createField(
+      "السعر",
+      Object.assign(document.createElement("input"), {
+        type: "number",
+        min: "0",
+        step: "0.01",
+        inputmode: "decimal",
+      }),
+      { note: "أدخل السعر بدون ضريبة." }
+    );
+
+    const defaultVatPercent = 14;
+    const vatRateInput = createField(
+      "نسبة الضريبة (٪)",
+      Object.assign(document.createElement("input"), {
+        type: "number",
+        min: "0",
+        step: "0.01",
+        inputmode: "decimal",
+      }),
+      { note: "أدخل النسبة بالمائة، مثال: 14 لضريبة 14٪." }
+    );
+    vatRateInput.value = String(defaultVatPercent);
+
+    const toggleField = document.createElement("div");
+    toggleField.className = "materials-form__field materials-form__field--full";
+    const toggleLabel = document.createElement("label");
+    toggleLabel.className = "materials-form__toggle";
+    const activeInput = document.createElement("input");
+    activeInput.type = "checkbox";
+    activeInput.checked = true;
+    toggleLabel.appendChild(activeInput);
+    const toggleText = document.createElement("span");
+    toggleText.textContent = "نشط؟";
+    toggleLabel.appendChild(toggleText);
+    toggleField.appendChild(toggleLabel);
+    grid.appendChild(toggleField);
+
+    const actions = document.createElement("div");
+    actions.className = "materials-form__actions";
+    const submitButton = document.createElement("button");
+    submitButton.type = "submit";
+    submitButton.className = "accent-button";
+    submitButton.textContent = "حفظ المادة";
+    actions.appendChild(submitButton);
+    const resetButton = document.createElement("button");
+    resetButton.type = "button";
+    resetButton.className = "ghost-button";
+    resetButton.textContent = "مسح الحقول";
+    resetButton.addEventListener("click", () => {
+      form.reset();
+      activeInput.checked = true;
+      vatRateInput.value = String(defaultVatPercent);
+      materialIdInput.focus();
+    });
+    actions.appendChild(resetButton);
+    form.appendChild(actions);
+
+    const finishLoading = (label) => {
+      submitButton.disabled = false;
+      submitButton.textContent = label;
+    };
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const materialId = materialIdInput.value.trim();
+      const nameAr = nameArInput.value.trim();
+      const nameEn = nameEnInput.value.trim();
+      if (!materialId) {
+        if (typeof showToast === "function") {
+          showToast("يرجى إدخال معرف المادة.", "warning");
+        }
+        materialIdInput.focus();
+        return;
+      }
+      if (!nameAr && !nameEn) {
+        if (typeof showToast === "function") {
+          showToast("يرجى إدخال اسم المادة بالعربية أو الإنجليزية.", "warning");
+        }
+        nameArInput.focus();
+        return;
+      }
+      if (!(window.google && google.script && google.script.run)) {
+        if (typeof showToast === "function") {
+          showToast("خدمة Google Apps Script غير متاحة حالياً.", "error");
+        }
+        return;
+      }
+
+      const submitLabel = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = "جارٍ الحفظ...";
+
+      const priceValueRaw = priceInput.value.trim();
+      const priceValue = priceValueRaw === "" ? "" : Number(priceValueRaw);
+      const vatValueRaw = vatRateInput.value.trim();
+      const vatValue = vatValueRaw === "" ? "" : Number(vatValueRaw);
+
+      const payload = {
+        formId,
+        materialId,
+        Material_ID: materialId,
+        Name_AR: nameAr,
+        Name_EN: nameEn,
+        Category: categoryInput.value.trim(),
+        Subcategory: subcategoryInput.value.trim(),
+        Sub2: subcategory2Input.value.trim(),
+        Default_Unit: unitInput.value.trim(),
+        Default_Price: Number.isFinite(priceValue) ? priceValue : "",
+        VAT_Rate: Number.isFinite(vatValue) ? vatValue : "",
+        vatRatePercent: Number.isFinite(vatValue) ? vatValue : "",
+        Active: activeInput.checked,
+        isActive: activeInput.checked,
+        source: "fallback",
+      };
+
+      google.script.run
+        .withFailureHandler((err) => {
+          console.error("saveMaterialCatalogEntry failed", err);
+          if (typeof showToast === "function") {
+            showToast("تعذر حفظ المادة.", "error");
+          }
+          finishLoading(submitLabel);
+        })
+        .withSuccessHandler((result) => {
+          finishLoading(submitLabel);
+          if (result?.success) {
+            if (typeof showToast === "function") {
+              showToast(
+                result?.message || "تم حفظ المادة بنجاح.",
+                "success"
+              );
+            }
+            form.reset();
+            activeInput.checked = true;
+            vatRateInput.value = String(defaultVatPercent);
+            materialIdInput.focus();
+            loadMaterialsViewData(viewContainer, {
+              reload: true,
+              formId,
+            });
+          } else {
+            if (typeof showToast === "function") {
+              showToast(
+                result?.message || "تعذر حفظ المادة.",
+                "warning"
+              );
+            }
+          }
+        })
+        .saveMaterialCatalogEntry(payload);
+    });
+
+    materialIdInput.focus();
+    addInitialized = true;
+  };
+
   const activateTab = (target) => {
     if (target === "view") {
       viewTab.classList.add("active");
@@ -3385,9 +3823,7 @@ function renderMaterialsModule(paneElement) {
 
       const resolved = resolveFormHandler();
       if (!resolved || !resolved.handler) {
-        addContainer.innerHTML =
-          '<p class="error-text">ميزة النماذج غير متاحة حالياً.</p>';
-        addInitialized = true;
+        renderFallbackMaterialsForm();
         return;
       }
 
@@ -3398,20 +3834,18 @@ function renderMaterialsModule(paneElement) {
           null,
           addContainer
         );
+        addInitialized = true;
         if (maybePromise && typeof maybePromise.then === "function") {
           maybePromise.catch((err) => {
             console.error("renderForm promise rejected", err);
-            addContainer.innerHTML =
-              '<p class="error-text">تعذر تحميل نموذج إضافة المادة.</p>';
+            renderFallbackMaterialsForm();
           });
         }
       } catch (err) {
         console.error("renderForm invocation failed", err);
-        addContainer.innerHTML =
-          '<p class="error-text">تعذر تحميل نموذج إضافة المادة.</p>';
+        renderFallbackMaterialsForm();
+        return;
       }
-
-      addInitialized = true;
     }
   };
 
@@ -3468,8 +3902,31 @@ function loadMaterialsViewData(container, options = {}) {
 function renderMaterialsTable(container, data, options = {}) {
   if (!container) return;
 
-  const headers = Array.isArray(data?.headers) ? data.headers : [];
-  const rows = Array.isArray(data?.rows) ? data.rows : [];
+  const normalized = (() => {
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      return { headers: [], rows: [] };
+    }
+    if (Array.isArray(data.headers) && Array.isArray(data.rows)) {
+      return data;
+    }
+    if (data.data && typeof data.data === "object") {
+      return data.data;
+    }
+    if (Array.isArray(data.items)) {
+      return {
+        headers: Array.isArray(data.headers) ? data.headers : [],
+        rows: data.items,
+      };
+    }
+    return data;
+  })();
+
+  const headers = Array.isArray(normalized?.headers) ? normalized.headers : [];
+  const rows = Array.isArray(normalized?.rows)
+    ? normalized.rows
+    : Array.isArray(normalized?.items)
+    ? normalized.items
+    : [];
   const formId =
     options?.formId ||
     (container.closest?.(".materials-catalog-pane")?.dataset?.materialsFormId ??
@@ -4301,8 +4758,31 @@ function loadDirectExpenseViewData(container, options = {}) {
 function renderDirectExpenseTable(container, data, options = {}) {
   if (!container) return;
 
-  const headers = Array.isArray(data?.headers) ? data.headers : [];
-  const rows = Array.isArray(data?.rows) ? data.rows : [];
+  const normalized = (() => {
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      return { headers: [], rows: [] };
+    }
+    if (Array.isArray(data.headers) && Array.isArray(data.rows)) {
+      return data;
+    }
+    if (data.data && typeof data.data === "object") {
+      return data.data;
+    }
+    if (Array.isArray(data.items)) {
+      return {
+        headers: Array.isArray(data.headers) ? data.headers : [],
+        rows: data.items,
+      };
+    }
+    return data;
+  })();
+
+  const headers = Array.isArray(normalized?.headers) ? normalized.headers : [];
+  const rows = Array.isArray(normalized?.rows)
+    ? normalized.rows
+    : Array.isArray(normalized?.items)
+    ? normalized.items
+    : [];
 
   container.innerHTML = "";
 
@@ -5125,6 +5605,21 @@ function renderDirectExpenseForm(paneElement, options = {}) {
             return value;
           };
 
+          const formatFileSize = (bytes) => {
+            const size = Number(bytes);
+            if (!Number.isFinite(size) || size <= 0) {
+              return "—";
+            }
+            const units = ["بايت", "ك.ب", "م.ب", "ج.ب"];
+            const exponent = Math.min(
+              units.length - 1,
+              Math.floor(Math.log(size) / Math.log(1024))
+            );
+            const value = size / Math.pow(1024, exponent);
+            const formatted = value >= 10 ? value.toFixed(0) : value.toFixed(1);
+            return `${formatted} ${units[exponent]}`;
+          };
+
           const hydrateMaterial = (material) => {
             if (Array.isArray(material)) {
               const [
@@ -5405,20 +5900,68 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               return;
             }
             attachments.forEach((attachment, index) => {
-              const item = document.createElement("div");
-              item.className = "direct-expense__attachment-item";
-              const nameSpan = document.createElement("span");
-              nameSpan.textContent = attachment.file.name;
-              item.appendChild(nameSpan);
+              const card = document.createElement("div");
+              card.className = "direct-expense__attachment-card";
+
+              const header = document.createElement("div");
+              header.className = "direct-expense__attachment-header";
+              const title = document.createElement("span");
+              title.className = "direct-expense__attachment-title";
+              const file = attachment.file || {};
+              const rawName = file.name || "";
+              const baseTitle = rawName.replace(/\.[^.]+$/, "") || rawName;
+              const currentValue = attachment.labelInput.value.trim();
+              const fallbackTitle = baseTitle || `فاتورة ${index + 1}`;
+              title.textContent = currentValue || fallbackTitle;
+              header.appendChild(title);
+
+              const removeButton = document.createElement("button");
+              removeButton.type = "button";
+              removeButton.className = "direct-expense__attachment-remove";
+              removeButton.textContent = "حذف";
+              removeButton.addEventListener("click", () => {
+                attachments.splice(index, 1);
+                renderAttachmentList();
+              });
+              header.appendChild(removeButton);
+              card.appendChild(header);
+
+              const meta = document.createElement("div");
+              meta.className = "direct-expense__attachment-meta";
+              const typeLabel = file.type || "نوع غير معروف";
+              const sizeLabel = formatFileSize(file.size);
+              meta.append(
+                document.createTextNode(rawName || "ملف بدون اسم"),
+                document.createTextNode(" • "),
+                document.createTextNode(typeLabel),
+                document.createTextNode(" • "),
+                document.createTextNode(sizeLabel)
+              );
+              card.appendChild(meta);
+
+              const fieldWrapper = document.createElement("div");
+              fieldWrapper.className = "direct-expense__attachment-field";
+              const fieldLabel = document.createElement("span");
+              fieldLabel.textContent = "تسمية المرفق";
+              fieldWrapper.appendChild(fieldLabel);
               const labelInput = attachment.labelInput;
               labelInput.type = "text";
-              labelInput.classList.add("direct-expense__attachment-label");
+              labelInput.className = "direct-expense__attachment-label";
               if (!labelInput.placeholder) {
                 labelInput.placeholder = "أدخل اسمًا للمرفق";
               }
+              if (!currentValue) {
+                labelInput.value = fallbackTitle;
+              }
               labelInput.dataset.attachmentIndex = index;
-              item.appendChild(labelInput);
-              attachmentList.appendChild(item);
+              labelInput.oninput = () => {
+                const value = labelInput.value.trim();
+                title.textContent = value || fallbackTitle;
+              };
+              fieldWrapper.appendChild(labelInput);
+              card.appendChild(fieldWrapper);
+
+              attachmentList.appendChild(card);
             });
           }
 
@@ -5507,21 +6050,16 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               cartItemsContainer.appendChild(emptyCart);
             } else {
               const table = document.createElement("table");
-              table.id = "cart-items-table";
+              table.className = "direct-expense__cart-table";
               const thead = document.createElement("thead");
               const headRow = document.createElement("tr");
-              [
-                "المادة",
-                "الكمية",
-                "السعر",
-                "الوحدة",
-                "الأجمالي",
-                "",
-              ].forEach((label) => {
-                const th = document.createElement("th");
-                th.textContent = label;
-                headRow.appendChild(th);
-              });
+              ["الكمية", "السعر", "الوحدة", "الأجمالي", ""].forEach(
+                (label) => {
+                  const th = document.createElement("th");
+                  th.textContent = label;
+                  headRow.appendChild(th);
+                }
+              );
               thead.appendChild(headRow);
               table.appendChild(thead);
 
@@ -5559,18 +6097,29 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 const row = document.createElement("tr");
                 row.dataset.index = String(index);
 
-                const nameCell = document.createElement("td");
-                nameCell.textContent =
-                  item.name || item.materialName || item.materialId || "—";
-                row.appendChild(nameCell);
-
                 const quantityCell = document.createElement("td");
+                const metaWrapper = document.createElement("div");
+                metaWrapper.className = "direct-expense__cart-meta";
+                const nameStrong = document.createElement("span");
+                nameStrong.className = "direct-expense__cart-name";
+                nameStrong.textContent =
+                  item.name || item.materialName || item.materialId || "—";
+                metaWrapper.appendChild(nameStrong);
+                const codeSpan = document.createElement("span");
+                codeSpan.className = "direct-expense__cart-code";
+                codeSpan.textContent = item.materialId
+                  ? `#${item.materialId}`
+                  : "—";
+                metaWrapper.appendChild(codeSpan);
+                quantityCell.appendChild(metaWrapper);
+
                 const qtyInput = document.createElement("input");
                 qtyInput.type = "number";
                 qtyInput.min = "0";
                 qtyInput.step = "0.01";
                 qtyInput.value = quantity.toString();
                 qtyInput.dataset.field = "quantity";
+                qtyInput.className = "direct-expense__cart-input";
                 const handleQuantityChange = () => {
                   const value = Number(qtyInput.value);
                   const resolved =
@@ -5596,6 +6145,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 priceInput.step = "0.01";
                 priceInput.value = price.toString();
                 priceInput.dataset.field = "price";
+                priceInput.className = "direct-expense__cart-input";
                 const handlePriceChange = () => {
                   const value = Number(priceInput.value);
                   const resolved =
@@ -5668,7 +6218,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           function recomputeRowAndTotals(rootElement, items) {
             if (!rootElement) return;
             const table = rootElement.querySelector(
-              ".direct-expense__cart-items table"
+              ".direct-expense__cart-table"
             );
             const totalsBox = rootElement.querySelector("#cart-totals");
             if (!table || !totalsBox) return;

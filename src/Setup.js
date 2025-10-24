@@ -7,6 +7,31 @@
  */
 
 const SYSTEM_USER = "SYSTEM";
+const TARGET_SPREADSHEET_ID = "1Oj7So4c5vBDpvj0pIfDeXz6XxBrY011J4xZwKlSkDzo";
+const TARGET_SPREADSHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1Oj7So4c5vBDpvj0pIfDeXz6XxBrY011J4xZwKlSkDzo/edit";
+
+function getTargetSpreadsheet() {
+  try {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) {
+      const activeId = typeof active.getId === "function" ? active.getId() : "";
+      if (!TARGET_SPREADSHEET_ID || activeId === TARGET_SPREADSHEET_ID) {
+        return active;
+      }
+    }
+  } catch (err) {
+    Logger.log(`getTargetSpreadsheet active lookup failed: ${err}`);
+  }
+
+  if (TARGET_SPREADSHEET_ID) {
+    return SpreadsheetApp.openById(TARGET_SPREADSHEET_ID);
+  }
+
+  throw new Error(
+    "Unable to resolve target spreadsheet. Set TARGET_SPREADSHEET_ID to the deployment workbook ID."
+  );
+}
 
 function ensureISODate(date) {
   if (!(date instanceof Date)) return new Date().toISOString().split("T")[0];
@@ -439,7 +464,23 @@ function getSheetSchemas() {
       "Sub2",
       "Default_Unit",
       "Default_Price",
+      "VAT_Rate",
       "Active",
+      "Updated_At",
+      "Updated_By",
+    ],
+    PV_PRJ_Materials: [
+      "Material_ID",
+      "Name_AR",
+      "Name_EN",
+      "Category",
+      "Subcategory",
+      "Default_Unit",
+      "Default_Price",
+      "VAT_Rate",
+      "Active",
+      "Updated_At",
+      "Updated_By",
     ],
     PRJ_InDirExp_Allocations: [
       "Allocation_ID",
@@ -498,6 +539,27 @@ function getSheetSchemas() {
       "Created_By",
       "Updated_At",
       "Updated_By",
+    ],
+    PV_FIN_DirectExpenses_View: [
+      "Expense_ID",
+      "Project_ID",
+      "Project_Name",
+      "Date",
+      "Category",
+      "Material_ID",
+      "Material_Name",
+      "Qty",
+      "Unit",
+      "Unit_Price",
+      "Amount",
+      "VAT_Rate",
+      "VAT_Amount",
+      "Total_With_VAT",
+      "Payment_Status",
+      "Payment_Method",
+      "Notes",
+      "Created_By",
+      "Created_At",
     ],
     FIN_InDirExpense_Repeated: [
       "InDirExpense_Repeated_ID",
@@ -1062,6 +1124,168 @@ function seedSysDynamicForms(ss) {
       "Role_Id",
       "",
     ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "البيانات الأساسية",
+      "MAT_Material_ID",
+      "معرّف المادة",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "PRJ_Materials",
+      "Material_ID",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "البيانات الأساسية",
+      "MAT_Name_AR",
+      "اسم المادة (عربي)",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "PRJ_Materials",
+      "Name_AR",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "البيانات الأساسية",
+      "MAT_Name_EN",
+      "اسم المادة (إنجليزي)",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "PRJ_Materials",
+      "Name_EN",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "التصنيفات",
+      "MAT_Category",
+      "التصنيف الرئيسي",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "PRJ_Materials",
+      "Category",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "التصنيفات",
+      "MAT_Subcategory",
+      "التصنيف الفرعي",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "PRJ_Materials",
+      "Subcategory",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "إعدادات الكمية",
+      "MAT_Default_Unit",
+      "الوحدة الافتراضية",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "PRJ_Materials",
+      "Default_Unit",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "إعدادات الكمية",
+      "MAT_Default_Price",
+      "السعر الافتراضي",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "0",
+      "",
+      "PRJ_Materials",
+      "Default_Price",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "إعدادات الكمية",
+      "MAT_VAT_Rate",
+      "نسبة ضريبة القيمة المضافة",
+      "Number",
+      "",
+      "",
+      "No",
+      "0.14",
+      "",
+      "PRJ_Materials",
+      "VAT_Rate",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "إعدادات الحالة",
+      "MAT_IsActive",
+      "نشط؟",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "TRUE",
+      "DD_YesNo",
+      "PRJ_Materials",
+      "Active",
+      "",
+    ],
   ];
   appendRowsIfEmpty(sh, rows);
 }
@@ -1282,7 +1506,7 @@ function seedSysRoles(ss) {
 
 /** ---------- MAIN RUNNER ---------- **/
 function setupERPAllSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getTargetSpreadsheet();
   const schemas = getSheetSchemas();
   Object.keys(schemas).forEach((name) =>
     createOrClearSheet(ss, name, schemas[name])
@@ -1710,7 +1934,7 @@ function seedSysRolePermissions(ss) {
   Logger.log("✅ SYS_Role_Permissions seeded successfully.");
 }
 function seedCoreData() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getTargetSpreadsheet();
   seedSysSettings(ss);
   seedSysRoles(ss);
   seedSysDropdowns(ss);
@@ -1737,7 +1961,7 @@ function seedCoreData() {
  * (FIXED: Now safely handles empty 'PRJ_Clients' and 'SYS_Users' sheets)
  */
 function seedProjectFormAndDropdowns() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getTargetSpreadsheet();
   
   // Get all required sheets
   const formsSheet = ss.getSheetByName('SYS_Dynamic_Forms');
