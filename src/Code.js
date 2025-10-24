@@ -3,8 +3,9 @@
 /** ---- GLOBAL CONFIG ---- */
 const CONFIG = {
   APP_NAME: "Nijjara ERP",
-  SPREADSHEET_ID: "", // optional fallback when script is standalone
-  SPREADSHEET_URL: "", // optional Spreadsheet URL fallback
+  SPREADSHEET_ID: "1Oj7So4c5vBDpvj0pIfDeXz6XxBrY011J4xZwKlSkDzo",
+  SPREADSHEET_URL:
+    "https://docs.google.com/spreadsheets/d/1Oj7So4c5vBDpvj0pIfDeXz6XxBrY011J4xZwKlSkDzo/edit",
   // Core sheet names
   SHEETS: {
     USERS: "SYS_Users",
@@ -258,6 +259,11 @@ const DYNAMIC_FORMS_FALLBACK = Object.freeze({
     formId: "FORM_SYS_AddUserProperty",
     titleEn: "Add User Property",
     titleAr: "إضافة خاصية مستخدم",
+  },
+  Sub_PRJ_Materials: {
+    formId: "FORM_PRJ_AddMaterial",
+    titleEn: "Add Material",
+    titleAr: "إضافة مادة جديدة",
   },
 });
 
@@ -1352,6 +1358,8 @@ function getMaterialsViewData() {
       source: sourceName || "",
     };
 
+    payload.items = Array.isArray(payload.rows) ? payload.rows : [];
+
     const sanitized = sanitizeForClientResponse_(payload);
     debugLog(FNAME, "resolved", {
       headers: payload.headers.length,
@@ -1617,6 +1625,307 @@ function updateMaterialPrice(materialId, newPrice) {
   }
 }
 
+function saveMaterialCatalogEntry(payload) {
+  const FNAME = "saveMaterialCatalogEntry";
+  debugLog(FNAME, "start", {
+    hasPayload: !!payload,
+    keys: payload ? Object.keys(payload) : [],
+  });
+
+  if (!payload || typeof payload !== "object") {
+    throw new Error("بيانات المادة غير صالحة.");
+  }
+
+  try {
+    const { sheet, headers, rows, indexes } = getMaterialSheetContext_();
+    const actor = getActorEmail_();
+    const timestamp = new Date();
+
+    const readValue = (...keys) => {
+      for (const key of keys) {
+        if (!key) continue;
+        if (Object.prototype.hasOwnProperty.call(payload, key)) {
+          return payload[key];
+        }
+      }
+      return undefined;
+    };
+
+    const toTrimmedString = (value) => {
+      if (value === undefined || value === null) return "";
+      return String(value).trim();
+    };
+
+    const rawId = readValue(
+      "materialId",
+      "Material_ID",
+      "MaterialId",
+      "MaterialId",
+      "MaterialCode",
+      "Material_Code",
+      "ID",
+      "Id",
+      "id",
+      "Code",
+      "code"
+    );
+    const normalizedId = normalizeKeyValue_(rawId);
+    if (!normalizedId) {
+      throw new Error("معرف المادة مطلوب.");
+    }
+
+    const existingIndex = rows.findIndex((row) =>
+      keysEqual_(getValueAt_(row, indexes.id), normalizedId)
+    );
+    const targetRow =
+      existingIndex >= 0
+        ? rows[existingIndex].slice()
+        : new Array(headers.length).fill("");
+
+    const nameArRaw = readValue(
+      "Name_AR",
+      "nameAr",
+      "Arabic_Name",
+      "Material_Name_AR",
+      "materialNameAr",
+      "NameAr"
+    );
+    const nameEnRaw = readValue(
+      "Name_EN",
+      "nameEn",
+      "English_Name",
+      "Material_Name_EN",
+      "materialNameEn",
+      "NameEn"
+    );
+    const safeNameAr = toTrimmedString(nameArRaw);
+    const safeNameEn = toTrimmedString(nameEnRaw);
+
+    if (!safeNameAr && !safeNameEn) {
+      throw new Error("يجب إدخال اسم للمادة بالعربية أو الإنجليزية.");
+    }
+
+    const category = toTrimmedString(
+      readValue(
+        "Category",
+        "category",
+        "Material_Category",
+        "categoryName",
+        "Category_Name"
+      )
+    );
+    const subcategory = toTrimmedString(
+      readValue(
+        "Subcategory",
+        "subcategory",
+        "Sub_Category",
+        "Material_Subcategory",
+        "SubCategory"
+      )
+    );
+    const subcategory2 = toTrimmedString(
+      readValue("Sub2", "Subcategory2", "Sub_Category_2", "subcategory2")
+    );
+    const unit = toTrimmedString(
+      readValue("Default_Unit", "defaultUnit", "Unit", "unit", "Unit_Name")
+    );
+
+    const priceRaw = readValue(
+      "Default_Price",
+      "defaultPrice",
+      "Unit_Price",
+      "unitPrice",
+      "Price"
+    );
+    const priceNumber = Number(priceRaw);
+    const priceValue = Number.isFinite(priceNumber) ? priceNumber : null;
+
+    const vatRaw = readValue(
+      "VAT_Rate",
+      "Vat_Rate",
+      "vatRate",
+      "vat",
+      "vatRatePercent",
+      "VAT"
+    );
+    let vatValue = null;
+    if (vatRaw !== undefined && vatRaw !== null && vatRaw !== "") {
+      const vatNumber = Number(vatRaw);
+      if (Number.isFinite(vatNumber)) {
+        if (vatNumber > 1.5) {
+          vatValue = vatNumber / 100;
+        } else if (vatNumber < 0) {
+          vatValue = 0;
+        } else {
+          vatValue = vatNumber;
+        }
+      }
+    }
+
+    const activeRaw = (() => {
+      if (Object.prototype.hasOwnProperty.call(payload, "isActive")) {
+        return payload.isActive;
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, "Active")) {
+        return payload.Active;
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, "active")) {
+        return payload.active;
+      }
+      if (Object.prototype.hasOwnProperty.call(payload, "IsActive")) {
+        return payload.IsActive;
+      }
+      return undefined;
+    })();
+
+    const activeValue =
+      activeRaw === undefined
+        ? existingIndex >= 0
+          ? isTruthyFlag_(getValueAt_(rows[existingIndex], indexes.active))
+          : true
+        : isTruthyFlag_(activeRaw);
+
+    setRowValue_(
+      headers,
+      targetRow,
+      normalizedId,
+      "Material_ID",
+      "MaterialId",
+      "ID",
+      "Code"
+    );
+    setRowValue_(
+      headers,
+      targetRow,
+      safeNameAr || safeNameEn || normalizedId,
+      "Name_AR",
+      "Arabic_Name",
+      "Material_Name_AR"
+    );
+    setRowValue_(
+      headers,
+      targetRow,
+      safeNameEn || safeNameAr || normalizedId,
+      "Name_EN",
+      "English_Name",
+      "Material_Name_EN"
+    );
+    setRowValue_(
+      headers,
+      targetRow,
+      category,
+      "Category",
+      "Material_Category",
+      "Category_Name"
+    );
+    setRowValue_(
+      headers,
+      targetRow,
+      subcategory,
+      "Subcategory",
+      "Sub_Category",
+      "Material_Subcategory"
+    );
+    setRowValue_(
+      headers,
+      targetRow,
+      subcategory2,
+      "Sub2",
+      "Subcategory2",
+      "Sub_Category_2"
+    );
+    setRowValue_(
+      headers,
+      targetRow,
+      unit,
+      "Default_Unit",
+      "Unit",
+      "Unit_Name"
+    );
+    if (priceValue !== null) {
+      setRowValue_(
+        headers,
+        targetRow,
+        priceValue,
+        "Default_Price",
+        "Unit_Price",
+        "Price"
+      );
+    }
+    if (vatValue !== null) {
+      setRowValue_(
+        headers,
+        targetRow,
+        vatValue,
+        "VAT_Rate",
+        "Vat_Rate",
+        "VAT"
+      );
+    }
+    setRowValue_(
+      headers,
+      targetRow,
+      activeValue,
+      "Active",
+      "IsActive",
+      "Enabled",
+      "Status",
+      "الحالة"
+    );
+
+    if (indexes.updatedAt >= 0) {
+      targetRow[indexes.updatedAt] = timestamp;
+    }
+    if (indexes.updatedBy >= 0) {
+      targetRow[indexes.updatedBy] = actor;
+    }
+
+    const targetRowNumber =
+      existingIndex >= 0 ? existingIndex + 2 : sheet.getLastRow() + 1;
+    sheet.getRange(targetRowNumber, 1, 1, headers.length).setValues([targetRow]);
+    if (existingIndex >= 0) {
+      rows[existingIndex] = targetRow;
+    } else {
+      rows.push(targetRow);
+    }
+
+    const materialObject = headers.reduce((acc, header, index) => {
+      acc[header] = targetRow[index];
+      if (typeof header === "string") {
+        const underscored = header.replace(/\s+/g, "_");
+        if (underscored && !(underscored in acc)) {
+          acc[underscored] = targetRow[index];
+        }
+      }
+      return acc;
+    }, {});
+
+    const message = existingIndex >= 0
+      ? "تم تحديث بيانات المادة بنجاح."
+      : "تمت إضافة المادة بنجاح.";
+
+    debugLog(FNAME, "complete", {
+      materialId: normalizedId,
+      rowNumber: targetRowNumber,
+      isUpdate: existingIndex >= 0,
+    });
+
+    return sanitizeForClientResponse_({
+      success: true,
+      materialId: normalizedId,
+      rowNumber: targetRowNumber,
+      isUpdate: existingIndex >= 0,
+      material: materialObject,
+      message,
+    });
+  } catch (err) {
+    debugError(FNAME, err, {
+      keys: payload ? Object.keys(payload) : [],
+    });
+    throw err;
+  }
+}
+
 function getProjectsForDropdown() {
   const FNAME = "getProjectsForDropdown";
   debugLog(FNAME, "start");
@@ -1734,6 +2043,7 @@ function getDirectExpenseViewData() {
       headers: Array.isArray(headers) ? headers : [],
       rows: processedRows,
     };
+    payload.items = Array.isArray(payload.rows) ? payload.rows : [];
 
     const sanitized = sanitizeForClientResponse_(payload);
     debugLog(FNAME, "resolved", {
