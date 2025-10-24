@@ -794,24 +794,50 @@
         background: rgba(0, 0, 0, 0.2);
         overflow-x: auto;
         overflow-y: hidden;
+        padding: 0.35rem;
       }
-      .direct-expense__cart-items table {
+      #cart-items-table {
         width: 100%;
-        min-width: 680px;
+        min-width: 640px;
         border-collapse: separate;
         border-spacing: 0;
+        background: rgba(10, 10, 10, 0.4);
+        border-radius: 10px;
+        overflow: hidden;
       }
-      .direct-expense__cart-items thead th {
-        background: rgba(255, 255, 255, 0.05);
-      }
-      .direct-expense__cart-items table th,
-      .direct-expense__cart-items table td {
-        padding: 0.5rem;
-      }
-      .direct-expense__cart-items table th:last-child,
-      .direct-expense__cart-items table td:last-child {
-        width: 1%;
+      #cart-items-table thead th {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--color-text-primary);
+        font-weight: 600;
+        padding: 0.65rem 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         text-align: center;
+      }
+      #cart-items-table tbody td {
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        text-align: center;
+      }
+      #cart-items-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+      #cart-items-table td:first-child,
+      #cart-items-table th:first-child {
+        text-align: start;
+      }
+      #cart-items-table td:last-child,
+      #cart-items-table th:last-child {
+        width: 1%;
+        white-space: nowrap;
+        text-align: center;
+      }
+      #cart-items-table input[type="number"] {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        padding: 0.35rem 0.5rem;
+        color: var(--color-text-primary);
       }
       .direct-expense__totals {
         border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -4830,6 +4856,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
 
   let cart = [];
   let materialsCatalog = [];
+  let materialsCatalogLoaded = false;
   let attachments = [];
           let selectedCategory = "";
           let selectedSubcategory = "";
@@ -5013,9 +5040,8 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           cartContainer.className = "direct-expense__cart";
           const cartTitle = document.createElement("h3");
           cartTitle.textContent = "سلة المشتريات";
-          const cartItemsTable = document.createElement("div");
-          cartItemsTable.id = "cart-items-table";
-          cartItemsTable.className = "direct-expense__cart-items";
+          const cartItemsContainer = document.createElement("div");
+          cartItemsContainer.className = "direct-expense__cart-items";
           const cartTotals = document.createElement("div");
           cartTotals.id = "cart-totals";
           cartTotals.className = "direct-expense__totals";
@@ -5027,10 +5053,16 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               const strongs = totalsBox.querySelectorAll(".direct-expense__totals-row strong");
               if (strongs.length !== 3) return;
               let subtotal = 0, vatTotal = 0, grandTotal = 0;
-              const rate = Number(typeof VAT_RATE !== "undefined" ? VAT_RATE : 0.14) || 0.14;
+              const defaultRate =
+                Number(typeof VAT_RATE !== "undefined" ? VAT_RATE : 0.14) || 0.14;
               (cart || []).forEach((item) => {
-                const amount = (Number(item?.quantity) || 0) * (Number(item?.unitPrice) || 0);
-                const vat = item?.vatApplied ? amount * (Number(item?.vatRate ?? rate)) : 0;
+                const quantity = Number(item?.quantity) || 0;
+                const price = Number(item?.price ?? item?.unitPrice) || 0;
+                const amount = quantity * price;
+                const vatRate = item?.vatApplied
+                  ? Number(item?.vatRate ?? item?.baseVatRate ?? defaultRate)
+                  : 0;
+                const vat = item?.vatApplied ? amount * vatRate : 0;
                 subtotal += amount;
                 vatTotal += vat;
                 grandTotal += amount + vat;
@@ -5055,7 +5087,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           vatToggleWrapper.appendChild(vatToggleText);
 
           cartContainer.appendChild(cartTitle);
-          cartContainer.appendChild(cartItemsTable);
+          cartContainer.appendChild(cartItemsContainer);
           cartContainer.appendChild(cartTotals);
 
           mainSection.appendChild(catalogContainer);
@@ -5249,6 +5281,15 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           }
 
           function populateSubcategoryOptions(category) {
+            if (!materialsCatalogLoaded || !Array.isArray(materialsCatalog)) {
+              subcategorySelect.innerHTML = "";
+              const defaultOption = document.createElement("option");
+              defaultOption.value = "";
+              defaultOption.textContent = "كل الأصناف الفرعية";
+              subcategorySelect.appendChild(defaultOption);
+              subcategorySelect.disabled = true;
+              return;
+            }
             const relevant = category
               ? materialsCatalog.filter(
                   (item) => String(item?.Category || "") === category
@@ -5283,6 +5324,16 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           }
 
           function populateCategoryOptions() {
+            if (!materialsCatalogLoaded || !Array.isArray(materialsCatalog)) {
+              categorySelect.innerHTML = "";
+              const defaultOption = document.createElement("option");
+              defaultOption.value = "";
+              defaultOption.textContent = "جميع الفئات";
+              categorySelect.appendChild(defaultOption);
+              categorySelect.disabled = true;
+              subcategorySelect.disabled = true;
+              return;
+            }
             const categories = getUniqueValues(materialsCatalog, "Category");
             if (selectedCategory && !categories.includes(selectedCategory)) {
               selectedCategory = "";
@@ -5306,6 +5357,13 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           }
 
           function applyMaterialFilters() {
+            if (!materialsCatalogLoaded || !Array.isArray(materialsCatalog)) {
+              return [];
+            }
+            if (!materialsCatalog.length) {
+              populateMaterialsList([]);
+              return [];
+            }
             const term = String(searchInput.value || "").trim().toLowerCase();
             const filtered = materialsCatalog.filter((material) => {
               const categoryValue = String(material?.Category || "").trim();
@@ -5354,8 +5412,10 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               item.appendChild(nameSpan);
               const labelInput = attachment.labelInput;
               labelInput.type = "text";
-              labelInput.className = "direct-expense__attachment-label";
-              labelInput.placeholder = "وسم المرفق";
+              labelInput.classList.add("direct-expense__attachment-label");
+              if (!labelInput.placeholder) {
+                labelInput.placeholder = "أدخل اسمًا للمرفق";
+              }
               labelInput.dataset.attachmentIndex = index;
               item.appendChild(labelInput);
               attachmentList.appendChild(item);
@@ -5389,23 +5449,38 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               existing.quantity += 1;
               existing.baseVatRate = baseVatRate;
             } else {
+              const name =
+                material.Name_AR ||
+                material.Name_EN ||
+                String(materialId);
+              const unit = material.Default_Unit || "";
+              const category = material.Category || "";
+              const subcategory = material.Subcategory || "";
+              const price = defaultPrice;
+              const quantity = 1;
+              const effectiveVatRate = isVatEnabled ? baseVatRate : 0;
+              const subtotal = quantity * price;
+              const vatAmount = subtotal * effectiveVatRate;
+              const totalWithVat = subtotal + vatAmount;
+
               cart.push({
                 materialId: String(materialId),
-                materialName:
-                  material.Name_AR ||
-                  material.Name_EN ||
-                  String(materialId),
-                category: material.Category || "",
-                subcategory: material.Subcategory || "",
-                unit: material.Default_Unit || "",
-                unitPrice: defaultPrice,
+                name,
+                materialName: name,
+                category,
+                subcategory,
+                unit,
+                price,
+                unitPrice: price,
+                quantity,
                 baseVatRate,
-                vatRate: isVatEnabled ? baseVatRate : 0,
+                vatRate: effectiveVatRate,
                 vatApplied: isVatEnabled,
-                quantity: 1,
-                amount: 0,
-                vatAmount: 0,
-                totalWithVat: 0,
+                subtotal,
+                amount: subtotal,
+                vatAmount,
+                total: totalWithVat,
+                totalWithVat,
               });
             }
 
@@ -5414,7 +5489,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
 
           function renderCart() {
             const previousScrollTop = window.scrollY;
-            cartItemsTable.innerHTML = "";
+            cartItemsContainer.innerHTML = "";
             cartTotals.innerHTML = "";
 
             vatToggle.checked = isVatEnabled;
@@ -5429,18 +5504,18 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               const emptyCart = document.createElement("p");
               emptyCart.className = "direct-expense__empty";
               emptyCart.textContent = "لم يتم إضافة أي عناصر بعد.";
-              cartItemsTable.appendChild(emptyCart);
+              cartItemsContainer.appendChild(emptyCart);
             } else {
               const table = document.createElement("table");
+              table.id = "cart-items-table";
               const thead = document.createElement("thead");
               const headRow = document.createElement("tr");
               [
                 "المادة",
-                "السعر",
                 "الكمية",
-                "الإجمالي",
-                "الضريبة",
-                "الإجمالي مع الضريبة",
+                "السعر",
+                "الوحدة",
+                "الأجمالي",
                 "",
               ].forEach((label) => {
                 const th = document.createElement("th");
@@ -5448,98 +5523,105 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 headRow.appendChild(th);
               });
               thead.appendChild(headRow);
+              table.appendChild(thead);
 
               const tbody = document.createElement("tbody");
 
               cart.forEach((item, index) => {
                 const quantity = Number(item.quantity) || 0;
-                const unitPrice = Number(item.unitPrice) || 0;
+                const price = Number(item.price ?? item.unitPrice) || 0;
                 const baseRate = Number.isFinite(item.baseVatRate)
-                  ? item.baseVatRate
+                  ? Number(item.baseVatRate)
                   : VAT_RATE;
                 const effectiveVatRate = isVatEnabled ? baseRate : 0;
 
                 item.baseVatRate = baseRate;
 
-                const amount = quantity * unitPrice;
-                const vatAmount = amount * effectiveVatRate;
-                const totalWithVat = amount + vatAmount;
+                const rowSubtotal = quantity * price;
+                const rowVatAmount = rowSubtotal * effectiveVatRate;
+                const rowTotal = rowSubtotal + rowVatAmount;
 
                 item.quantity = quantity;
-                item.unitPrice = unitPrice;
-                item.amount = amount;
-                item.vatAmount = vatAmount;
-                item.totalWithVat = totalWithVat;
+                item.price = price;
+                item.unitPrice = price;
+                item.subtotal = rowSubtotal;
+                item.amount = rowSubtotal;
+                item.vatAmount = rowVatAmount;
+                item.total = rowTotal;
+                item.totalWithVat = rowTotal;
                 item.vatRate = effectiveVatRate;
                 item.vatApplied = isVatEnabled;
 
-                subtotal += amount;
-                vatTotal += vatAmount;
-                grandTotal += totalWithVat;
+                subtotal += rowSubtotal;
+                vatTotal += rowVatAmount;
+                grandTotal += rowTotal;
 
                 const row = document.createElement("tr");
                 row.dataset.index = String(index);
 
-                const materialCell = document.createElement("td");
-                materialCell.textContent = item.materialName;
-                row.appendChild(materialCell);
+                const nameCell = document.createElement("td");
+                nameCell.textContent =
+                  item.name || item.materialName || item.materialId || "—";
+                row.appendChild(nameCell);
+
+                const quantityCell = document.createElement("td");
+                const qtyInput = document.createElement("input");
+                qtyInput.type = "number";
+                qtyInput.min = "0";
+                qtyInput.step = "0.01";
+                qtyInput.value = quantity.toString();
+                qtyInput.dataset.field = "quantity";
+                const handleQuantityChange = () => {
+                  const value = Number(qtyInput.value);
+                  const resolved =
+                    Number.isFinite(value) && value > 0 ? value : 1;
+                  item.quantity = resolved;
+                  renderCart();
+                };
+                qtyInput.addEventListener("input", () => {
+                  const value = Number(qtyInput.value);
+                  const resolved =
+                    Number.isFinite(value) && value > 0 ? value : 1;
+                  item.quantity = resolved;
+                  updateCartTotalsOnly();
+                });
+                qtyInput.addEventListener("change", handleQuantityChange);
+                quantityCell.appendChild(qtyInput);
+                row.appendChild(quantityCell);
 
                 const priceCell = document.createElement("td");
                 const priceInput = document.createElement("input");
                 priceInput.type = "number";
                 priceInput.min = "0";
                 priceInput.step = "0.01";
-                priceInput.value = unitPrice.toString();
-                
+                priceInput.value = price.toString();
+                priceInput.dataset.field = "price";
                 const handlePriceChange = () => {
                   const value = Number(priceInput.value);
-                  item.unitPrice = Number.isFinite(value) && value >= 0 ? value : 0;
+                  const resolved =
+                    Number.isFinite(value) && value >= 0 ? value : 0;
+                  item.price = resolved;
+                  item.unitPrice = resolved;
                   renderCart();
                 };
                 priceInput.addEventListener("input", () => {
                   const value = Number(priceInput.value);
-                  item.unitPrice = Number.isFinite(value) && value >= 0 ? value : 0;
+                  const resolved =
+                    Number.isFinite(value) && value >= 0 ? value : 0;
+                  item.price = resolved;
+                  item.unitPrice = resolved;
                   updateCartTotalsOnly();
                 });
                 priceInput.addEventListener("change", handlePriceChange);
-
                 priceCell.appendChild(priceInput);
                 row.appendChild(priceCell);
 
-                const qtyCell = document.createElement("td");
-                const qtyInput = document.createElement("input");
-                qtyInput.type = "number";
-                qtyInput.min = "0";
-                qtyInput.step = "0.01";
-                qtyInput.value = quantity.toString();
-                
-                const handleQuantityChange = () => {
-                  const value = Number(qtyInput.value);
-                  item.quantity = Number.isFinite(value) && value > 0 ? value : 1;
-                  renderCart();
-                };
-                qtyInput.addEventListener("input", () => {
-                  const value = Number(qtyInput.value);
-                  item.quantity = Number.isFinite(value) && value > 0 ? value : 1;
-                  updateCartTotalsOnly();
-                });
-                qtyInput.addEventListener("change", handleQuantityChange);
-
-                qtyCell.appendChild(qtyInput);
-                row.appendChild(qtyCell);
-
-                const amountCell = document.createElement("td");
-                amountCell.textContent = formatCurrencyValue(amount);
-                amountCell.dataset.field = "amount";
-                row.appendChild(amountCell);
-
-                const vatCell = document.createElement("td");
-                vatCell.textContent = formatCurrencyValue(vatAmount);
-                vatCell.dataset.field = "vat";
-                row.appendChild(vatCell);
+                const unitCell = document.createElement("td");
+                unitCell.textContent = item.unit || "—";
+                row.appendChild(unitCell);
 
                 const totalCell = document.createElement("td");
-                totalCell.textContent = formatCurrencyValue(totalWithVat);
+                totalCell.textContent = formatCurrencyValue(rowTotal);
                 totalCell.dataset.field = "total";
                 row.appendChild(totalCell);
 
@@ -5558,9 +5640,8 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 tbody.appendChild(row);
               });
 
-              table.appendChild(thead);
               table.appendChild(tbody);
-              cartItemsTable.appendChild(table);
+              cartItemsContainer.appendChild(table);
             }
 
             const totalsConfig = [
@@ -5611,7 +5692,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               const priceValue = Number(priceInputEl?.value);
               const qtyValue = Number(qtyInputEl?.value);
 
-              const unitPrice =
+              const price =
                 Number.isFinite(priceValue) && priceValue >= 0 ? priceValue : 0;
               const quantity =
                 Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 1;
@@ -5621,27 +5702,26 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 : VAT_RATE;
               const effectiveVatRate = isVatEnabled ? baseRate : 0;
 
-              currentItem.unitPrice = unitPrice;
+              currentItem.price = price;
+              currentItem.unitPrice = price;
               currentItem.quantity = quantity;
               currentItem.vatApplied = isVatEnabled;
               currentItem.vatRate = effectiveVatRate;
 
-              const amount = quantity * unitPrice;
+              const amount = quantity * price;
               const vatAmount = amount * effectiveVatRate;
               const totalWithVat = amount + vatAmount;
 
+              currentItem.subtotal = amount;
               currentItem.amount = amount;
               currentItem.vatAmount = vatAmount;
+              currentItem.total = totalWithVat;
               currentItem.totalWithVat = totalWithVat;
 
               subtotal += amount;
               vatTotal += vatAmount;
               grandTotal += totalWithVat;
 
-              const amountCell = row.querySelector('[data-field="amount"]');
-              if (amountCell) amountCell.textContent = formatCurrencyValue(amount);
-              const vatCell = row.querySelector('[data-field="vat"]');
-              if (vatCell) vatCell.textContent = formatCurrencyValue(vatAmount);
               const totalCell = row.querySelector('[data-field="total"]');
               if (totalCell)
                 totalCell.textContent = formatCurrencyValue(totalWithVat);
@@ -5657,7 +5737,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
             }
           }
 
-          cartItemsTable.addEventListener("input", (event) => {
+          cartItemsContainer.addEventListener("input", (event) => {
             const input = event.target;
             if (!(input instanceof HTMLInputElement)) return;
             if (input.type !== "number") return;
@@ -5673,8 +5753,10 @@ function renderDirectExpenseForm(paneElement, options = {}) {
 
             const value = Number(input.value);
             if (field === "price") {
-              cart[index].unitPrice =
+              const resolved =
                 Number.isFinite(value) && value >= 0 ? value : 0;
+              cart[index].price = resolved;
+              cart[index].unitPrice = resolved;
             } else if (field === "quantity") {
               cart[index].quantity =
                 Number.isFinite(value) && value > 0 ? value : 1;
@@ -5683,7 +5765,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
             recomputeRowAndTotals(paneElement, cart);
           });
 
-          cartItemsTable.addEventListener("change", (event) => {
+          cartItemsContainer.addEventListener("change", (event) => {
             const input = event.target;
             if (!(input instanceof HTMLInputElement)) return;
             if (input.type !== "number") return;
@@ -5703,6 +5785,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           });
 
           searchInput.addEventListener("input", () => {
+            if (!materialsCatalogLoaded) return;
             applyMaterialFilters();
           });
 
@@ -5713,6 +5796,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           });
 
           categorySelect.addEventListener("change", () => {
+            if (!materialsCatalogLoaded) return;
             selectedCategory = categorySelect.value;
             selectedSubcategory = "";
             subcategorySelect.value = "";
@@ -5721,6 +5805,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           });
 
           subcategorySelect.addEventListener("change", () => {
+            if (!materialsCatalogLoaded) return;
             selectedSubcategory = subcategorySelect.value;
             applyMaterialFilters();
           });
@@ -5749,6 +5834,12 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               }
               const labelInput = document.createElement("input");
               labelInput.type = "text";
+              labelInput.className = "direct-expense__attachment-label";
+              const defaultLabel = file.name.replace(/\.[^.]+$/, "").trim();
+              if (defaultLabel) {
+                labelInput.value = defaultLabel;
+              }
+              labelInput.placeholder = "أدخل اسمًا للمرفق";
               attachments.push({ file, labelInput });
             });
             attachmentsInput.value = "";
@@ -5767,15 +5858,26 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           google.script.run
             .withFailureHandler((err) => {
               console.error("getMaterialsCatalog failed", err);
+              materialsCatalog = [];
+              materialsCatalogLoaded = false;
               materialsList.innerHTML =
                 '<p class="error-text">تعذر تحميل كتالوج المواد.</p>';
+              populateCategoryOptions();
               showToast("تعذر تحميل كتالوج المواد.", "error");
             })
             .withSuccessHandler((result) => {
               const source = Array.isArray(result) ? result : [];
               materialsCatalog = source.map(hydrateMaterial);
+              materialsCatalogLoaded = true;
               populateCategoryOptions();
-              applyMaterialFilters();
+              populateMaterialsList(materialsCatalog);
+              if (
+                String(searchInput.value || "").trim() ||
+                selectedCategory ||
+                selectedSubcategory
+              ) {
+                applyMaterialFilters();
+              }
             })
             .getMaterialsCatalog();
 
@@ -5825,8 +5927,8 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               (item) =>
                 !Number.isFinite(item.quantity) ||
                 item.quantity <= 0 ||
-                !Number.isFinite(item.unitPrice) ||
-                item.unitPrice < 0
+                !Number.isFinite(item.price ?? item.unitPrice) ||
+                (item.price ?? item.unitPrice) < 0
             );
             if (invalidItem) {
               showToast("يرجى التحقق من الكميات والأسعار في السلة.", "warning");
@@ -5853,16 +5955,16 @@ function renderDirectExpenseForm(paneElement, options = {}) {
               },
               items: cart.map((item) => ({
                 materialId: item.materialId,
-                materialName: item.materialName,
+                materialName: item.name || item.materialName || "",
                 category: item.category,
                 subcategory: item.subcategory,
                 unit: item.unit,
                 quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                amount: item.amount,
+                unitPrice: item.price ?? item.unitPrice,
+                amount: item.amount ?? item.subtotal,
                 vatRate: item.vatRate,
                 vatAmount: item.vatAmount,
-                totalWithVat: item.totalWithVat,
+                totalWithVat: item.totalWithVat ?? item.total,
                 vatApplied: item.vatApplied,
               })),
               attachments: attachments.map((attachment) => ({
