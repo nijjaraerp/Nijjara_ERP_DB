@@ -69,7 +69,7 @@ const TAB_REGISTER_FALLBACKS = [
     permissions: "PRJ_VIEW_PROJECTS",
     subTabs: [
       {
-        subId: "Sub_PRJ_Projects",
+        subId: "Sub_PRJ_Main",
         subLabelEn: "Projects",
         subLabelAr: "قائمة المشاريع",
         route: "/projects",
@@ -106,7 +106,7 @@ const TAB_REGISTER_FALLBACKS = [
         subLabelAr: "الإيرادات",
         route: "/projects/revenue",
         sortOrder: 5,
-        sourceSheet: CONFIG.SHEETS.PRJ_PROJECT_REVENUE,
+        sourceSheet: CONFIG.SHEETS.FIN_PROJECT_REVENUE,
       },
     ],
   },
@@ -260,10 +260,30 @@ const DYNAMIC_FORMS_FALLBACK = Object.freeze({
     titleEn: "Add User Property",
     titleAr: "إضافة خاصية مستخدم",
   },
+  Sub_PRJ_Main: {
+    formId: "FORM_PRJ_AddProject",
+    titleEn: "Add Project",
+    titleAr: "إضافة مشروع جديد",
+  },
+  Sub_PRJ_Tasks: {
+    formId: "FORM_PRJ_AddTask",
+    titleEn: "Add Project Task",
+    titleAr: "إضافة مهمة مشروع",
+  },
+  Sub_PRJ_Costs: {
+    formId: "FORM_PRJ_AddCost",
+    titleEn: "Log Project Cost",
+    titleAr: "تسجيل تكلفة مشروع",
+  },
   Sub_PRJ_Materials: {
     formId: "FORM_PRJ_AddMaterial",
     titleEn: "Add Material",
     titleAr: "إضافة مادة جديدة",
+  },
+  Sub_PRJ_Revenue: {
+    formId: "FORM_PRJ_AddRevenue",
+    titleEn: "Log Project Revenue",
+    titleAr: "تسجيل إيراد مشروع",
   },
 });
 
@@ -2154,6 +2174,7 @@ function getAttachmentsForEntity(entityId, entityKey) {
       return sanitizeForClientResponse_([]);
     }
 
+    const idxDocId = findHeaderIndex_(headers, "Doc_ID", "DocId", "ID");
     const idxEntity = findHeaderIndex_(headers, "Entity");
     const idxEntityId = findHeaderIndex_(
       headers,
@@ -2201,7 +2222,9 @@ function getAttachmentsForEntity(entityId, entityKey) {
         if (!normalizedEntity && !normalizedId) {
           return null;
         }
+        const docId = idxDocId >= 0 ? getValueAt_(row, idxDocId) : "";
         return {
+          Doc_ID: docId,
           Entity: rowEntity,
           Entity_ID: rowEntityId,
           Label: idxLabel >= 0 ? getValueAt_(row, idxLabel) : "",
@@ -2218,6 +2241,273 @@ function getAttachmentsForEntity(entityId, entityKey) {
     return sanitizeForClientResponse_(attachments);
   } catch (err) {
     debugError(FNAME, err, { entityId, entityKey });
+    throw err;
+  }
+}
+
+function saveAttachmentRecord(payload) {
+  const FNAME = "saveAttachmentRecord";
+  debugLog(FNAME, "start", {
+    hasPayload: !!payload,
+    keys: payload ? Object.keys(payload) : [],
+  });
+
+  try {
+    if (!payload || typeof payload !== "object") {
+      throw new Error("بيانات المرفق غير صالحة.");
+    }
+
+    const entityRaw =
+      payload.entity || payload.Entity || payload.entityKey || payload.Entity_Key;
+    const entityIdRaw =
+      payload.entityId ||
+      payload.Entity_ID ||
+      payload.recordId ||
+      payload.Record_ID;
+    const labelRaw = payload.label || payload.Label || "";
+    const fileNameRaw = payload.fileName || payload.File_Name || labelRaw;
+    const driveIdRaw = payload.driveId || payload.Drive_File_ID || payload.File_Id;
+    const urlRaw = payload.url || payload.Drive_URL || payload.File_URL;
+
+    const entity = String(entityRaw || "").trim();
+    const entityId = String(entityIdRaw || "").trim();
+    if (!entity) throw new Error("نوع الكيان مطلوب للمرفقات.");
+    if (!entityId) throw new Error("معرّف السجل مطلوب للمرفقات.");
+
+    const sheet = getSheet_(CONFIG.SHEETS.DOCUMENTS);
+    if (!sheet) throw new Error("لم يتم العثور على ورقة المرفقات.");
+
+    const lastCol = sheet.getLastColumn();
+    if (!lastCol) throw new Error("ورقة المرفقات لا تحتوي على رؤوس أعمدة.");
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0] || [];
+    if (!headers.length) throw new Error("تعذر تحميل رؤوس ورقة المرفقات.");
+
+    const now = new Date();
+    const actor = getActorEmail_();
+    const docId =
+      payload.docId ||
+      payload.Doc_ID ||
+      Utilities.getUuid() ||
+      `${entity}-${entityId}-${now.getTime()}`;
+
+    const safeLabel = String(labelRaw || "").trim();
+    const safeFileName = String(fileNameRaw || safeLabel || "").trim();
+    const safeDriveId = String(driveIdRaw || "").trim();
+    const safeUrl = String(urlRaw || "").trim();
+
+    const row = new Array(headers.length).fill("");
+    const set = (name, value) => {
+      const idx = headers.indexOf(name);
+      if (idx >= 0) row[idx] = value;
+    };
+
+    set("Doc_ID", docId);
+    set("Entity", entity);
+    set("Entity_ID", entityId);
+    set("Label", safeLabel);
+    set("File_Name", safeFileName || safeLabel);
+    set("Drive_File_ID", safeDriveId);
+    set("Drive_URL", safeUrl);
+    set("Uploaded_By", actor);
+    set("Created_At", now);
+
+    sheet.appendRow(row);
+
+    debugLog(FNAME, "complete", { entity, entityId, docId });
+    return sanitizeForClientResponse_({
+      success: true,
+      docId,
+      entity,
+      entityId,
+    });
+  } catch (err) {
+    debugError(FNAME, err, {
+      hasPayload: !!payload,
+      entity: payload?.entity || payload?.Entity,
+      entityId: payload?.entityId || payload?.Entity_ID,
+    });
+    throw err;
+  }
+}
+
+function deleteAttachmentRecord(docId) {
+  const FNAME = "deleteAttachmentRecord";
+  debugLog(FNAME, "start", { docId });
+
+  try {
+    const normalizedId = String(docId || "").trim();
+    if (!normalizedId) throw new Error("معرّف المرفق مطلوب للحذف.");
+
+    const sheet = getSheet_(CONFIG.SHEETS.DOCUMENTS);
+    if (!sheet) throw new Error("لم يتم العثور على ورقة المرفقات.");
+
+    const data = sheet.getDataRange().getValues();
+    if (!data || data.length <= 1) {
+      return sanitizeForClientResponse_({ success: false, message: "لا توجد بيانات" });
+    }
+
+    const headers = data[0] || [];
+    const idxDoc = headers.indexOf("Doc_ID");
+    if (idxDoc < 0) throw new Error("عمود Doc_ID غير موجود.");
+
+    const rowIndex = data
+      .slice(1)
+      .findIndex((row) => normalizeKeyValue_(row[idxDoc]) === normalizeKeyValue_(normalizedId));
+
+    if (rowIndex < 0) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "لم يتم العثور على المرفق المحدد.",
+      });
+    }
+
+    const deleteRowNumber = rowIndex + 2; // +1 header, +1 zero index
+    sheet.deleteRow(deleteRowNumber);
+
+    debugLog(FNAME, "deleted", { docId: normalizedId });
+    return sanitizeForClientResponse_({
+      success: true,
+      docId: normalizedId,
+    });
+  } catch (err) {
+    debugError(FNAME, err, { docId });
+    throw err;
+  }
+}
+
+function submitDynamicForm(formId, formData, options = {}) {
+  const FNAME = "submitDynamicForm";
+  debugLog(FNAME, "start", {
+    formId,
+    hasData: !!formData,
+    optionKeys: Object.keys(options || {}),
+  });
+
+  try {
+    const safeFormId = String(formId || "").trim();
+    if (!safeFormId) throw new Error("معرّف النموذج غير محدد.");
+
+    const structure = getDynamicFormStructure(safeFormId);
+    if (!Array.isArray(structure) || !structure.length) {
+      throw new Error("تعذر تحميل تعريف النموذج الديناميكي.");
+    }
+
+    const payload = formData && typeof formData === "object" ? formData : {};
+    const actor = getActorEmail_();
+    const now = new Date();
+
+    const grouped = new Map();
+    structure.forEach((field) => {
+      const targetSheet =
+        options.targetSheet || field.targetSheet || field.Target_Sheet || "";
+      const targetColumn = field.targetColumn || field.Target_Column || "";
+      if (!targetSheet || !targetColumn) return;
+      if (!grouped.has(targetSheet)) grouped.set(targetSheet, []);
+      grouped.get(targetSheet).push({
+        fieldId: field.fieldId || field.Field_ID || targetColumn,
+        type: (field.type || field.Field_Type || "text").toString().toLowerCase(),
+        targetColumn,
+        required: !!field.required,
+        defaultValue: field.defaultValue,
+        dropdownKey: field.sourceKey || field.Dropdown_Key || "",
+      });
+    });
+
+    if (!grouped.size) {
+      throw new Error("النموذج لا يحتوي على حقول قابلة للحفظ.");
+    }
+
+    grouped.forEach((fields, sheetName) => {
+      const sheet = getSheet_(sheetName);
+      if (!sheet) throw new Error(`لم يتم العثور على ورقة ${sheetName}.`);
+
+      const lastCol = sheet.getLastColumn();
+      if (!lastCol) throw new Error(`ورقة ${sheetName} تفتقر إلى رؤوس الأعمدة.`);
+      const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0] || [];
+      if (!headers.length)
+        throw new Error(`تعذر قراءة رؤوس الأعمدة للورقة ${sheetName}.`);
+
+      const row = new Array(headers.length).fill("");
+      const set = (name, value) => {
+        const idx = headers.indexOf(name);
+        if (idx >= 0) row[idx] = value;
+      };
+
+      const normalizeKey = (key) =>
+        String(key || "")
+          .replace(/\s+/g, "_")
+          .toLowerCase();
+
+      const rawDataMap = new Map();
+      Object.keys(payload).forEach((key) => {
+        rawDataMap.set(key, payload[key]);
+        rawDataMap.set(normalizeKey(key), payload[key]);
+      });
+
+      const coerceValue = (field, value) => {
+        if (value === undefined || value === null || value === "") {
+          if (field.defaultValue !== undefined && field.defaultValue !== null) {
+            return field.defaultValue;
+          }
+          return "";
+        }
+        switch (field.type) {
+          case "number":
+            if (value === "") return "";
+            const num = Number(value);
+            return Number.isFinite(num) ? num : value;
+          case "date":
+            if (value instanceof Date) return value;
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? value : parsed;
+          case "checkbox":
+          case "boolean":
+            if (typeof value === "boolean") return value;
+            return ["true", "yes", "1", "y", "نعم", "نشط"].includes(
+              String(value).toLowerCase()
+            );
+          default:
+            return value;
+        }
+      };
+
+      fields.forEach((field) => {
+        const candidates = [
+          field.targetColumn,
+          field.fieldId,
+          normalizeKey(field.targetColumn),
+          normalizeKey(field.fieldId),
+        ].filter(Boolean);
+        let value;
+        for (const key of candidates) {
+          if (rawDataMap.has(key)) {
+            value = rawDataMap.get(key);
+            break;
+          }
+        }
+        const coerced = coerceValue(field, value);
+        set(field.targetColumn, coerced);
+      });
+
+      if (headers.includes("Created_At")) set("Created_At", now);
+      if (headers.includes("Created_By")) set("Created_By", actor);
+      if (headers.includes("Updated_At")) set("Updated_At", now);
+      if (headers.includes("Updated_By")) set("Updated_By", actor);
+
+      sheet.appendRow(row);
+      debugLog(FNAME, "rowAppended", {
+        sheet: sheetName,
+        columns: fields.length,
+      });
+    });
+
+    return sanitizeForClientResponse_({
+      success: true,
+      formId: safeFormId,
+      message: "تم حفظ البيانات بنجاح.",
+    });
+  } catch (err) {
+    debugError(FNAME, err, { formId });
     throw err;
   }
 }
@@ -3160,8 +3450,8 @@ function searchUsers(filters = {}) {
   }
 }
 
-function getUserFormStructure(formId = "FORM_SYS_AddUser") {
-  debugLog("getUserFormStructure", "start", { formId });
+function getDynamicFormStructure(formId = "FORM_SYS_AddUser") {
+  debugLog("getDynamicFormStructure", "start", { formId });
   const sh = getSheet_(CONFIG.SHEETS.DYNAMIC_FORMS);
   if (!sh) return [];
 
@@ -3215,13 +3505,13 @@ function getUserFormStructure(formId = "FORM_SYS_AddUser") {
         targetColumn: r[idx.Target_Column] || "",
         roleId: r[idx.Role_ID] || "",
       }));
-    debugLog("getUserFormStructure", "loaded", {
+    debugLog("getDynamicFormStructure", "loaded", {
       formId,
       fieldCount: fields.length,
     });
     return fields;
   } catch (err) {
-    debugError("getUserFormStructure", err, { formId });
+    debugError("getDynamicFormStructure", err, { formId });
     throw err;
   }
 }
@@ -4047,7 +4337,7 @@ function listSessions() {
 
 function getFormWithOptions(formId = "FORM_SYS_AddUser") {
   debugLog("getFormWithOptions", "start", { formId });
-  const fields = getUserFormStructure(formId);
+  const fields = getDynamicFormStructure(formId);
   const enriched = fields.map((f) => {
     if (
       f.type === "dropdown" &&

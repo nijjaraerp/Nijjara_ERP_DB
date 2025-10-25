@@ -528,10 +528,212 @@
       }
       .pane-header {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         align-items: center;
-        gap: 0.75rem;
+        gap: 1rem;
+        flex-wrap: wrap;
         margin-bottom: 1rem;
+      }
+      .pane-header__title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+      }
+      .pane-header__buttons {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .pane-header__buttons .ghost-button {
+        min-width: 130px;
+      }
+      .ghost-button--small {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.55rem;
+        border-radius: 8px;
+      }
+      .generic-pane__body {
+        display: grid;
+        grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.5fr);
+        gap: 1.25rem;
+        align-items: start;
+      }
+      @media (max-width: 980px) {
+        .generic-pane__body {
+          grid-template-columns: 1fr;
+        }
+      }
+      .generic-pane__view {
+        min-height: 240px;
+      }
+      .generic-pane__form {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 1.25rem;
+        background: rgba(15, 15, 20, 0.65);
+        box-shadow: 0 14px 32px rgba(0, 0, 0, 0.35);
+      }
+      .generic-pane__form[hidden] {
+        display: none !important;
+      }
+      .generic-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+      .generic-form__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem 1.25rem;
+      }
+      .generic-form__field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+      .generic-form__field--wide {
+        grid-column: 1 / -1;
+      }
+      .generic-form__field label {
+        font-size: 0.9rem;
+        color: var(--color-text-secondary);
+      }
+      .generic-form__field input,
+      .generic-form__field select,
+      .generic-form__field textarea {
+        width: 100%;
+        padding: 0.55rem 0.75rem;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--color-text-primary);
+      }
+      .generic-form__field textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+      .generic-form__actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+      }
+      .generic-form__actions .accent-button[disabled] {
+        opacity: 0.65;
+        cursor: progress;
+      }
+      .generic-table__actions-header {
+        width: 150px;
+      }
+      .generic-table__actions-cell {
+        vertical-align: middle;
+      }
+      .generic-table__actions {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+      .generic-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 15, 20, 0.82);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 1.5rem;
+      }
+      .generic-modal {
+        background: rgba(20, 22, 30, 0.95);
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        width: min(720px, 100%);
+        max-height: 90vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .generic-modal--wide {
+        width: min(880px, 100%);
+      }
+      .generic-modal__header {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+      }
+      .generic-modal__title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--color-text-primary);
+      }
+      .generic-modal__body {
+        padding: 1.25rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .generic-modal__footer {
+        padding: 0.85rem 1.25rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+      }
+      .generic-attachments__list {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        background: rgba(10, 12, 18, 0.6);
+      }
+      .generic-attachments__item {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.5rem 1rem;
+        padding: 0.5rem 0.65rem;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .generic-attachments__item a {
+        color: var(--color-accent);
+      }
+      .generic-attachments__form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.75rem 1rem;
+        border: 1px dashed rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        padding: 0.9rem;
+        background: rgba(0, 0, 0, 0.3);
+      }
+      .generic-attachments__form label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+      }
+      .generic-attachments__form input {
+        padding: 0.45rem 0.65rem;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.4);
+        color: var(--color-text-primary);
+      }
+      .generic-attachments__actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
       }
       .materials-catalog__controls,
       .materials-module__controls {
@@ -3304,7 +3506,7 @@ select:focus {
           navEl.dataset.rendered = "true";
         }
 
-    function loadGenericTab(paneName, sourceSheet, contentElement) {
+function loadGenericTab(paneName, sourceSheet, contentElement) {
   if (!contentElement || !paneName) return;
 
   const paneId = String(paneName);
@@ -3331,6 +3533,7 @@ select:focus {
 
   paneElement.classList.remove("direct-expense-pane");
   paneElement.classList.remove("materials-catalog-pane");
+  paneElement.dataset.sourceSheet = trimmedSource;
 
   if (paneName === "Sub_PRJ_Materials") {
     if (typeof renderMaterialsModule === "function") {
@@ -3356,7 +3559,6 @@ select:focus {
     (bootstrapData && bootstrapData.forms) || Object.create(null);
   const formMeta = formsRegister[paneName];
 
-  // Developer diagnostics (from feature branch)
   if (window.console && typeof console.groupCollapsed === "function") {
     console.groupCollapsed(
       `[loadGenericTab] ${paneId} (source: ${trimmedSource || "<none>"})`
@@ -3372,97 +3574,799 @@ select:focus {
     });
   }
 
+  const scaffold = ensureGenericPaneScaffold(paneElement);
+  const viewContainer = scaffold.viewContainer;
+  const formContainer = scaffold.formContainer;
+
+  const entityKey = resolveEntityKeyForPane(paneId);
+
+  const fetchData = () => {
+    if (!(window.google && google.script && google.script.run)) {
+      viewContainer.innerHTML =
+        '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
+      return;
+    }
+
+    viewContainer.innerHTML =
+      '<p class="muted">جارٍ تحميل البيانات، يرجى الانتظار...</p>';
+
+    google.script.run
+      .withFailureHandler((err) => {
+        console.error("loadGenericTab failed", err);
+        viewContainer.innerHTML =
+          '<p class="error-text">تعذر تحميل البيانات.</p>';
+      })
+      .withSuccessHandler((result) => {
+        renderGenericTable(viewContainer, result, {
+          paneId,
+          entityKey,
+          formMeta,
+          onAttachments: (recordId, record) =>
+            openAttachmentsModal({
+              paneId,
+              entityKey,
+              recordId,
+              record,
+              onUpdated: fetchData,
+            }),
+          onViewRecord: (record) =>
+            openGenericRecordModal({ paneId, entityKey, record }),
+        });
+      })
+      .getSheetData(trimmedSource);
+  };
+
+  const handleUploadAction = () => {
+    const recordId = window.prompt(
+      "أدخل معرّف السجل الذي ترغب في رفع المرفقات له:",
+      ""
+    );
+    if (!recordId) return;
+    openAttachmentsModal({
+      paneId,
+      entityKey,
+      recordId: recordId.trim(),
+      record: null,
+      onUpdated: fetchData,
+    });
+  };
+
+  const handleAddAction = () => {
+    if (!formMeta?.formId) {
+      showToast("لا يوجد نموذج مرتبط بهذا التبويب.", "info");
+      return;
+    }
+    formContainer.dataset.formVisible = "true";
+    const firstInput = formContainer.querySelector(
+      "input, select, textarea"
+    );
+    if (firstInput) firstInput.focus();
+    formContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  renderPaneHeader(paneElement, paneName, {
+    formMeta,
+    onAdd: handleAddAction,
+    onRefresh: fetchData,
+    onUpload: handleUploadAction,
+  });
+
+  renderGenericFormPane(formContainer, {
+    paneId,
+    formMeta,
+    onSubmitted: () => fetchData(),
+  });
+
   if (!trimmedSource) {
-    paneElement.innerHTML =
+    viewContainer.innerHTML =
       '<p class="error-text">لم يتم تعيين مصدر بيانات لهذا التبويب.</p>';
     return;
   }
 
-  paneElement.innerHTML =
-    '<p class="muted">جارٍ تحميل البيانات، يرجى الانتظار...</p>';
+  fetchData();
+}
+
+function renderGenericTable(container, data, options = {}) {
+  if (!container) return;
+  const headers = Array.isArray(data?.headers) ? data.headers : [];
+  const rows = Array.isArray(data?.rows) ? data.rows : [];
+
+  container.innerHTML = "";
+
+  if (!headers.length) {
+    const emptyMessage = document.createElement("p");
+    emptyMessage.className = "muted";
+    emptyMessage.textContent = "لا توجد بيانات متاحة للعرض.";
+    container.appendChild(emptyMessage);
+    return;
+  }
+
+  const table = document.createElement("table");
+  table.className = "sys-table generic-table";
+
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+
+  const actionsTh = document.createElement("th");
+  actionsTh.className = "generic-table__actions-header";
+  actionsTh.textContent = "إجراءات";
+  headerRow.appendChild(actionsTh);
+
+  headers.forEach((header) => {
+    const th = document.createElement("th");
+    th.textContent = header;
+    headerRow.appendChild(th);
+  });
+  thead.appendChild(headerRow);
+
+  const tbody = document.createElement("tbody");
+
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    const record = {};
+    headers.forEach((header, index) => {
+      record[header] = Array.isArray(row) ? row[index] : row?.[index];
+    });
+
+    const metadata = resolveRecordMetadata(headers, row);
+    const actionCell = document.createElement("td");
+    actionCell.className = "generic-table__actions-cell";
+    const actionWrapper = document.createElement("div");
+    actionWrapper.className = "generic-table__actions";
+
+    const viewBtn = document.createElement("button");
+    viewBtn.type = "button";
+    viewBtn.className = "ghost-button ghost-button--small";
+    viewBtn.textContent = "عرض";
+    viewBtn.addEventListener("click", () => {
+      if (typeof options.onViewRecord === "function") {
+        options.onViewRecord(
+          Object.assign({}, record, { __meta: metadata })
+        );
+      }
+    });
+    actionWrapper.appendChild(viewBtn);
+
+    const attachBtn = document.createElement("button");
+    attachBtn.type = "button";
+    attachBtn.className = "ghost-button ghost-button--small";
+    attachBtn.textContent = "مرفقات";
+    attachBtn.addEventListener("click", () => {
+      if (typeof options.onAttachments === "function") {
+        options.onAttachments(metadata.recordId, record);
+      }
+    });
+    actionWrapper.appendChild(attachBtn);
+
+    actionCell.appendChild(actionWrapper);
+    tr.appendChild(actionCell);
+
+    headers.forEach((_, index) => {
+      const td = document.createElement("td");
+      const value = Array.isArray(row) ? row[index] : row?.[index];
+      if (value === true || value === false) {
+        td.innerHTML = renderBooleanBadge(value);
+      } else if (
+        typeof value === "string" &&
+        /^(true|false|yes|no|y|n|1|0)$/i.test(value.trim())
+      ) {
+        td.innerHTML = renderBooleanBadge(value);
+      } else if (value instanceof Date) {
+        td.textContent = formatDateTime(value);
+      } else if (
+        typeof value === "string" &&
+        /^\d{4}-\d{2}-\d{2}T/.test(value)
+      ) {
+        td.textContent = formatDateTime(value);
+      } else {
+        td.innerHTML = escapeHtml(value == null ? "" : String(value));
+      }
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  container.appendChild(table);
+}
+
+function ensureGenericPaneScaffold(paneElement) {
+  if (!paneElement) return { viewContainer: null, formContainer: null };
+
+  let body = paneElement.querySelector(".generic-pane__body");
+  const header = paneElement.querySelector(".pane-header");
+  if (!body) {
+    body = document.createElement("div");
+    body.className = "generic-pane__body";
+    if (header && header.nextSibling) {
+      paneElement.insertBefore(body, header.nextSibling);
+    } else {
+      paneElement.appendChild(body);
+    }
+  }
+
+  let viewContainer = body.querySelector(".generic-pane__view");
+  if (!viewContainer) {
+    viewContainer = document.createElement("div");
+    viewContainer.className = "generic-pane__view";
+    body.appendChild(viewContainer);
+  }
+
+  let formContainer = body.querySelector(".generic-pane__form");
+  if (!formContainer) {
+    formContainer = document.createElement("div");
+    formContainer.className = "generic-pane__form";
+    body.appendChild(formContainer);
+  }
+
+  return { body, viewContainer, formContainer };
+}
+
+function resolveRecordMetadata(headers, row) {
+  const normalizedHeaders = headers.map((header) =>
+    String(header || "")
+      .replace(/[\s\u200f\u200e]+/g, "")
+      .toLowerCase()
+  );
+
+  const idPatterns = [
+    "recordid",
+    "id",
+    "projectid",
+    "taskid",
+    "costid",
+    "revenueid",
+    "materialid",
+    "documentid",
+    "entityid",
+  ];
+
+  let recordId = "";
+  let idHeader = headers[0] || "";
+  idPatterns.some((pattern) => {
+    const matchIndex = normalizedHeaders.findIndex((header) =>
+      header.endsWith(pattern)
+    );
+    if (matchIndex >= 0) {
+      recordId = Array.isArray(row) ? row[matchIndex] : row?.[matchIndex];
+      idHeader = headers[matchIndex];
+      return true;
+    }
+    return false;
+  });
+
+  if (recordId == null || recordId === "") {
+    recordId = Array.isArray(row) ? row[0] : row?.[0];
+    idHeader = headers[0] || idHeader;
+  }
+
+  const nameIndex = normalizedHeaders.findIndex((header) =>
+    /name|title|label|subject/.test(header)
+  );
+  const labelParts = [];
+  if (recordId != null && recordId !== "") {
+    labelParts.push(String(recordId));
+  }
+  if (nameIndex >= 0) {
+    const raw = Array.isArray(row) ? row[nameIndex] : row?.[nameIndex];
+    if (raw != null && raw !== "") labelParts.push(String(raw));
+  }
+
+  return {
+    recordId: String(recordId == null ? "" : recordId).trim(),
+    idHeader,
+    label: labelParts.join(" – "),
+  };
+}
+
+function resolveEntityKeyForPane(paneId) {
+  const map = {
+    Sub_PRJ_Main: "Projects",
+    Sub_PRJ_Tasks: "Project_Tasks",
+    Sub_PRJ_Costs: "Project_Costs",
+    Sub_PRJ_Materials: "Project_Materials",
+    Sub_PRJ_Revenue: "Project_Revenue",
+  };
+  return map[paneId] || paneId.replace(/^Sub_/i, "");
+}
+
+function renderGenericFormPane(container, options = {}) {
+  if (!container) return;
+  const formId = options?.formMeta?.formId;
+  container.innerHTML = "";
+
+  if (!formId) {
+    container.innerHTML =
+      '<p class="muted">لا يوجد نموذج معرف لهذا التبويب حتى الآن.</p>';
+    return;
+  }
+
+  container.dataset.formId = formId;
+  container.innerHTML =
+    '<p class="muted">جارٍ تحميل النموذج الديناميكي، يرجى الانتظار...</p>';
 
   if (!(window.google && google.script && google.script.run)) {
-    paneElement.innerHTML =
-      '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
+    container.innerHTML =
+      '<p class="error-text">خدمة Google Apps Script غير متاحة حالياً.</p>';
     return;
   }
 
   google.script.run
     .withFailureHandler((err) => {
-      console.error("loadGenericTab failed", err);
-      paneElement.innerHTML =
-        '<p class="error-text">تعذر تحميل البيانات.</p>';
+      console.error("getFormWithOptions failed", err);
+      container.innerHTML =
+        '<p class="error-text">تعذر تحميل النموذج الديناميكي.</p>';
     })
-    .withSuccessHandler((result) => {
-      if (formMeta) {
-        renderPaneHeader(paneElement, paneName);
+    .withSuccessHandler((fields) => {
+      if (!Array.isArray(fields) || !fields.length) {
+        container.innerHTML =
+          '<p class="muted">لم يتم العثور على حقول لهذا النموذج.</p>';
+        return;
       }
-      renderGenericTable(paneElement, result);
+      renderGenericDynamicForm(container, fields, options);
     })
-    .getSheetData(trimmedSource);
+    .getFormWithOptions(formId);
 }
-function renderGenericTable(paneElement, data) {
-  if (!paneElement) return;
-  const headers = Array.isArray(data?.headers) ? data.headers : [];
-  const rows = Array.isArray(data?.rows) ? data.rows : [];
 
-          const preservedHeader = paneElement.querySelector(".pane-header");
-          paneElement.innerHTML = "";
-          if (preservedHeader) {
-            paneElement.appendChild(preservedHeader);
-          }
+function renderGenericDynamicForm(container, fields, options = {}) {
+  const formId = options?.formMeta?.formId;
+  container.innerHTML = "";
 
-          if (!headers.length) {
-            const emptyMessage = document.createElement("p");
-            emptyMessage.className = "muted";
-            emptyMessage.textContent = "لا توجد بيانات متاحة للعرض.";
-            paneElement.appendChild(emptyMessage);
+  const heading = document.createElement("h3");
+  heading.className = "pane-header__title";
+  heading.textContent =
+    options?.formMeta?.titleAr || options?.formMeta?.titleEn || "نموذج الإدخال";
+  container.appendChild(heading);
+
+  const form = document.createElement("form");
+  form.className = "generic-form";
+  container.appendChild(form);
+
+  const sections = new Map();
+  fields.forEach((field) => {
+    const sectionKey = field.section || field.Section_Header || "";
+    if (!sections.has(sectionKey)) sections.set(sectionKey, []);
+    sections.get(sectionKey).push(field);
+  });
+
+  sections.forEach((sectionFields, sectionName) => {
+    if (sectionName) {
+      const sectionHeading = document.createElement("h4");
+      sectionHeading.className = "muted";
+      sectionHeading.style.margin = "0.5rem 0";
+      sectionHeading.textContent = sectionName;
+      form.appendChild(sectionHeading);
+    }
+
+    const grid = document.createElement("div");
+    grid.className = "generic-form__grid";
+    form.appendChild(grid);
+
+    sectionFields.forEach((field) => {
+      const wrapper = document.createElement("div");
+      wrapper.className = "generic-form__field";
+      const type = String(field.type || field.Field_Type || "text").toLowerCase();
+      if (type === "paragraph" || type === "textarea") {
+        wrapper.classList.add("generic-form__field--wide");
+      }
+
+      const label = document.createElement("label");
+      label.textContent =
+        field.label || field.Field_Label || field.targetColumn || field.fieldId || "حقل";
+
+      const nameKey = field.targetColumn || field.Target_Column || field.fieldId;
+      let input;
+      if (type === "dropdown") {
+        input = document.createElement("select");
+        const optionsList = Array.isArray(field.options) ? field.options : [];
+        if (!field.required) {
+          const emptyOpt = document.createElement("option");
+          emptyOpt.value = "";
+          emptyOpt.textContent = "";
+          input.appendChild(emptyOpt);
+        }
+        optionsList.forEach((opt) => {
+          const optionEl = document.createElement("option");
+          optionEl.value = opt.value;
+          optionEl.textContent = opt.label || opt.value;
+          input.appendChild(optionEl);
+        });
+      } else if (type === "paragraph" || type === "textarea") {
+        input = document.createElement("textarea");
+        input.rows = 4;
+      } else {
+        input = document.createElement("input");
+        if (type === "date") input.type = "date";
+        else if (type === "number") input.type = "number";
+        else if (type === "auto") input.type = "text";
+        else input.type = type === "email" ? "email" : "text";
+      }
+
+      if (type === "auto") {
+        input.readOnly = true;
+        input.placeholder = "تعبئة تلقائية";
+      }
+
+      if (field.readOnly) {
+        input.readOnly = true;
+        input.setAttribute("aria-readonly", "true");
+      }
+
+      input.name = nameKey || field.fieldId || field.Field_ID || "field";
+      if (field.required) input.required = true;
+      if (field.defaultValue != null && field.defaultValue !== "") {
+        input.value = field.defaultValue;
+      }
+
+      label.appendChild(input);
+      wrapper.appendChild(label);
+      grid.appendChild(wrapper);
+    });
+  });
+
+  const actions = document.createElement("div");
+  actions.className = "generic-form__actions";
+  form.appendChild(actions);
+
+  const submitButton = document.createElement("button");
+  submitButton.type = "submit";
+  submitButton.className = "accent-button";
+  submitButton.textContent = "حفظ";
+  actions.appendChild(submitButton);
+
+  const resetButton = document.createElement("button");
+  resetButton.type = "button";
+  resetButton.className = "ghost-button";
+  resetButton.textContent = "مسح";
+  resetButton.addEventListener("click", () => form.reset());
+  actions.appendChild(resetButton);
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!(window.google && google.script && google.script.run)) {
+      showToast("خدمة Google Apps Script غير متاحة.", "error");
+      return;
+    }
+
+    const formData = new FormData(form);
+    const payload = {};
+    formData.forEach((value, key) => {
+      const inputEl = form.elements.namedItem(key);
+      if (inputEl && inputEl.type === "number") {
+        const numeric = Number(value);
+        payload[key] = Number.isFinite(numeric) ? numeric : value;
+      } else {
+        payload[key] = value;
+      }
+    });
+
+    payload.__pane = options?.paneId || "";
+
+    submitButton.disabled = true;
+    submitButton.textContent = "جارٍ الحفظ...";
+
+    google.script.run
+      .withFailureHandler((err) => {
+        console.error("submitDynamicForm failed", err);
+        submitButton.disabled = false;
+        submitButton.textContent = "حفظ";
+        showToast("تعذر حفظ البيانات.", "error");
+      })
+      .withSuccessHandler((result) => {
+        submitButton.disabled = false;
+        submitButton.textContent = "حفظ";
+        showToast(result?.message || "تم حفظ البيانات بنجاح.", "success");
+        form.reset();
+        if (typeof options.onSubmitted === "function") {
+          options.onSubmitted(result);
+        }
+      })
+      .submitDynamicForm(formId, payload, { paneId: options?.paneId || "" });
+  });
+}
+
+function openGenericRecordModal({ paneId, entityKey, record }) {
+  if (!record || typeof record !== "object") return;
+  const overlay = document.createElement("div");
+  overlay.className = "generic-modal-overlay";
+
+  const dialog = document.createElement("div");
+  dialog.className = "generic-modal";
+  overlay.appendChild(dialog);
+
+  const header = document.createElement("div");
+  header.className = "generic-modal__header";
+  const title = document.createElement("h3");
+  title.className = "generic-modal__title";
+  const label = record.__meta?.label || record.__meta?.recordId || "";
+  title.textContent = label
+    ? `تفاصيل السجل (${label})`
+    : "تفاصيل السجل";
+  header.appendChild(title);
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "ghost-button";
+  closeBtn.textContent = "إغلاق";
+  header.appendChild(closeBtn);
+  dialog.appendChild(header);
+
+  const body = document.createElement("div");
+  body.className = "generic-modal__body";
+  dialog.appendChild(body);
+
+  const list = document.createElement("dl");
+  list.style.display = "grid";
+  list.style.gridTemplateColumns = "minmax(160px, 1fr) minmax(180px, 2fr)";
+  list.style.gap = "0.5rem 1rem";
+  Object.keys(record).forEach((key) => {
+    if (key === "__meta") return;
+    const dt = document.createElement("dt");
+    dt.textContent = key;
+    const dd = document.createElement("dd");
+    const value = record[key];
+    dd.textContent = value == null || value === "" ? "—" : String(value);
+    list.appendChild(dt);
+    list.appendChild(dd);
+  });
+  body.appendChild(list);
+
+  const footer = document.createElement("div");
+  footer.className = "generic-modal__footer";
+  dialog.appendChild(footer);
+  const dismissBtn = document.createElement("button");
+  dismissBtn.type = "button";
+  dismissBtn.className = "ghost-button";
+  dismissBtn.textContent = "إغلاق";
+  footer.appendChild(dismissBtn);
+
+  const closeOverlay = () => {
+    document.removeEventListener("keydown", handleKeydown);
+    overlay.remove();
+  };
+
+  const handleKeydown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeOverlay();
+    }
+  };
+
+  closeBtn.addEventListener("click", closeOverlay);
+  dismissBtn.addEventListener("click", closeOverlay);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeOverlay();
+  });
+  document.addEventListener("keydown", handleKeydown);
+  document.body.appendChild(overlay);
+}
+
+function openAttachmentsModal({
+  paneId,
+  entityKey,
+  recordId,
+  record,
+  onUpdated,
+}) {
+  const normalizedId = String(recordId || "").trim();
+  if (!normalizedId) {
+    showToast("يرجى تحديد معرّف السجل أولاً.", "warning");
+    return;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "generic-modal-overlay";
+  const dialog = document.createElement("div");
+  dialog.className = "generic-modal generic-modal--wide";
+  overlay.appendChild(dialog);
+
+  const header = document.createElement("div");
+  header.className = "generic-modal__header";
+  const title = document.createElement("h3");
+  title.className = "generic-modal__title";
+  title.textContent = `مرفقات السجل (${normalizedId})`;
+  header.appendChild(title);
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "ghost-button";
+  closeBtn.textContent = "إغلاق";
+  header.appendChild(closeBtn);
+  dialog.appendChild(header);
+
+  const body = document.createElement("div");
+  body.className = "generic-modal__body";
+  dialog.appendChild(body);
+
+  const attachmentsList = document.createElement("div");
+  attachmentsList.className = "generic-attachments__list";
+  body.appendChild(attachmentsList);
+
+  const form = document.createElement("form");
+  form.className = "generic-attachments__form";
+  form.innerHTML = `
+    <label>الوصف
+      <input name="Label" type="text" placeholder="مثال: عقد موقّع" />
+    </label>
+    <label>اسم الملف
+      <input name="File_Name" type="text" placeholder="Contract.pdf" />
+    </label>
+    <label>معرّف ملف Drive
+      <input name="Drive_File_ID" type="text" placeholder="1AbC..." />
+    </label>
+    <label>رابط المرفق
+      <input name="Drive_URL" type="url" placeholder="https://drive.google.com/..." />
+    </label>
+    <div class="generic-attachments__actions">
+      <button type="submit" class="accent-button">حفظ المرفق</button>
+      <button type="button" class="ghost-button" data-action="reset">مسح</button>
+    </div>
+  `;
+  body.appendChild(form);
+
+  const footer = document.createElement("div");
+  footer.className = "generic-modal__footer";
+  const closeFooterBtn = document.createElement("button");
+  closeFooterBtn.type = "button";
+  closeFooterBtn.className = "ghost-button";
+  closeFooterBtn.textContent = "إغلاق";
+  footer.appendChild(closeFooterBtn);
+  dialog.appendChild(footer);
+
+  const closeOverlay = () => {
+    document.removeEventListener("keydown", handleKeydown);
+    overlay.remove();
+  };
+
+  const handleKeydown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeOverlay();
+    }
+  };
+
+  closeBtn.addEventListener("click", closeOverlay);
+  closeFooterBtn.addEventListener("click", closeOverlay);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeOverlay();
+  });
+  document.addEventListener("keydown", handleKeydown);
+  document.body.appendChild(overlay);
+
+  const renderAttachments = (attachments) => {
+    attachmentsList.innerHTML = "";
+    const items = Array.isArray(attachments) ? attachments : [];
+    if (!items.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "لا توجد مرفقات مسجلة لهذا السجل.";
+      attachmentsList.appendChild(empty);
+      return;
+    }
+
+    items.forEach((item) => {
+      const card = document.createElement("div");
+      card.className = "generic-attachments__item";
+      const info = document.createElement("div");
+      info.innerHTML = `<strong>${
+        item?.Label || item?.File_Name || "مرفق"
+      }</strong><br/><small>${item?.Drive_File_ID || ""}</small>`;
+      card.appendChild(info);
+
+      const controls = document.createElement("div");
+      controls.className = "generic-attachments__actions";
+      if (item?.Drive_URL) {
+        const openBtn = document.createElement("a");
+        openBtn.href = item.Drive_URL;
+        openBtn.target = "_blank";
+        openBtn.rel = "noopener";
+        openBtn.className = "ghost-button ghost-button--small";
+        openBtn.textContent = "فتح";
+        controls.appendChild(openBtn);
+      }
+
+      if (item?.Doc_ID) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "ghost-button ghost-button--small";
+        deleteBtn.textContent = "حذف";
+        deleteBtn.addEventListener("click", () => {
+          if (
+            !(window.google && google.script && google.script.run) ||
+            !window.confirm("هل أنت متأكد من حذف هذا المرفق؟")
+          ) {
             return;
           }
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("deleteAttachmentRecord failed", err);
+              showToast("تعذر حذف المرفق.", "error");
+            })
+            .withSuccessHandler(() => {
+              showToast("تم حذف المرفق.", "success");
+              loadAttachments();
+              if (typeof onUpdated === "function") onUpdated();
+            })
+            .deleteAttachmentRecord(item.Doc_ID);
+        });
+        controls.appendChild(deleteBtn);
+      }
 
-          const table = document.createElement("table");
-          table.className = "sys-table";
+      card.appendChild(controls);
+      attachmentsList.appendChild(card);
+    });
+  };
 
-          const thead = document.createElement("thead");
-          const headerRow = document.createElement("tr");
-          headers.forEach((header) => {
-            const th = document.createElement("th");
-            th.textContent = header;
-            headerRow.appendChild(th);
-          });
-          thead.appendChild(headerRow);
+  const loadAttachments = () => {
+    attachmentsList.innerHTML =
+      '<p class="muted">جارٍ تحميل المرفقات، يرجى الانتظار...</p>';
+    if (!(window.google && google.script && google.script.run)) {
+      attachmentsList.innerHTML =
+        '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
+      return;
+    }
+    google.script.run
+      .withFailureHandler((err) => {
+        console.error("getAttachmentsForEntity failed", err);
+        attachmentsList.innerHTML =
+          '<p class="error-text">تعذر تحميل قائمة المرفقات.</p>';
+      })
+      .withSuccessHandler((list) => {
+        renderAttachments(list);
+      })
+      .getAttachmentsForEntity(normalizedId, entityKey);
+  };
 
-          const tbody = document.createElement("tbody");
-          rows.forEach((row) => {
-            const tr = document.createElement("tr");
-            headers.forEach((_, index) => {
-              const td = document.createElement("td");
-              const value = Array.isArray(row) ? row[index] : row?.[index];
-              if (value === true || value === false) {
-                td.innerHTML = renderBooleanBadge(value);
-              } else if (
-                typeof value === "string" &&
-                /^(true|false|yes|no|y|n|1|0)$/i.test(value.trim())
-              ) {
-                td.innerHTML = renderBooleanBadge(value);
-              } else if (value instanceof Date) {
-                td.textContent = formatDateTime(value);
-              } else if (
-                typeof value === "string" &&
-                /^\d{4}-\d{2}-\d{2}T/.test(value)
-              ) {
-                td.textContent = formatDateTime(value);
-              } else {
-                td.innerHTML = escapeHtml(value == null ? "" : String(value));
-              }
-              tr.appendChild(td);
-            });
-            tbody.appendChild(tr);
-          });
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!(window.google && google.script && google.script.run)) {
+      showToast("خدمة Google Apps Script غير متاحة.", "error");
+      return;
+    }
+    const formData = new FormData(form);
+    const payload = {
+      Entity: entityKey,
+      Entity_ID: normalizedId,
+    };
+    formData.forEach((value, key) => {
+      payload[key] = value;
+    });
 
-          table.appendChild(thead);
-          table.appendChild(tbody);
-  paneElement.appendChild(table);
+    const submitBtn = form.querySelector("button[type='submit']");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "جارٍ الحفظ...";
+    }
+
+    google.script.run
+      .withFailureHandler((err) => {
+        console.error("saveAttachmentRecord failed", err);
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "حفظ المرفق";
+        }
+        showToast("تعذر حفظ المرفق.", "error");
+      })
+      .withSuccessHandler(() => {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "حفظ المرفق";
+        }
+        showToast("تم حفظ المرفق بنجاح.", "success");
+        form.reset();
+        loadAttachments();
+        if (typeof onUpdated === "function") onUpdated();
+      })
+      .saveAttachmentRecord(payload);
+  });
+
+  const resetBtn = form.querySelector("button[data-action='reset']");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => form.reset());
+  }
+
+  loadAttachments();
 }
 
 function renderMaterialsModule(paneElement) {
@@ -3480,8 +4384,34 @@ function renderMaterialsModule(paneElement) {
   paneElement.classList.add("materials-catalog-pane");
   paneElement.innerHTML = "";
 
+  let viewContainer;
+
+  const handleUpload = () => {
+    const targetId = window.prompt(
+      "أدخل معرّف المادة لإدارة مرفقاتها:",
+      ""
+    );
+    if (!targetId) return;
+    openAttachmentsModal({
+      paneId: paneName,
+      entityKey: resolveEntityKeyForPane(paneName),
+      recordId: targetId.trim(),
+      record: null,
+      onUpdated: () => loadMaterialsViewData(viewContainer, { formId, reload: true }),
+    });
+  };
+
   try {
-    renderPaneHeader(paneElement, paneName);
+    renderPaneHeader(paneElement, paneName, {
+      formMeta,
+      onAdd: () => activateTab("add"),
+      onRefresh: () =>
+        loadMaterialsViewData(viewContainer, {
+          formId,
+          reload: true,
+        }),
+      onUpload: handleUpload,
+    });
   } catch (err) {
     console.warn("[renderMaterialsModule] unable to render pane header", err);
   }
@@ -3506,7 +4436,7 @@ function renderMaterialsModule(paneElement) {
   addTab.textContent = "إضافة مادة";
   tabs.appendChild(addTab);
 
-  const viewContainer = document.createElement("div");
+  viewContainer = document.createElement("div");
   viewContainer.id = "mat-view-content";
   viewContainer.className = "materials-module__section";
   viewContainer.dataset.viewLoaded = "false";
@@ -4567,26 +5497,24 @@ function renderMaterialsTable(container, data, options = {}) {
 }
 
 
-function renderPaneHeader(paneElement, paneName) {
+function renderPaneHeader(paneElement, paneName, options = {}) {
   if (!paneElement) return;
 
   const formsRegister =
     (bootstrapData && bootstrapData.forms) || Object.create(null);
-  const formEntry = formsRegister?.[paneName];
+  const formEntry = options.formMeta || formsRegister?.[paneName] || null;
 
-  // Developer diagnostics
   if (window.console) {
     console.log(`[renderPaneHeader] lookup`, {
       paneName,
       hasForms: Boolean(formsRegister),
       availableForms: Object.keys(formsRegister),
       formEntry,
+      options,
     });
   }
 
   const formId = formEntry?.formId;
-  if (!formId) return;
-
   let header = paneElement.querySelector(".pane-header");
   if (!header) {
     header = document.createElement("div");
@@ -4594,53 +5522,98 @@ function renderPaneHeader(paneElement, paneName) {
     paneElement.prepend(header);
   }
 
-  header.dataset.formId = formId;
   header.innerHTML = "";
+  if (formId) header.dataset.formId = formId;
 
-  const addButton = document.createElement("button");
-  addButton.type = "button";
-  addButton.className = "accent-button";
-  addButton.textContent = "إضافة جديد";
+  const title = document.createElement("div");
+  title.className = "pane-header__title";
+  title.textContent =
+    formEntry?.titleAr || formEntry?.titleEn || "إدارة السجل";
+  header.appendChild(title);
 
-  // Flexible renderForm handler resolution
-  const renderFormHandler =
-    (typeof window !== "undefined" && window.renderForm) ||
-    (typeof window !== "undefined" &&
-      window.app &&
-      typeof window.app.renderForm === "function" &&
-      window.app.renderForm) ||
-    (typeof window !== "undefined" &&
-      window.forms &&
-      typeof window.forms.renderForm === "function" &&
-      window.forms.renderForm);
+  const buttonGroup = document.createElement("div");
+  buttonGroup.className = "pane-header__buttons";
+  header.appendChild(buttonGroup);
 
-  if (typeof renderFormHandler === "function") {
-    const context =
-      (typeof window !== "undefined" && window.app) ||
-      (typeof window !== "undefined" && window.forms) ||
-      window;
-    addButton.addEventListener("click", () => {
-      if (window.console) {
-        console.log("[renderPaneHeader] Add New button clicked", {
-          paneName,
-          formId,
-        });
-      }
-      renderFormHandler.call(context, formId, null);
+  const attachButton = document.createElement("button");
+  attachButton.type = "button";
+  attachButton.className = "ghost-button";
+  attachButton.textContent = "تحميل المرفقات";
+  if (typeof options.onUpload === "function") {
+    attachButton.addEventListener("click", (event) => {
+      options.onUpload.call(paneElement, event);
     });
   } else {
-    addButton.addEventListener("click", () => {
-      console.warn("renderForm handler is not available", {
-        formId,
-        windowHasRenderForm:
-          typeof window !== "undefined" &&
-          typeof window.renderForm === "function",
-      });
-      showToast("ميزة النماذج غير متاحة حالياً.", "warning");
+    attachButton.addEventListener("click", () => {
+      showToast("لم يتم تفعيل إدارة المرفقات لهذا التبويب.", "info");
     });
   }
+  buttonGroup.appendChild(attachButton);
 
-  header.appendChild(addButton);
+  const refreshButton = document.createElement("button");
+  refreshButton.type = "button";
+  refreshButton.className = "ghost-button";
+  refreshButton.textContent = "تحديث البيانات";
+  if (typeof options.onRefresh === "function") {
+    refreshButton.addEventListener("click", (event) => {
+      options.onRefresh.call(paneElement, event);
+    });
+  } else {
+    refreshButton.disabled = true;
+  }
+  buttonGroup.appendChild(refreshButton);
+
+  if (formId) {
+    const addButton = document.createElement("button");
+    addButton.type = "button";
+    addButton.className = "accent-button";
+    addButton.textContent = "إضافة جديد";
+
+    if (typeof options.onAdd === "function") {
+      addButton.addEventListener("click", (event) => {
+        options.onAdd.call(paneElement, event);
+      });
+    } else {
+      const renderFormHandler =
+        (typeof window !== "undefined" && window.renderForm) ||
+        (typeof window !== "undefined" &&
+          window.app &&
+          typeof window.app.renderForm === "function" &&
+          window.app.renderForm) ||
+        (typeof window !== "undefined" &&
+          window.forms &&
+          typeof window.forms.renderForm === "function" &&
+          window.forms.renderForm);
+
+      if (typeof renderFormHandler === "function") {
+        const context =
+          (typeof window !== "undefined" && window.app) ||
+          (typeof window !== "undefined" && window.forms) ||
+          window;
+        addButton.addEventListener("click", () => {
+          if (window.console) {
+            console.log("[renderPaneHeader] Add New button clicked", {
+              paneName,
+              formId,
+            });
+          }
+          renderFormHandler.call(context, formId, null);
+        });
+      } else {
+        addButton.addEventListener("click", () => {
+          console.warn("renderForm handler is not available", {
+            formId,
+            windowHasRenderForm:
+              typeof window !== "undefined" &&
+              typeof window.renderForm === "function",
+          });
+          showToast("ميزة النماذج غير متاحة حالياً.", "warning");
+        });
+      }
+    }
+
+    buttonGroup.appendChild(addButton);
+  }
 }
 function renderDirectExpenseShell(paneElement) {
   if (!paneElement) return;
