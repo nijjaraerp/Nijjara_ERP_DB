@@ -1612,6 +1612,84 @@ function setupERPAllSheets() {
   seedCoreData();
   Logger.log("✅ Full ERP Setup Completed.");
 }
+
+/**
+ * Audit and seed missing sheets and data in the target spreadsheet.
+ * Scans the workbook for every sheet defined in getSheetSchemas() and creates it if missing.
+ * Ensures the header row matches the schema definition.
+ * After structural audit, calls seedCoreData() and other seeding helpers to populate
+ * baseline data (SYS_Tab_Register, SYS_Dynamic_Forms, SYS_Dropdowns, etc.).
+ * All create/seed operations are logged via logSetupAction for auditability.
+ */
+function logSetupAction(action, entity, targetSheet, details) {
+  try {
+    const ss = getTargetSpreadsheet();
+    const logSheet = ss.getSheetByName('SYS_Audit_Log');
+    const nowIso = new Date().toISOString();
+    // [Timestamp, User, Action, Details, Entity, Entity_Id, Scope, Sheet, Target_Id, Actor_Id]
+    logSheet.appendRow([
+      nowIso,
+      SYSTEM_USER,
+      action,
+      details,
+      entity,
+      '',
+      'SYSTEM',
+      targetSheet,
+      '',
+      SYSTEM_USER,
+    ]);
+  } catch (err) {
+    Logger.log(`logSetupAction failed: ${err}`);
+  }
+}
+
+function auditAndSeedERP() {
+  const ss = getTargetSpreadsheet();
+  const schemas = getSheetSchemas();
+  const created = [];
+  Object.keys(schemas).forEach(function (name) {
+    let sheet = ss.getSheetByName(name);
+    const headers = schemas[name];
+    if (!sheet) {
+      // Sheet missing: create and set headers
+      sheet = ss.insertSheet(name);
+      sheet
+        .getRange(1, 1, 1, headers.length)
+        .setValues([headers])
+        .setFontWeight('bold')
+        .setBackground('#E0E0E0');
+      created.push(name);
+      logSetupAction('CREATE_SHEET', name, name, 'Created missing sheet and set headers');
+    } else {
+      // Check header row; update if mismatched length or labels
+      const existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+      let mismatch = existing.length !== headers.length;
+      if (!mismatch) {
+        for (var i = 0; i < headers.length; i++) {
+          if (existing[i] !== headers[i]) {
+            mismatch = true;
+            break;
+          }
+        }
+      }
+      if (mismatch) {
+        sheet
+          .getRange(1, 1, 1, headers.length)
+          .setValues([headers])
+          .setFontWeight('bold')
+          .setBackground('#E0E0E0');
+        logSetupAction('UPDATE_HEADERS', name, name, 'Updated header row to match schema');
+      }
+    }
+  });
+  // Seed missing data using existing seeder functions (idempotent)
+  seedCoreData();
+  seedProjectFormAndDropdowns();
+  seedHrDepartments(ss);
+  Logger.log('✅ Audit and seeding complete. Created sheets: ' + created.join(', '));
+  return created;
+}
 /** ---------- Seed Admin User ---------- **/
 function seedAdminUser(ss) {
   const sh = ss.getSheetByName("SYS_Users");
