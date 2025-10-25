@@ -473,8 +473,9 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.75rem;
+        gap: 1.2rem;
         padding: 1rem 0 0.5rem;
+        width: 100%;
       }
       .pane-mode-switch {
         display: inline-flex;
@@ -482,15 +483,17 @@
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
+        width: 100%;
       }
       .pane-mode-button {
-        min-width: 140px;
-        padding: 0.7rem 1.6rem;
+        min-width: 170px;
+        padding: 0.85rem 2.2rem;
         border-radius: 999px;
         border: 1px solid var(--theme-accent-24);
         background: rgba(255, 255, 255, 0.04);
         color: var(--color-text-secondary);
-        font-weight: 600;
+        font-weight: 700;
+        font-size: 1.05rem;
         text-align: center;
         transition: background 0.25s ease, color 0.25s ease,
           box-shadow 0.25s ease, border-color 0.25s ease;
@@ -539,6 +542,7 @@
         gap: 0.6rem;
         flex-wrap: wrap;
         justify-content: center;
+        width: 100%;
       }
       .pane-bulk-actions .ghost-button,
       .pane-bulk-actions .accent-button {
@@ -671,11 +675,20 @@
         grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.5fr);
         gap: 1.25rem;
         align-items: start;
+        width: 100%;
       }
       @media (max-width: 980px) {
         .generic-pane__body {
           grid-template-columns: 1fr;
         }
+      }
+      .sys-pane[data-mode="list"] .generic-pane__body,
+      .sys-pane[data-mode="form"] .generic-pane__body {
+        grid-template-columns: 1fr;
+      }
+      .sys-pane[data-mode="list"] .generic-pane__view,
+      .sys-pane[data-mode="form"] .generic-pane__form {
+        width: 100%;
       }
       .generic-pane__view {
         min-height: 240px;
@@ -1695,15 +1708,19 @@
       /* Toasts (app views) */
       body > .toast-container {
         position: fixed;
-        top: 16px;
-        inset-inline-end: 16px;
-        inset-inline-start: auto;
-        transform: none;
-        margin-top: 0;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
         display: flex;
         flex-direction: column;
-        gap: 0.6rem;
+        align-items: center;
+        gap: 0.75rem;
         z-index: 10000;
+        width: min(90vw, 420px);
+        pointer-events: none;
+      }
+      body > .toast-container .toast {
+        pointer-events: auto;
       }
       .toast {
         min-width: 260px;
@@ -3402,15 +3419,20 @@ select:focus {
               rawEntry.TabId ||
               rawEntry.tabID ||
               "";
-            if (!isSysManagementTab(tabId)) return;
+            const normalizedTabId = String(tabId || "").trim();
+            if (!isSysManagementTab(normalizedTabId)) return;
 
             const paneName = rawEntry.pane || derivePaneNameFromEntry(rawEntry);
             const subId = rawEntry.subId || rawEntry.Sub_ID || rawEntry.subID || "";
-            if (!paneName && !subId) return;
+            const normalizedSubId = subId ? String(subId).trim() : "";
+            const normalizedPane = String(
+              paneName || (normalizedSubId ? normalizedSubId : "")
+            ).trim();
+            if (!normalizedPane && !normalizedSubId) return;
 
             const normalized = {
-              tabId: tabId || "Tab_SYS_Management",
-              subId: subId ? String(subId) : paneName,
+              tabId: normalizedTabId || "Tab_SYS_Management",
+              subId: normalizedSubId || normalizedPane,
               labelAr:
                 rawEntry.labelAr ||
                 rawEntry.Sub_Label_AR ||
@@ -3427,11 +3449,11 @@ select:focus {
               sortOrder: toNumberOrNull(
                 rawEntry.sortOrder ?? rawEntry.Sort_Order ?? rawEntry.order
               ),
-              pane: paneName || (subId ? String(subId) : ""),
+              pane: normalizedPane,
             };
 
             if (!normalized.pane) return;
-            const key = normalized.subId || normalized.pane;
+            const key = (normalized.subId || normalized.pane || "").trim();
             if (!key) return;
 
             if (!map.has(key)) {
@@ -3937,7 +3959,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
       renderMaterialsModule(paneElement);
     } else {
       paneElement.innerHTML =
-        '<p class="error-text">????? ?????? ?????? ??? ????? ??????.</p>';
+        '<p class="error-text">تعذّر تحميل وحدة المواد، يرجى المحاولة لاحقًا.</p>';
     }
     return;
   }
@@ -3947,7 +3969,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
       renderDirectExpenseShell(paneElement);
     } else {
       paneElement.innerHTML =
-        '<p class="error-text">????? ????????? ??? ????? ??????.</p>';
+        '<p class="error-text">تعذّر تحميل وحدة المصروفات، يرجى المحاولة لاحقًا.</p>';
     }
     return;
   }
@@ -4050,14 +4072,6 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
         entityKey,
         formMeta,
         selection,
-        onAttachments: (recordId, record) =>
-          openAttachmentsModal({
-            paneId,
-            entityKey,
-            recordId,
-            record,
-            onUpdated: fetchData,
-          }),
         onViewRecord: (record) =>
           openGenericRecordModal({ paneId, entityKey, record }),
       }
@@ -4082,7 +4096,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
       paneState.rows = [];
       paneState.filteredRows = [];
       viewContainer.innerHTML =
-        '<p class="error-text">?? ??? ????? ???? ?????? ???? ???????.</p>';
+        '<p class="error-text">لا يوجد مصدر بيانات معرف لهذا التبويب.</p>';
       updatePaneSearchOptions(scaffold, paneState);
       updatePaneSelectionSummary(scaffold, paneState);
       return;
@@ -4090,18 +4104,18 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
 
     if (!hasGoogleRunner) {
       viewContainer.innerHTML =
-        '<p class="error-text">???? Google Apps Script ??? ?????.</p>';
+        '<p class="error-text">خدمة Google Apps Script غير متاحة حاليًا.</p>';
       return;
     }
 
     viewContainer.innerHTML =
-      '<p class="muted">???? ????? ????????? ???? ????????...</p>';
+      '<p class="muted">جارٍ تحميل البيانات من الخادم...</p>';
 
     const runner = google.script.run
       .withFailureHandler((err) => {
         console.error("loadGenericTab failed", err);
         viewContainer.innerHTML =
-          '<p class="error-text">???? ????? ????????.</p>';
+          '<p class="error-text">تعذّر تحميل البيانات.</p>';
       })
       .withSuccessHandler((result) => {
         paneState.headers = Array.isArray(result?.headers)
@@ -4118,21 +4132,6 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
       runner.getSheetData(trimmedSource);
     }
   }
-
-  const handleUploadAction = () => {
-    const recordId = window.prompt(
-      "???? ????? ????? ???? ???? ?? ??? ???????? ??:",
-      ""
-    );
-    if (!recordId) return;
-    openAttachmentsModal({
-      paneId,
-      entityKey,
-      recordId: recordId.trim(),
-      record: null,
-      onUpdated: fetchData,
-    });
-  };
 
   if (listButton && !listButton.dataset.bound) {
     listButton.dataset.bound = "true";
@@ -4232,7 +4231,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
       paneElement.dispatchEvent(
         new CustomEvent("pane:bulk-action", { detail })
       );
-      showToast(`?? ????? ${count} ??? ???????? ?????.`, "success");
+      showToast(`تم تحديد ${count} سجل من النتائج المعروضة.`, "success");
     });
   }
 
@@ -4240,7 +4239,6 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
     formMeta,
     onAdd: () => setPaneMode(paneElement, paneState, "form"),
     onRefresh: fetchData,
-    onUpload: handleUploadAction,
     hideAddButton: true,
   });
 
@@ -4272,7 +4270,7 @@ function renderGenericTable(container, data, options = {}) {
   if (!headers.length) {
     const emptyMessage = document.createElement("p");
     emptyMessage.className = "muted";
-    emptyMessage.textContent = "?? ???? ?????? ????? ?????.";
+    emptyMessage.textContent = "لا توجد بيانات متاحة بعد.";
     container.appendChild(emptyMessage);
     return;
   }
@@ -4293,7 +4291,7 @@ function renderGenericTable(container, data, options = {}) {
 
   const actionsTh = document.createElement("th");
   actionsTh.className = "generic-table__actions-header";
-  actionsTh.textContent = "???????";
+  actionsTh.textContent = "الإجراءات";
   headerRow.appendChild(actionsTh);
 
   headers.forEach((header) => {
@@ -4341,7 +4339,8 @@ function renderGenericTable(container, data, options = {}) {
     const viewBtn = document.createElement("button");
     viewBtn.type = "button";
     viewBtn.className = "ghost-button ghost-button--small";
-    viewBtn.textContent = "???";
+    viewBtn.textContent = "عرض التفاصيل";
+    viewBtn.title = "عرض التفاصيل";
     viewBtn.addEventListener("click", () => {
       if (typeof options.onViewRecord === "function") {
         options.onViewRecord(
@@ -4350,17 +4349,6 @@ function renderGenericTable(container, data, options = {}) {
       }
     });
     actionWrapper.appendChild(viewBtn);
-
-    const attachBtn = document.createElement("button");
-    attachBtn.type = "button";
-    attachBtn.className = "ghost-button ghost-button--small";
-    attachBtn.textContent = "??????";
-    attachBtn.addEventListener("click", () => {
-      if (typeof options.onAttachments === "function") {
-        options.onAttachments(metadata.recordId, record);
-      }
-    });
-    actionWrapper.appendChild(attachBtn);
 
     actionCell.appendChild(actionWrapper);
     tr.appendChild(actionCell);
@@ -6608,20 +6596,22 @@ function renderPaneHeader(paneElement, paneName, options = {}) {
   buttonGroup.className = "pane-header__buttons";
   header.appendChild(buttonGroup);
 
-  const attachButton = document.createElement("button");
-  attachButton.type = "button";
-  attachButton.className = "ghost-button";
-  attachButton.textContent = "تحميل المرفقات";
-  if (typeof options.onUpload === "function") {
-    attachButton.addEventListener("click", (event) => {
-      options.onUpload.call(paneElement, event);
-    });
-  } else {
-    attachButton.addEventListener("click", () => {
-      showToast("لم يتم تفعيل إدارة المرفقات لهذا التبويب.", "info");
-    });
+  if (options.enableAttachments) {
+    const attachButton = document.createElement("button");
+    attachButton.type = "button";
+    attachButton.className = "ghost-button";
+    attachButton.textContent = "تحميل المرفقات";
+    if (typeof options.onUpload === "function") {
+      attachButton.addEventListener("click", (event) => {
+        options.onUpload.call(paneElement, event);
+      });
+    } else {
+      attachButton.addEventListener("click", () => {
+        showToast("لم يتم تفعيل إدارة المرفقات لهذا التبويب.", "info");
+      });
+    }
+    buttonGroup.appendChild(attachButton);
   }
-  buttonGroup.appendChild(attachButton);
 
   const refreshButton = document.createElement("button");
   refreshButton.type = "button";
