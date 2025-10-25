@@ -119,6 +119,27 @@ function ensureSheetsAvailable(ss, sheetNames, contextLabel) {
   return true;
 }
 
+function columnToLetter(columnNumber) {
+  let column = Number(columnNumber) || 0;
+  if (column <= 0) return "A";
+  let letter = "";
+  while (column > 0) {
+    const remainder = ((column - 1) % 26) + 65;
+    letter = String.fromCharCode(remainder) + letter;
+    column = Math.floor((column - 1) / 26);
+  }
+  return letter;
+}
+
+function applyFormulaToViewSheet(sheet, formula) {
+  if (!sheet) return;
+  const maxRows = sheet.getMaxRows();
+  if (maxRows > 1) {
+    sheet.getRange(2, 1, maxRows - 1, sheet.getMaxColumns()).clearContent();
+  }
+  sheet.getRange(2, 1).setFormula(formula);
+}
+
 /** ---------- SCHEMA ---------- **/
 function getSheetSchemas() {
   const schemas = {
@@ -1060,7 +1081,7 @@ function seedSysTabRegister(ss) {
       "قائمة المشاريع",
       "/projects",
       1,
-      "PRJ_Main",
+      "PV_PRJ_Main",
       "PRJ_VIEW_PROJECTS",
     ],
     [
@@ -1073,7 +1094,7 @@ function seedSysTabRegister(ss) {
       "المهام",
       "/projects/tasks",
       2,
-      "PRJ_Tasks",
+      "PV_PRJ_Tasks",
       "PRJ_VIEW_PROJECTS",
     ],
     [
@@ -1112,7 +1133,7 @@ function seedSysTabRegister(ss) {
       "الإيرادات",
       "/projects/revenue",
       5,
-      "FIN_Project_Revenue",
+      "PV_FIN_Project_Revenue_View",
       "PRJ_VIEW_PROJECTS",
     ],
     [
@@ -1242,7 +1263,7 @@ function seedSysTabRegister(ss) {
       "المؤشرات الرئيسية",
       "/fin/kpis",
       9,
-      "FIN_KPIs",
+      "PV_FIN_KPIs",
       "FIN_VIEW_REPORTS",
     ],
     [
@@ -1268,7 +1289,7 @@ function seedSysTabRegister(ss) {
       "الموظفون",
       "/hr/employees",
       1,
-      "HR_Employees",
+      "PV_HR_Employees",
       "HR_VIEW_EMPLOYEES",
     ],
     [
@@ -1281,7 +1302,7 @@ function seedSysTabRegister(ss) {
       "الحضور",
       "/hr/attendance",
       2,
-      "HR_Attendance",
+      "PV_HR_Attendance",
       "HR_VIEW_EMPLOYEES",
     ],
     [
@@ -1294,7 +1315,7 @@ function seedSysTabRegister(ss) {
       "الإجازات",
       "/hr/leave",
       3,
-      "HR_Leave",
+      "PV_HR_Leave",
       "HR_VIEW_EMPLOYEES",
     ],
     [
@@ -1307,7 +1328,7 @@ function seedSysTabRegister(ss) {
       "طلبات الإجازة",
       "/hr/leave-requests",
       4,
-      "HR_Leave_Requests",
+      "PV_HR_Leave_Requests",
       "HR_VIEW_EMPLOYEES",
     ],
     [
@@ -1320,7 +1341,7 @@ function seedSysTabRegister(ss) {
       "السلف",
       "/hr/advances",
       5,
-      "HR_Advances",
+      "PV_HR_Advances",
       "HR_VIEW_EMPLOYEES",
     ],
     [
@@ -1333,7 +1354,7 @@ function seedSysTabRegister(ss) {
       "الخصومات",
       "/hr/deductions",
       6,
-      "HR_Deductions",
+      "PV_HR_Deductions",
       "HR_VIEW_EMPLOYEES",
     ],
     [
@@ -1346,7 +1367,7 @@ function seedSysTabRegister(ss) {
       "الرواتب",
       "/hr/payroll",
       7,
-      "HR_Payroll",
+      "PV_HR_Payroll",
       "HR_VIEW_EMPLOYEES",
     ],
   ];
@@ -7661,6 +7682,7 @@ function seedAllModules(ss) {
 
   seedHrDepartments(workbook);
   seedHrFormAndDropdowns(workbook);
+  seedHrViewSheets(workbook);
   seedHrViews(workbook);
 
   Logger.log('✅ All modules seeded successfully.');
@@ -7669,13 +7691,17 @@ function seedAllModules(ss) {
 // Internal helper invoked by seedAllModules to refresh PV_FIN_* sheets.
 function seedFinanceViewSheets(ss) {
   try {
-    const direct = ss.getSheetByName('PV_FIN_DirectExpenses_View');
-    if (direct && ensureSheetsAvailable(ss, ['FIN_DirectExpenses', 'PRJ_Main'], 'PV_FIN_DirectExpenses_View')) {
-      const maxRows = direct.getMaxRows();
-      if (maxRows > 1) {
-        direct.getRange(2, 1, maxRows - 1, direct.getMaxColumns()).clearContent();
-      }
-      const directFormula = `=QUERY({
+    const workbook = ss || getTargetSpreadsheet();
+    if (!workbook) {
+      Logger.log('seedFinanceViewSheets skipped: workbook unavailable.');
+      return;
+    }
+
+    const financeViewConfigs = [
+      {
+        sheetName: 'PV_FIN_DirectExpenses_View',
+        dependencies: ['FIN_DirectExpenses', 'PRJ_Main'],
+        formula: `=QUERY({
   FIN_DirectExpenses!A2:A,
   FIN_DirectExpenses!C2:C,
   FIN_DirectExpenses!B2:B,
@@ -7701,18 +7727,12 @@ function seedFinanceViewSheets(ss) {
   FIN_DirectExpenses!U2:U
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14,Col15,Col16,Col17,Col18,Col19,Col20,Col21,Col22,Col23 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 '', Col15 '', Col16 '', Col17 '', Col18 '', Col19 '', Col20 '', Col21 '', Col22 '', Col23 ''",
-0)`;
-      direct.getRange(2, 1).setFormula(directFormula);
-      Logger.log('✅ PV_FIN_DirectExpenses_View query seeded.');
-    }
-
-    const indirectRep = ss.getSheetByName('PV_FIN_InDirExpense_Repeated_View');
-    if (indirectRep && ensureSheetsAvailable(ss, ['FIN_InDirExpense_Repeated'], 'PV_FIN_InDirExpense_Repeated_View')) {
-      const maxRows = indirectRep.getMaxRows();
-      if (maxRows > 1) {
-        indirectRep.getRange(2, 1, maxRows - 1, indirectRep.getMaxColumns()).clearContent();
-      }
-      const indirectRepFormula = `=QUERY({
+0)`
+      },
+      {
+        sheetName: 'PV_FIN_InDirExpense_Repeated_View',
+        dependencies: ['FIN_InDirExpense_Repeated'],
+        formula: `=QUERY({
   FIN_InDirExpense_Repeated!A2:A,
   FIN_InDirExpense_Repeated!B2:B,
   FIN_InDirExpense_Repeated!C2:C,
@@ -7730,18 +7750,12 @@ function seedFinanceViewSheets(ss) {
   FIN_InDirExpense_Repeated!P2:P
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14,Col15 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 '', Col15 ''",
-0)`;
-      indirectRep.getRange(2, 1).setFormula(indirectRepFormula);
-      Logger.log('✅ PV_FIN_InDirExpense_Repeated_View query seeded.');
-    }
-
-    const indirectOnce = ss.getSheetByName('PV_FIN_InDirExpense_Once_View');
-    if (indirectOnce && ensureSheetsAvailable(ss, ['FIN_InDirExpense_Once'], 'PV_FIN_InDirExpense_Once_View')) {
-      const maxRows = indirectOnce.getMaxRows();
-      if (maxRows > 1) {
-        indirectOnce.getRange(2, 1, maxRows - 1, indirectOnce.getMaxColumns()).clearContent();
-      }
-      const indirectOnceFormula = `=QUERY({
+0)`
+      },
+      {
+        sheetName: 'PV_FIN_InDirExpense_Once_View',
+        dependencies: ['FIN_InDirExpense_Once'],
+        formula: `=QUERY({
   FIN_InDirExpense_Once!A2:A,
   FIN_InDirExpense_Once!B2:B,
   FIN_InDirExpense_Once!C2:C,
@@ -7758,21 +7772,14 @@ function seedFinanceViewSheets(ss) {
   FIN_InDirExpense_Once!O2:O
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 ''",
-0)`;
-      indirectOnce.getRange(2, 1).setFormula(indirectOnceFormula);
-      Logger.log('✅ PV_FIN_InDirExpense_Once_View query seeded.');
-    }
-
-    const projRev = ss.getSheetByName('PV_FIN_Project_Revenue_View');
-    if (projRev && ensureSheetsAvailable(ss, ['FIN_Project_Revenue', 'PRJ_Main'], 'PV_FIN_Project_Revenue_View')) {
-      const maxRows = projRev.getMaxRows();
-      if (maxRows > 1) {
-        projRev.getRange(2, 1, maxRows - 1, projRev.getMaxColumns()).clearContent();
-      }
-      const projRevFormula = `=QUERY({
+0)`
+      },
+      {
+        sheetName: 'PV_FIN_Project_Revenue_View',
+        dependencies: ['FIN_Project_Revenue', 'PRJ_Main'],
+        formula: `=QUERY({
   FIN_Project_Revenue!A2:A,
   FIN_Project_Revenue!B2:B,
-  IFERROR(VLOOKUP(FIN_Project_Revenue!B2:B, PRJ_Main!A:B, 2, FALSE), ""),
   FIN_Project_Revenue!C2:C,
   FIN_Project_Revenue!D2:D,
   FIN_Project_Revenue!E2:E,
@@ -7786,25 +7793,12 @@ function seedFinanceViewSheets(ss) {
   FIN_Project_Revenue!M2:M
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 ''",
-0)`;
-      projRev.getRange(2, 1).setFormula(projRevFormula);
-      Logger.log('✅ PV_FIN_Project_Revenue_View query seeded.');
-    }
-
-    const revenues = ss.getSheetByName('PV_FIN_Revenues_View');
-    if (
-      revenues &&
-      ensureSheetsAvailable(
-        ss,
-        ['FIN_Revenues', 'PRJ_Clients', 'PRJ_Main'],
-        'PV_FIN_Revenues_View'
-      )
-    ) {
-      const maxRows = revenues.getMaxRows();
-      if (maxRows > 1) {
-        revenues.getRange(2, 1, maxRows - 1, revenues.getMaxColumns()).clearContent();
-      }
-      const revenuesFormula = `=QUERY({
+0)`
+      },
+      {
+        sheetName: 'PV_FIN_Revenues_View',
+        dependencies: ['FIN_Revenues', 'PRJ_Clients', 'PRJ_Main'],
+        formula: `=QUERY({
   FIN_Revenues!A2:A,
   FIN_Revenues!C2:C,
   FIN_Revenues!B2:B,
@@ -7824,18 +7818,12 @@ function seedFinanceViewSheets(ss) {
   FIN_Revenues!O2:O
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14,Col15,Col16,Col17 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 '', Col15 '', Col16 '', Col17 ''",
-0)`;
-      revenues.getRange(2, 1).setFormula(revenuesFormula);
-      Logger.log('✅ PV_FIN_Revenues_View query seeded.');
-    }
-
-    const journal = ss.getSheetByName('PV_FIN_Journal_View');
-    if (journal && ensureSheetsAvailable(ss, ['FIN_Journal'], 'PV_FIN_Journal_View')) {
-      const maxRows = journal.getMaxRows();
-      if (maxRows > 1) {
-        journal.getRange(2, 1, maxRows - 1, journal.getMaxColumns()).clearContent();
-      }
-      const journalFormula = `=QUERY({
+0)`
+      },
+      {
+        sheetName: 'PV_FIN_Journal_View',
+        dependencies: ['FIN_Journal'],
+        formula: `=QUERY({
   FIN_Journal!A2:A,
   FIN_Journal!B2:B,
   FIN_Journal!C2:C,
@@ -7850,18 +7838,12 @@ function seedFinanceViewSheets(ss) {
   FIN_Journal!L2:L
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 ''",
-0)`;
-      journal.getRange(2, 1).setFormula(journalFormula);
-      Logger.log('✅ PV_FIN_Journal_View query seeded.');
-    }
-
-    const custody = ss.getSheetByName('PV_FIN_Custody_View');
-    if (custody && ensureSheetsAvailable(ss, ['FIN_Custody'], 'PV_FIN_Custody_View')) {
-      const maxRows = custody.getMaxRows();
-      if (maxRows > 1) {
-        custody.getRange(2, 1, maxRows - 1, custody.getMaxColumns()).clearContent();
-      }
-      const custodyFormula = `=QUERY({
+0)`
+      },
+      {
+        sheetName: 'PV_FIN_Custody_View',
+        dependencies: ['FIN_Custody'],
+        formula: `=QUERY({
   FIN_Custody!A2:A,
   FIN_Custody!B2:B,
   FIN_Custody!C2:C,
@@ -7876,27 +7858,68 @@ function seedFinanceViewSheets(ss) {
   FIN_Custody!L2:L
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 ''",
-0)`;
-      custody.getRange(2, 1).setFormula(custodyFormula);
-      Logger.log('✅ PV_FIN_Custody_View query seeded.');
-    }
-
-    const glTotals = ss.getSheetByName('PV_FIN_GL_Totals_View');
-    if (glTotals && ensureSheetsAvailable(ss, ['FIN_GL_Totals'], 'PV_FIN_GL_Totals_View')) {
-      const maxRows = glTotals.getMaxRows();
-      if (maxRows > 1) {
-        glTotals.getRange(2, 1, maxRows - 1, glTotals.getMaxColumns()).clearContent();
-      }
-      const glFormula = `=QUERY(FIN_GL_Totals!A2:E,
+0)`
+      },
+      {
+        sheetName: 'PV_FIN_GL_Totals_View',
+        dependencies: ['FIN_GL_Totals'],
+        formula: `=QUERY(FIN_GL_Totals!A2:E,
 "select Col1,Col2,Col3,Col4,Col5 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 ''",
-0)`;
-      glTotals.getRange(2, 1).setFormula(glFormula);
-      Logger.log('✅ PV_FIN_GL_Totals_View query seeded.');
-    }
+0)`
+      },
+    ];
+
+    financeViewConfigs.forEach(({ sheetName, dependencies, formula }) => {
+      const sheet = workbook.getSheetByName(sheetName);
+      if (!sheet) return;
+      if (!ensureSheetsAvailable(workbook, dependencies, sheetName)) return;
+      applyFormulaToViewSheet(sheet, formula);
+      Logger.log(`✅ ${sheetName} query seeded.`);
+    });
   } catch (err) {
     Logger.log(`seedFinanceViewSheets error: ${err}`);
   }
 }
+
+
+function seedHrViewSheets(ss) {
+  try {
+    const workbook = ss || getTargetSpreadsheet();
+    if (!workbook) {
+      Logger.log('seedHrViewSheets skipped: workbook unavailable.');
+      return;
+    }
+
+    const hrViewConfigs = [
+      { sheetName: 'PV_HR_Employees', source: 'HR_Employees' },
+      { sheetName: 'PV_HR_Departments', source: 'HR_Departments' },
+      { sheetName: 'PV_HR_Attendance', source: 'HR_Attendance' },
+      { sheetName: 'PV_HR_Leave', source: 'HR_Leave' },
+      { sheetName: 'PV_HR_Leave_Requests', source: 'HR_Leave_Requests' },
+      { sheetName: 'PV_HR_Advances', source: 'HR_Advances' },
+      { sheetName: 'PV_HR_Deductions', source: 'HR_Deductions' },
+      { sheetName: 'PV_HR_Payroll', source: 'HR_Payroll' },
+    ];
+
+    hrViewConfigs.forEach(({ sheetName, source }) => {
+      const sheet = workbook.getSheetByName(sheetName);
+      if (!sheet) return;
+      if (!ensureSheetsAvailable(workbook, [source], sheetName)) return;
+
+      const sourceSheet = workbook.getSheetByName(source);
+      if (!sourceSheet) return;
+      const lastColumnLetter = columnToLetter(sourceSheet.getLastColumn());
+      const formula = `=ARRAYFORMULA(IF(LEN(${source}!A2:A)=0,"",${source}!A2:${lastColumnLetter}))`;
+      applyFormulaToViewSheet(sheet, formula);
+      Logger.log(`✅ ${sheetName} mirror seeded.`);
+    });
+  } catch (err) {
+    Logger.log(`seedHrViewSheets error: ${err}`);
+  }
+}
+
+
+
 
 
 /**
