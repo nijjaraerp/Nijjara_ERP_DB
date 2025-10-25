@@ -113,6 +113,8 @@ function getSheetSchemas() {
       "Sub_Label_AR",
       "Route",
       "Sort_Order",
+      "Source_Sheet",
+      "Permissions",
     ],
     SYS_Dropdowns: [
       "Key",
@@ -681,6 +683,8 @@ function seedSysTabRegister(ss) {
       "",
       "",
       1,
+      "",
+      "SYS_VIEW",
     ],
     [
       "SUB",
@@ -692,6 +696,8 @@ function seedSysTabRegister(ss) {
       "نظرة عامة",
       "/sys",
       1,
+      "PV_SYS_Overview",
+      "SYS_VIEW",
     ],
     [
       "SUB",
@@ -703,6 +709,8 @@ function seedSysTabRegister(ss) {
       "المستخدمون",
       "/sys/users",
       2,
+      "PV_SYS_Users_Table",
+      "SYS_VIEW",
     ],
     [
       "SUB",
@@ -714,6 +722,8 @@ function seedSysTabRegister(ss) {
       "الأدوار",
       "/sys/roles",
       3,
+      "SYS_Roles",
+      "SYS_VIEW",
     ],
     [
       "SUB",
@@ -725,6 +735,8 @@ function seedSysTabRegister(ss) {
       "الأذونات",
       "/sys/permissions",
       4,
+      "SYS_Permissions",
+      "SYS_VIEW",
     ],
     [
       "SUB",
@@ -736,6 +748,8 @@ function seedSysTabRegister(ss) {
       "تعيين أذونات الأدوار",
       "/sys/role-perms",
       5,
+      "SYS_Role_Permissions",
+      "SYS_VIEW",
     ],
     [
       "SUB",
@@ -747,6 +761,8 @@ function seedSysTabRegister(ss) {
       "خصائص المستخدم",
       "/sys/properties",
       6,
+      "SYS_User_Properties",
+      "SYS_VIEW",
     ],
     [
       "SUB",
@@ -758,6 +774,8 @@ function seedSysTabRegister(ss) {
       "الجلسات",
       "/sys/sessions",
       7,
+      "SYS_Sessions",
+      "SYS_VIEW",
     ],
     [
       "SUB",
@@ -769,6 +787,86 @@ function seedSysTabRegister(ss) {
       "التدقيق",
       "/sys/audit",
       8,
+      "SYS_Audit_Report",
+      "SYS_VIEW",
+    ],
+    [
+      "TAB",
+      "Tab_PRJ_Management",
+      "Projects",
+      "إدارة المشاريع",
+      "",
+      "",
+      "",
+      "",
+      20,
+      "",
+      "PRJ_VIEW_PROJECTS",
+    ],
+    [
+      "SUB",
+      "Tab_PRJ_Management",
+      "Projects",
+      "إدارة المشاريع",
+      "Sub_PRJ_Main",
+      "Projects",
+      "قائمة المشاريع",
+      "/projects",
+      1,
+      "PRJ_Main",
+      "PRJ_VIEW_PROJECTS",
+    ],
+    [
+      "SUB",
+      "Tab_PRJ_Management",
+      "Projects",
+      "إدارة المشاريع",
+      "Sub_PRJ_Tasks",
+      "Tasks",
+      "المهام",
+      "/projects/tasks",
+      2,
+      "PRJ_Tasks",
+      "PRJ_VIEW_PROJECTS",
+    ],
+    [
+      "SUB",
+      "Tab_PRJ_Management",
+      "Projects",
+      "إدارة المشاريع",
+      "Sub_PRJ_Costs",
+      "Costs",
+      "التكاليف",
+      "/projects/costs",
+      3,
+      "PRJ_Costs",
+      "PRJ_VIEW_PROJECTS",
+    ],
+    [
+      "SUB",
+      "Tab_PRJ_Management",
+      "Projects",
+      "إدارة المشاريع",
+      "Sub_PRJ_Materials",
+      "Materials",
+      "المواد",
+      "/projects/materials",
+      4,
+      "PV_PRJ_Materials",
+      "PRJ_VIEW_PROJECTS",
+    ],
+    [
+      "SUB",
+      "Tab_PRJ_Management",
+      "Projects",
+      "إدارة المشاريع",
+      "Sub_PRJ_Revenue",
+      "Revenue",
+      "الإيرادات",
+      "/projects/revenue",
+      5,
+      "FIN_Project_Revenue",
+      "PRJ_VIEW_PROJECTS",
     ],
   ];
   appendRowsIfEmpty(sh, rows);
@@ -1949,6 +2047,7 @@ function seedCoreData() {
   seedSysDocuments(ss);
   seedSysSessions(ss);
   seedSysAuditLog(ss);
+  seedProjectFormAndDropdowns();
   seedHrDepartments(ss);
   Logger.log("✅ Core SYS + Admin seeding completed.");
 }
@@ -1968,6 +2067,7 @@ function seedProjectFormAndDropdowns() {
   const dropsSheet = ss.getSheetByName('SYS_Dropdowns');
   const clientsSheet = ss.getSheetByName('PRJ_Clients');
   const usersSheet = ss.getSheetByName('SYS_Users');
+  const projectsSheet = ss.getSheetByName('PRJ_Main');
 
   // Safety check to ensure all sheets exist
   if (!formsSheet || !dropsSheet || !clientsSheet || !usersSheet) {
@@ -1975,7 +2075,8 @@ function seedProjectFormAndDropdowns() {
       !formsSheet ? 'SYS_Dynamic_Forms' : null,
       !dropsSheet ? 'SYS_Dropdowns' : null,
       !clientsSheet ? 'PRJ_Clients' : null,
-      !usersSheet ? 'SYS_Users' : null
+      !usersSheet ? 'SYS_Users' : null,
+      !projectsSheet ? 'PRJ_Main' : null
     ].filter(Boolean).join(', ');
     
     Logger.log(`Error: Missing one or more required sheets: ${missing}.`);
@@ -1989,11 +2090,19 @@ function seedProjectFormAndDropdowns() {
   Logger.log('Clearing old data...');
   // Clear old form definition
   clearOldData(formsSheet, 'FORM_PRJ_AddProject', 0); // 0 is the column index for 'Form_ID'
+  clearOldData(formsSheet, 'FORM_PRJ_AddTask', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_AddCost', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_AddRevenue', 0);
   
   // Clear old dropdowns
   clearOldData(dropsSheet, 'DD_Project_Status', 0); // 0 is the column index for 'Key'
   clearOldData(dropsSheet, 'DD_Clients', 0);
   clearOldData(dropsSheet, 'DD_Managers', 0);
+  clearOldData(dropsSheet, 'DD_Projects', 0);
+  clearOldData(dropsSheet, 'DD_Project_Assignees', 0);
+  clearOldData(dropsSheet, 'DD_Task_Status', 0);
+  clearOldData(dropsSheet, 'DD_Cost_Categories', 0);
+  clearOldData(dropsSheet, 'DD_Revenue_Type', 0);
 
   // --- 2. Define New Form Data for 'FORM_PRJ_AddProject' ---
   // Based on the schema of 'SYS_Dynamic_Forms'
@@ -2010,7 +2119,26 @@ function seedProjectFormAndDropdowns() {
     ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Budget', 'الميزانية', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Budget', ''],
     ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Planned_Material_Expense', 'تكلفة المواد المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Material_Expense', ''],
     ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Manager', 'مدير المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Managers', 'PRJ_Main', 'Manager', ''],
-    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Notes', 'ملاحظات', 'Paragraph', '', '', 'No', '', '', 'PRJ_Main', 'Notes', '']
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Notes', 'ملاحظات', 'Paragraph', '', '', 'No', '', '', 'PRJ_Main', 'Notes', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_ID', 'معرّف المهمة', 'Auto', '', '', 'No', '', '', 'PRJ_Tasks', 'Task_ID', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'PRJ_Tasks', 'Project_ID', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Name', 'اسم المهمة', 'Text', '', '', 'Yes', '', '', 'PRJ_Tasks', 'Task_Name', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التعيينات', 'PRJ_Task_Assignee', 'المسؤول', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Assignees', 'PRJ_Tasks', 'Assignee_ID', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PStart', 'تاريخ البدء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_Start', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PEnd', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_End', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'الحالة', 'PRJ_Task_Status', 'حالة المهمة', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', 'Not_Started', 'DD_Task_Status', 'PRJ_Tasks', 'Status', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'البيانات الأساسية', 'PRJ_Cost_ID', 'معرّف التكلفة', 'Auto', '', '', 'No', '', '', 'PRJ_Costs', 'Cost_ID', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'البيانات الأساسية', 'PRJ_Cost_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'PRJ_Costs', 'Project_ID', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'البيانات الأساسية', 'PRJ_Cost_Date', 'تاريخ التكلفة', 'Date', '', '', 'Yes', '', '', 'PRJ_Costs', 'Date', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'التصنيف', 'PRJ_Cost_Category', 'فئة التكلفة', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Cost_Categories', 'PRJ_Costs', 'Category', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'التفاصيل', 'PRJ_Cost_Desc', 'وصف التكلفة', 'Paragraph', '', '', 'No', '', '', 'PRJ_Costs', 'Description', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'القيم', 'PRJ_Cost_Amount', 'المبلغ', 'Number', '', '', 'Yes', '', '', 'PRJ_Costs', 'Amount', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'البيانات الأساسية', 'PRJ_Revenue_ID', 'معرّف الإيراد', 'Auto', '', '', 'No', '', '', 'FIN_Project_Revenue', 'Revenue_ID', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'البيانات الأساسية', 'PRJ_Revenue_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'FIN_Project_Revenue', 'Project_ID', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'البيانات الأساسية', 'PRJ_Revenue_Date', 'تاريخ الإيراد', 'Date', '', '', 'Yes', '', '', 'FIN_Project_Revenue', 'Revenue_Date', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'القيم', 'PRJ_Revenue_Amount', 'المبلغ', 'Number', '', '', 'Yes', '', '', 'FIN_Project_Revenue', 'Amount', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'المصدر', 'PRJ_Revenue_Source', 'مصدر الإيراد', 'Text', '', '', 'No', '', '', 'FIN_Project_Revenue', 'Source', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'الحالة', 'PRJ_Revenue_Status', 'حالة الدفع', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Revenue_Type', 'FIN_Project_Revenue', 'Pay_Status', '']
   ];
 
   // --- 3. Define New Static Dropdown Data ---
@@ -2021,7 +2149,18 @@ function seedProjectFormAndDropdowns() {
     ['DD_Project_Status', 'In_Progress', 'قيد التنفيذ', 'TRUE', 2],
     ['DD_Project_Status', 'Completed', 'مكتمل', 'TRUE', 3],
     ['DD_Project_Status', 'On_Hold', 'معلق', 'TRUE', 4],
-    ['DD_Project_Status', 'Cancelled', 'ملغى', 'TRUE', 5]
+    ['DD_Project_Status', 'Cancelled', 'ملغى', 'TRUE', 5],
+    ['DD_Task_Status', 'Not_Started', 'لم يبدأ', 'TRUE', 1],
+    ['DD_Task_Status', 'In_Progress', 'قيد التنفيذ', 'TRUE', 2],
+    ['DD_Task_Status', 'Completed', 'مكتملة', 'TRUE', 3],
+    ['DD_Task_Status', 'Blocked', 'معلقة', 'TRUE', 4],
+    ['DD_Cost_Categories', 'Labor', 'تكاليف العمالة', 'TRUE', 1],
+    ['DD_Cost_Categories', 'Materials', 'مواد', 'TRUE', 2],
+    ['DD_Cost_Categories', 'Equipment', 'معدات', 'TRUE', 3],
+    ['DD_Cost_Categories', 'Misc', 'أخرى', 'TRUE', 4],
+    ['DD_Revenue_Type', 'Pending', 'قيد التحصيل', 'TRUE', 1],
+    ['DD_Revenue_Type', 'Received', 'تم التحصيل', 'TRUE', 2],
+    ['DD_Revenue_Type', 'Cancelled', 'ملغي', 'TRUE', 3]
   ];
 
   // --- 4. Prepare Dynamic Client Dropdowns (from PRJ_Clients) ---
@@ -2038,22 +2177,59 @@ function seedProjectFormAndDropdowns() {
   Logger.log(`Found ${clientDropdowns.length} clients to seed.`);
 
 
-  // --- 5. Prepare Dynamic Manager Dropdowns (from SYS_Users) ---
+  // --- 5. Prepare Dynamic Manager & Assignee Dropdowns (from SYS_Users) ---
   // Assumes User_Id is in Col A, Full_Name is in Col B
-  let managerDropdowns = []; // Default to empty array
+  let managerDropdowns = [];
+  let assigneeDropdowns = [];
   const usersLastRow = usersSheet.getLastRow();
 
-  if (usersLastRow > 1) { // ***FIX***: Only run if there is data beyond the header
-    const usersDataValues = usersSheet.getRange(2, 1, usersLastRow - 1, 2).getValues();
-    managerDropdowns = usersDataValues
-      .filter(row => row[0] && row[1]) // Ensure User_Id (row[0]) and Full_Name (row[1]) exist
-      .map((row, index) => ['DD_Managers', row[0], row[1], 'TRUE', index + 1]); // [Key, English_Title(Value), Arabic_Title(Display), Active, Sort]
+  if (usersLastRow > 1) {
+    const usersDataValues = usersSheet
+      .getRange(2, 1, usersLastRow - 1, 2)
+      .getValues();
+    const filteredUsers = usersDataValues.filter((row) => row[0] && row[1]);
+    managerDropdowns = filteredUsers.map((row, index) => [
+      'DD_Managers',
+      row[0],
+      row[1],
+      'TRUE',
+      index + 1,
+    ]);
+    assigneeDropdowns = filteredUsers.map((row, index) => [
+      'DD_Project_Assignees',
+      row[0],
+      row[1],
+      'TRUE',
+      index + 1,
+    ]);
   }
   Logger.log(`Found ${managerDropdowns.length} managers to seed.`);
+  Logger.log(`Found ${assigneeDropdowns.length} assignees to seed.`);
 
-  // --- 6. Write all new data to the sheets ---
+  // --- 6. Prepare Dynamic Projects Dropdowns (from PRJ_Main) ---
+  let projectDropdowns = [];
+  if (projectsSheet) {
+    const projectsLastRow = projectsSheet.getLastRow();
+    if (projectsLastRow > 1) {
+      const projectValues = projectsSheet
+        .getRange(2, 1, projectsLastRow - 1, 2)
+        .getValues();
+      projectDropdowns = projectValues
+        .filter((row) => row[0])
+        .map((row, index) => [
+          'DD_Projects',
+          row[0],
+          row[1] || row[0],
+          'TRUE',
+          index + 1,
+        ]);
+    }
+  }
+  Logger.log(`Found ${projectDropdowns.length} projects to seed.`);
+
+  // --- 7. Write all new data to the sheets ---
   Logger.log('Writing new data to sheets...');
-  
+
   // Append form data
   if (newFormData.length > 0) {
     formsSheet.getRange(formsSheet.getLastRow() + 1, 1, newFormData.length, newFormData[0].length).setValues(newFormData);
@@ -2061,7 +2237,11 @@ function seedProjectFormAndDropdowns() {
   }
 
   // Combine all new dropdowns and append
-  const allNewDropdowns = newStaticDropdowns.concat(clientDropdowns).concat(managerDropdowns);
+  const allNewDropdowns = newStaticDropdowns
+    .concat(clientDropdowns)
+    .concat(managerDropdowns)
+    .concat(assigneeDropdowns)
+    .concat(projectDropdowns);
   
   if (allNewDropdowns.length > 0) {
     dropsSheet.getRange(dropsSheet.getLastRow() + 1, 1, allNewDropdowns.length, allNewDropdowns[0].length).setValues(allNewDropdowns);
