@@ -1712,8 +1712,11 @@ function seedSysUsersView(ss) {
   Logger.log("✅ PV_SYS_Users_Table seeded successfully.");
 }
 function seedViewFromSource(ss, sourceName, viewName, fieldOrder) {
-  const source = ss.getSheetByName(sourceName);
-  const view = ss.getSheetByName(viewName);
+  const workbook = ss || getTargetSpreadsheet();
+  if (!workbook) return;
+
+  const source = workbook.getSheetByName(sourceName);
+  const view = workbook.getSheetByName(viewName);
   if (!source || !view) return;
   const data = source.getDataRange().getValues();
   if (!data || data.length < 2) return;
