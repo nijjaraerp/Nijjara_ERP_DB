@@ -57,7 +57,7 @@ function createOrClearSheet(ss, name, headers) {
 
 /** ---------- SCHEMA ---------- **/
 function getSheetSchemas() {
-  return {
+  const schemas = {
     // ================== SYSTEM ==================
     SYS_Settings: [
       "Setting_Key",
@@ -649,6 +649,32 @@ function getSheetSchemas() {
     ],
     FIN_KPIs: ["Metric", "Value", "Notes"],
   };
+  schemas.PV_PRJ_Main = Array.isArray(schemas.PRJ_Main) ? schemas.PRJ_Main.slice() : [];
+  schemas.PV_PRJ_Tasks = Array.isArray(schemas.PRJ_Tasks) ? schemas.PRJ_Tasks.slice() : [];
+  schemas.PV_PRJ_Costs = Array.isArray(schemas.PRJ_Costs) ? schemas.PRJ_Costs.slice() : [];
+  schemas.PV_PRJ_Clients = Array.isArray(schemas.PRJ_Clients) ? schemas.PRJ_Clients.slice() : [];
+  schemas.PV_PRJ_Schedule_Calc = Array.isArray(schemas.PRJ_Schedule_Calc) ? schemas.PRJ_Schedule_Calc.slice() : [];
+  schemas.PV_PRJ_Dashboard = Array.isArray(schemas.PRJ_Dashboard) ? schemas.PRJ_Dashboard.slice() : [];
+  schemas.PV_PRJ_KPIs = Array.isArray(schemas.PRJ_KPIs) ? schemas.PRJ_KPIs.slice() : [];
+  schemas.PV_PRJ_InDirExp_Allocations = Array.isArray(schemas.PRJ_InDirExp_Allocations) ? schemas.PRJ_InDirExp_Allocations.slice() : [];
+  schemas.PV_FIN_Project_Revenue = Array.isArray(schemas.FIN_PROJECT_REVENUE) ? schemas.FIN_PROJECT_REVENUE.slice() : [];
+  schemas.PV_FIN_Revenues = Array.isArray(schemas.FIN_REVENUES) ? schemas.FIN_REVENUES.slice() : [];
+  schemas.PV_FIN_Journal = Array.isArray(schemas.FIN_JOURNAL) ? schemas.FIN_JOURNAL.slice() : [];
+  schemas.PV_FIN_Custody = Array.isArray(schemas.FIN_CUSTODY) ? schemas.FIN_CUSTODY.slice() : [];
+  schemas.PV_FIN_GL_Totals = Array.isArray(schemas.FIN_GL_Totals) ? schemas.FIN_GL_Totals.slice() : [];
+  schemas.PV_FIN_KPIs = Array.isArray(schemas.FIN_KPIs) ? schemas.FIN_KPIs.slice() : [];
+  schemas.PV_FIN_InDirExpense_Once = Array.isArray(schemas.FIN_InDirExpense_Once) ? schemas.FIN_InDirExpense_Once.slice() : [];
+  schemas.PV_FIN_InDirExpense_Repeated = Array.isArray(schemas.FIN_InDirExpense_Repeated) ? schemas.FIN_InDirExpense_Repeated.slice() : [];
+  schemas.PV_HR_Employees = Array.isArray(schemas.HR_EMPLOYEES) ? schemas.HR_EMPLOYEES.slice() : [];
+  schemas.PV_HR_Departments = Array.isArray(schemas.HR_DEPARTMENTS) ? schemas.HR_DEPARTMENTS.slice() : [];
+  schemas.PV_HR_Attendance = Array.isArray(schemas.HR_ATTENDANCE) ? schemas.HR_ATTENDANCE.slice() : [];
+  schemas.PV_HR_Leave = Array.isArray(schemas.HR_LEAVE) ? schemas.HR_LEAVE.slice() : [];
+  schemas.PV_HR_Leave_Requests = Array.isArray(schemas.HR_LEAVE_REQUESTS) ? schemas.HR_LEAVE_REQUESTS.slice() : [];
+  schemas.PV_HR_Advances = Array.isArray(schemas.HR_ADVANCES) ? schemas.HR_ADVANCES.slice() : [];
+  schemas.PV_HR_Deductions = Array.isArray(schemas.HR_DEDUCTIONS) ? schemas.HR_DEDUCTIONS.slice() : [];
+  schemas.PV_HR_Payroll = Array.isArray(schemas.HR_PAYROLL) ? schemas.HR_PAYROLL.slice() : [];
+
+  return schemas;
 }
 
 /** ---------- SEED DATA ---------- **/
@@ -1685,6 +1711,60 @@ function seedSysUsersView(ss) {
   appendRowsIfEmpty(view, rows);
   Logger.log("✅ PV_SYS_Users_Table seeded successfully.");
 }
+function seedViewFromSource(ss, sourceName, viewName, fieldOrder) {
+  const source = ss.getSheetByName(sourceName);
+  const view = ss.getSheetByName(viewName);
+  if (!source || !view) return;
+  const data = source.getDataRange().getValues();
+  if (!data || data.length < 2) return;
+  const headers = data[0];
+  let rows = data.slice(1);
+  if (Array.isArray(fieldOrder) && fieldOrder.length) {
+    const indexes = fieldOrder.map((field) => headers.indexOf(field));
+    rows = rows.map((row) =>
+      indexes.map((idx) => (idx >= 0 ? row[idx] : ""))
+    );
+  }
+  appendRowsIfEmpty(view, rows);
+  Logger.log("✅ " + viewName + " view synced from " + sourceName + ".");
+}
+
+function seedProjectViews(ss) {
+  seedViewFromSource(ss, "PRJ_Main", "PV_PRJ_Main");
+  seedViewFromSource(ss, "PRJ_Tasks", "PV_PRJ_Tasks");
+  seedViewFromSource(ss, "PRJ_Costs", "PV_PRJ_Costs");
+  seedViewFromSource(ss, "PRJ_Clients", "PV_PRJ_Clients");
+  seedViewFromSource(ss, "PRJ_Schedule_Calc", "PV_PRJ_Schedule_Calc");
+  seedViewFromSource(ss, "PRJ_Dashboard", "PV_PRJ_Dashboard");
+  seedViewFromSource(ss, "PRJ_KPIs", "PV_PRJ_KPIs");
+  seedViewFromSource(ss, "PRJ_InDirExp_Allocations", "PV_PRJ_InDirExp_Allocations");
+  seedViewFromSource(ss, "FIN_Project_Revenue", "PV_FIN_Project_Revenue");
+  seedViewFromSource(ss, "PRJ_Materials", "PV_PRJ_Materials");
+}
+
+function seedFinanceViews(ss) {
+  seedViewFromSource(ss, "FIN_DirectExpenses", "PV_FIN_DirectExpenses_View", ["Expense_ID", "Project_ID", "Project_Name", "Date", "Category", "Material_ID", "Material_Name", "Qty", "Unit", "Unit_Price", "Amount", "VAT_Rate", "VAT_Amount", "Total_With_VAT", "Pay_Status", "Pay_Method", "Notes", "Created_By", "Created_At"]);
+  seedViewFromSource(ss, "FIN_Revenues", "PV_FIN_Revenues");
+  seedViewFromSource(ss, "FIN_Project_Revenue", "PV_FIN_Project_Revenue");
+  seedViewFromSource(ss, "FIN_Journal", "PV_FIN_Journal");
+  seedViewFromSource(ss, "FIN_Custody", "PV_FIN_Custody");
+  seedViewFromSource(ss, "FIN_GL_Totals", "PV_FIN_GL_Totals");
+  seedViewFromSource(ss, "FIN_KPIs", "PV_FIN_KPIs");
+  seedViewFromSource(ss, "FIN_InDirExpense_Once", "PV_FIN_InDirExpense_Once");
+  seedViewFromSource(ss, "FIN_InDirExpense_Repeated", "PV_FIN_InDirExpense_Repeated");
+}
+
+function seedHrViews(ss) {
+  seedViewFromSource(ss, "HR_Employees", "PV_HR_Employees");
+  seedViewFromSource(ss, "HR_Departments", "PV_HR_Departments");
+  seedViewFromSource(ss, "HR_Attendance", "PV_HR_Attendance");
+  seedViewFromSource(ss, "HR_Leave", "PV_HR_Leave");
+  seedViewFromSource(ss, "HR_Leave_Requests", "PV_HR_Leave_Requests");
+  seedViewFromSource(ss, "HR_Advances", "PV_HR_Advances");
+  seedViewFromSource(ss, "HR_Deductions", "PV_HR_Deductions");
+  seedViewFromSource(ss, "HR_Payroll", "PV_HR_Payroll");
+}
+
 
 function seedSysUserProperties(ss) {
   const sh = ss.getSheetByName("SYS_User_Properties");
@@ -2049,6 +2129,9 @@ function seedCoreData() {
   seedSysAuditLog(ss);
   seedProjectFormAndDropdowns();
   seedHrDepartments(ss);
+  seedProjectViews(ss);
+  seedFinanceViews(ss);
+  seedHrViews(ss);
   Logger.log("✅ Core SYS + Admin seeding completed.");
 }
 /**

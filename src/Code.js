@@ -1313,6 +1313,391 @@ function getSheetData(sourceName) {
   }
 }
 
+const DETAIL_CONFIGS = [
+  {
+    type: "project",
+    match: (paneId, entityKey) => {
+      const id = String(paneId || "").toUpperCase();
+      const key = String(entityKey || "").toUpperCase();
+      return id.includes("PRJ") || key.includes("PROJECT");
+    },
+    primary: {
+      sheet: CONFIG.SHEETS.PRJ_MAIN,
+      keys: ["Project_ID", "ProjectId", "ID"],
+    },
+    titleField: "Project_Name",
+    labels: {
+      general: "البيانات العامة",
+    },
+    sections: [
+      {
+        id: "tasks",
+        label: "المهام",
+        sheet: CONFIG.SHEETS.PRJ_TASKS,
+        keys: ["Project_ID", "ProjectId"],
+      },
+      {
+        id: "costs",
+        label: "التكاليف",
+        sheet: CONFIG.SHEETS.PRJ_COSTS,
+        keys: ["Project_ID"],
+      },
+      {
+        id: "directExpenses",
+        label: "المصروفات المباشرة",
+        sheet: CONFIG.SHEETS.FIN_DIRECT_EXP,
+        keys: ["Project_ID"],
+      },
+      {
+        id: "indirectAllocations",
+        label: "المصروفات غير المباشرة",
+        sheet: CONFIG.SHEETS.PRJ_ALLOCATIONS,
+        keys: ["Project_ID"],
+      },
+      {
+        id: "revenues",
+        label: "الإيرادات",
+        sheet: CONFIG.SHEETS.FIN_PROJECT_REVENUE,
+        keys: ["Project_ID"],
+      },
+      {
+        id: "dashboard",
+        label: "مؤشرات المشروع",
+        sheet: CONFIG.SHEETS.PRJ_DASHBOARD,
+        keys: ["Project_ID"],
+      },
+    ],
+    attachments: { entity: "PRJ" },
+  },
+  {
+    type: "hr",
+    match: (paneId, entityKey) => {
+      const id = String(paneId || "").toUpperCase();
+      const key = String(entityKey || "").toUpperCase();
+      return id.includes("HR") || key.includes("EMP") || key.includes("HR");
+    },
+    primary: {
+      sheet: CONFIG.SHEETS.HR_EMPLOYEES,
+      keys: ["Employee_ID", "EmployeeId", "ID"],
+    },
+    titleField: "Employee_Name",
+    labels: {
+      general: "بيانات الموظف",
+    },
+    sections: [
+      {
+        id: "attendance",
+        label: "الحضور والانصراف",
+        sheet: CONFIG.SHEETS.HR_ATTENDANCE,
+        keys: ["Employee_ID", "EmployeeId"],
+      },
+      {
+        id: "leaveRequests",
+        label: "طلبات الإجازة",
+        sheet: CONFIG.SHEETS.HR_LEAVE_REQUESTS,
+        keys: ["Employee_ID"],
+      },
+      {
+        id: "advances",
+        label: "السلف",
+        sheet: CONFIG.SHEETS.HR_ADVANCES,
+        keys: ["Employee_ID"],
+      },
+      {
+        id: "deductions",
+        label: "الخصومات",
+        sheet: CONFIG.SHEETS.HR_DEDUCTIONS,
+        keys: ["Employee_ID"],
+      },
+      {
+        id: "payroll",
+        label: "الرواتب",
+        sheet: CONFIG.SHEETS.HR_PAYROLL,
+        keys: ["Employee_ID"],
+      },
+    ],
+    attachments: { entity: "HR" },
+  },
+];
+
+function getRecordDetail(paneId, recordId, entityKey, clientRecord) {
+  const FNAME = "getRecordDetail";
+  debugLog(FNAME, "start", { paneId, recordId, entityKey });
+  try {
+    const normalizedId = recordId == null ? "" : String(recordId).trim();
+    const detail = {
+      paneId: paneId || "",
+      recordId: normalizedId,
+      title: "",
+      sections: [],
+    };
+
+    const configuration = resolveDetailConfig_(paneId, entityKey);
+    let primaryRow = null;
+    let primaryHeaders = [];
+
+    if (configuration && normalizedId) {
+      const lookup = findRowById_(
+        configuration.primary.sheet,
+        normalizedId,
+        configuration.primary.keys
+      );
+      if (lookup) {
+        primaryHeaders = lookup.headers;
+        primaryRow = lookup.row;
+      }
+    }
+
+    let generalFields = [];
+    if (primaryRow) {
+      generalFields = convertRowToFields_(primaryHeaders, primaryRow);
+    } else if (clientRecord && typeof clientRecord === "object") {
+      generalFields = convertObjectToFields_(clientRecord);
+    }
+
+    if (generalFields.length) {
+      const generalLabel =
+        configuration?.labels?.general || "البيانات العامة";
+      detail.sections.push({
+        id: "general",
+        label: generalLabel,
+        layout: "fields",
+        fields: generalFields,
+      });
+    }
+
+    detail.title = resolveDetailTitle_(
+      configuration,
+      primaryHeaders,
+      primaryRow,
+      clientRecord,
+      normalizedId
+    );
+
+    if (configuration && normalizedId) {
+      configuration.sections.forEach((section) => {
+        const dataset = filterRowsByColumn_(
+          section.sheet,
+          normalizedId,
+          section.keys
+        );
+        const headers = dataset.headers || [];
+        const rows = dataset.rows || [];
+        detail.sections.push({
+          id: section.id,
+          label: section.label,
+          layout: "table",
+          headers,
+          rows,
+        });
+      });
+    }
+
+    if (normalizedId) {
+      const attachments = getAttachmentsForDetail_(
+        normalizedId,
+        entityKey,
+        configuration?.attachments?.entity
+      );
+      if (attachments.rows.length) {
+        detail.sections.push({
+          id: "attachments",
+          label: "المرفقات",
+          layout: "table",
+          headers: attachments.headers,
+          rows: attachments.rows,
+        });
+      }
+    }
+
+    if (!detail.sections.length && clientRecord && typeof clientRecord === "object") {
+      detail.sections.push({
+        id: "general",
+        label: "البيانات العامة",
+        layout: "fields",
+        fields: convertObjectToFields_(clientRecord),
+      });
+    }
+
+    return sanitizeForClientResponse_(detail);
+  } catch (err) {
+    debugError(FNAME, err, { paneId, recordId });
+    throw err;
+  }
+}
+function resolveDetailConfig_(paneId, entityKey) {
+  for (const config of DETAIL_CONFIGS) {
+    try {
+      if (config.match(paneId, entityKey)) {
+        return config;
+      }
+    } catch (err) {
+      debugError("resolveDetailConfig_", err, { paneId, entityKey });
+    }
+  }
+  return null;
+}
+function findRowById_(sheetName, recordId, keyColumns) {
+  const data = loadSheetData_(sheetName);
+  const headers = Array.isArray(data?.headers) ? data.headers : [];
+  const rows = Array.isArray(data?.rows) ? data.rows : [];
+  if (!headers.length || !rows.length) return null;
+  const indexes = (keyColumns || [])
+    .map((key) => findHeaderIndex_(headers, key))
+    .filter((idx) => idx >= 0);
+  if (!indexes.length) return null;
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    if (indexes.some((idx) => keysEqual_(row[idx], recordId))) {
+      return { headers, row };
+    }
+  }
+  return null;
+}
+function filterRowsByColumn_(sheetName, recordId, keyColumns) {
+  const data = loadSheetData_(sheetName);
+  const headers = Array.isArray(data?.headers) ? data.headers : [];
+  const rows = Array.isArray(data?.rows) ? data.rows : [];
+  if (!headers.length || !rows.length) {
+    return { headers, rows: [] };
+  }
+  const indexes = (keyColumns || [])
+    .map((key) => findHeaderIndex_(headers, key))
+    .filter((idx) => idx >= 0);
+  if (!indexes.length) {
+    return { headers, rows: [] };
+  }
+  const filtered = rows.filter((row) =>
+    indexes.some((idx) => keysEqual_(row[idx], recordId))
+  );
+  return { headers, rows: filtered };
+}
+function convertRowToFields_(headers, row) {
+  const fields = [];
+  headers.forEach((header, idx) => {
+    const label = String(header || "").trim();
+    if (!label) return;
+    const value = Array.isArray(row) ? row[idx] : row?.[idx];
+    if (value == null || value === "") return;
+    fields.push({
+      label,
+      value: normalizeDetailValue_(value),
+    });
+  });
+  return fields;
+}
+function convertObjectToFields_(record) {
+  const fields = [];
+  Object.keys(record || {}).forEach((key) => {
+    if (key === "__meta") return;
+    const value = record[key];
+    if (value == null || value === "") return;
+    fields.push({
+      label: key,
+      value: normalizeDetailValue_(value),
+    });
+  });
+  return fields;
+}
+function normalizeDetailValue_(value) {
+  if (value instanceof Date) {
+    try {
+      return value.toISOString();
+    } catch (err) {
+      return value.toString();
+    }
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeDetailValue_(item)).join(", ");
+  }
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value);
+  }
+  return value;
+}
+function resolveDetailTitle_(config, headers, row, clientRecord, fallbackId) {
+  const fallback = fallbackId || "";
+  let candidate = "";
+  if (config && row && Array.isArray(headers)) {
+    const idx = findHeaderIndex_(headers, config.titleField);
+    if (idx >= 0) {
+      candidate = row[idx];
+    }
+  }
+  if (!candidate && clientRecord && config?.titleField) {
+    candidate = clientRecord[config.titleField];
+  }
+  if (!candidate && clientRecord) {
+    candidate =
+      clientRecord.Name ||
+      clientRecord.Title ||
+      clientRecord.Full_Name ||
+      clientRecord.Employee_Name ||
+      "";
+  }
+  if (!candidate) {
+    return fallback || (config?.type === "project"
+      ? "مشروع"
+      : config?.type === "hr"
+      ? "موظف"
+      : "السجل");
+  }
+  if (config?.type === "project") {
+    return "مشروع: " + candidate;
+  }
+  if (config?.type === "hr") {
+    return "موظف: " + candidate;
+  }
+  return candidate;
+}
+function getAttachmentsForDetail_(recordId, entityKey, fallbackEntity) {
+  const data = loadSheetData_(CONFIG.SHEETS.DOCUMENTS);
+  const headers = Array.isArray(data?.headers) ? data.headers : [];
+  const rows = Array.isArray(data?.rows) ? data.rows : [];
+  if (!headers.length || !rows.length) {
+    return { headers: [], rows: [] };
+  }
+  const idxEntityId = findHeaderIndex_(headers, "Entity_ID", "EntityId", "Record_ID");
+  if (idxEntityId < 0) {
+    return { headers: [], rows: [] };
+  }
+  const idxEntity = findHeaderIndex_(headers, "Entity", "Module");
+  const desiredEntity = String(entityKey || fallbackEntity || "").toUpperCase();
+  const filtered = rows.filter((row) => {
+    if (!keysEqual_(row[idxEntityId], recordId)) return false;
+    if (!desiredEntity) return true;
+    if (idxEntity < 0) return true;
+    const value = String(row[idxEntity] || "").toUpperCase();
+    return value.includes(desiredEntity);
+  });
+  if (!filtered.length) {
+    return { headers: [], rows: [] };
+  }
+  const columnMap = [
+    { key: "Label", label: "الوصف" },
+    { key: "File_Name", label: "اسم الملف" },
+    { key: "Drive_URL", label: "الرابط" },
+    { key: "Uploaded_By", label: "المستخدم" },
+    { key: "Created_At", label: "تاريخ الرفع" },
+  ];
+  const mappedHeaders = columnMap
+    .map((item) => {
+      const idx = findHeaderIndex_(headers, item.key);
+      return idx >= 0 ? { label: item.label, index: idx } : null;
+    })
+    .filter(Boolean);
+  if (!mappedHeaders.length) {
+    return { headers, rows: filtered };
+  }
+  const mappedRows = filtered.map((row) =>
+    mappedHeaders.map((col) => normalizeDetailValue_(row[col.index]))
+  );
+  return {
+    headers: mappedHeaders.map((col) => col.label),
+    rows: mappedRows,
+  };
+}
+
 function getMaterialsCatalog() {
   const FNAME = "getMaterialsCatalog";
   debugLog(FNAME, "start");

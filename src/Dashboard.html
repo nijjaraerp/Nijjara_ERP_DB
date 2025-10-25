@@ -450,7 +450,7 @@
         width: 100%;
         border-collapse: collapse;
       }
-      thead {
+      table thead {
         background: rgba(255, 255, 255, 0.04);
       }
       td,
@@ -461,6 +461,118 @@
       }
       tbody tr:hover {
         background: rgba(255, 255, 255, 0.04);
+      }
+      .generic-table thead {
+        background: var(--theme-accent-16);
+        color: var(--theme-accent);
+      }
+      .generic-table thead th {
+        color: inherit;
+      }
+      .generic-pane__controls {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 0 0.5rem;
+      }
+      .pane-mode-switch {
+        display: inline-flex;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .pane-mode-button {
+        min-width: 140px;
+        padding: 0.7rem 1.6rem;
+        border-radius: 999px;
+        border: 1px solid var(--theme-accent-24);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--color-text-secondary);
+        font-weight: 600;
+        text-align: center;
+        transition: background 0.25s ease, color 0.25s ease,
+          box-shadow 0.25s ease, border-color 0.25s ease;
+      }
+      .pane-mode-button.is-active {
+        background: var(--theme-accent);
+        color: #0f0f0f;
+        border-color: var(--theme-accent);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+      }
+      .pane-mode-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .pane-search-bar {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+      }
+      .pane-search-bar input[type="search"] {
+        min-width: 220px;
+        padding: 0.55rem 0.85rem;
+        border-radius: 999px;
+        border: 1px solid var(--theme-accent-24);
+        background: rgba(18, 18, 18, 0.92);
+        color: var(--color-text-primary);
+      }
+      .pane-search-bar select {
+        min-width: 180px;
+        padding: 0.55rem 0.85rem;
+        border-radius: 999px;
+        border: 1px solid var(--theme-accent-24);
+        background: rgba(18, 18, 18, 0.92);
+        color: var(--color-text-secondary);
+      }
+      .pane-search-summary {
+        color: var(--color-text-secondary);
+        font-size: 0.9rem;
+      }
+      .pane-bulk-actions {
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .pane-bulk-actions .ghost-button,
+      .pane-bulk-actions .accent-button {
+        padding: 0.45rem 1rem;
+      }
+      .generic-table__select-header,
+      .generic-table__select-cell {
+        width: 52px;
+        text-align: center;
+      }
+      .generic-table__select-cell input[type="checkbox"],
+      .generic-table__select-all {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+      .generic-table__row--selected {
+        background: var(--theme-accent-16);
+      }
+      .generic-table__row--selected:hover {
+        background: var(--theme-accent-24);
+      }
+      @media (max-width: 768px) {
+        .pane-search-bar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .pane-search-bar input[type="search"],
+        .pane-search-bar select {
+          width: 100%;
+        }
+        .pane-bulk-actions {
+          justify-content: stretch;
+        }
       }
       .ghost-button,
       .accent-button,
@@ -684,6 +796,83 @@
         display: flex;
         justify-content: flex-end;
         gap: 0.75rem;
+      }
+      .detail-tabs {
+        display: flex;
+        flex-direction: column;
+        gap: 1.2rem;
+      }
+      .detail-tabs__nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: flex-start;
+      }
+      .detail-tabs__button {
+        border: 1px solid var(--theme-accent-24);
+        border-radius: 999px;
+        padding: 0.5rem 1.2rem;
+        background: transparent;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: background 0.2s ease, color 0.2s ease,
+          border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      .detail-tabs__button.is-active {
+        background: var(--theme-accent);
+        color: #111;
+        border-color: var(--theme-accent);
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+      }
+      .detail-tab-pane {
+        display: none;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        padding: 1rem;
+        background: rgba(18, 18, 18, 0.88);
+        max-height: 420px;
+        overflow: auto;
+      }
+      .detail-tab-pane.active {
+        display: block;
+      }
+      .detail-fields {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0.75rem 1.5rem;
+      }
+      .detail-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .detail-field__label {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+      }
+      .detail-field__value {
+        font-weight: 600;
+        color: var(--color-text-primary);
+        word-break: break-word;
+      }
+      .detail-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .detail-table thead {
+        background: var(--theme-accent-16);
+        color: var(--theme-accent);
+      }
+      .detail-table th,
+      .detail-table td {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 0.5rem 0.75rem;
+        text-align: right;
+      }
+      .detail-empty {
+        text-align: center;
+        color: var(--color-text-secondary);
+        font-size: 0.95rem;
       }
       .generic-attachments__list {
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -2903,6 +3092,7 @@ select:focus {
           sessions: false,
           audit: false,
         };
+        const paneStateCache = new Map();
         let currentSysPane = "overview";
         let lastLoginIdentity = null;
 
@@ -2991,6 +3181,168 @@ select:focus {
           }
 
           return "";
+        }
+
+        function getPaneState(paneId) {
+          const key = String(paneId || "").trim();
+          if (!key) {
+            return {
+              paneId: "",
+              mode: "list",
+              searchText: "",
+              searchColumnIndex: -1,
+              headers: [],
+              rows: [],
+              filteredRows: [],
+              selectedIds: new Set(),
+              formAvailable: false,
+              formMeta: null,
+              sourceSheet: "",
+            };
+          }
+
+          if (!paneStateCache.has(key)) {
+            paneStateCache.set(key, {
+              paneId: key,
+              mode: "list",
+              searchText: "",
+              searchColumnIndex: -1,
+              headers: [],
+              rows: [],
+              filteredRows: [],
+              selectedIds: new Set(),
+              formAvailable: false,
+              formMeta: null,
+              sourceSheet: "",
+            });
+          }
+          return paneStateCache.get(key);
+        }
+
+        function applyPaneFilters(paneState) {
+          if (!paneState) return [];
+          const headers = Array.isArray(paneState.headers)
+            ? paneState.headers
+            : [];
+          const rows = Array.isArray(paneState.rows) ? paneState.rows : [];
+          const searchTerm = String(paneState.searchText || "")
+            .trim()
+            .toLowerCase();
+
+          if (!searchTerm) return rows.slice();
+
+          const colIndex =
+            paneState.searchColumnIndex != null
+              ? Number(paneState.searchColumnIndex)
+              : -1;
+
+          const matches = (value) => {
+            if (value == null || value === "") return false;
+            if (value instanceof Date) return value.toISOString().toLowerCase().includes(searchTerm);
+            const text = String(value).toLowerCase();
+            return text.includes(searchTerm);
+          };
+
+          return rows.filter((row) => {
+            if (colIndex >= 0 && colIndex < headers.length) {
+              const value = Array.isArray(row) ? row[colIndex] : row?.[colIndex];
+              return matches(value);
+            }
+
+            for (let idx = 0; idx < headers.length; idx += 1) {
+              const value = Array.isArray(row) ? row[idx] : row?.[idx];
+              if (matches(value)) return true;
+            }
+            return false;
+          });
+        }
+
+        function updatePaneSearchOptions(scaffold, paneState) {
+          if (!scaffold || !paneState) return;
+          const select = scaffold.columnSelect;
+          if (!select) return;
+
+          const headers = Array.isArray(paneState.headers)
+            ? paneState.headers
+            : [];
+          const desiredValue =
+            paneState.searchColumnIndex != null &&
+            paneState.searchColumnIndex >= 0
+              ? String(paneState.searchColumnIndex)
+              : "";
+
+          select.innerHTML = "";
+          const anyOption = document.createElement("option");
+          anyOption.value = "";
+          anyOption.textContent = "بحث في جميع الأعمدة";
+          select.appendChild(anyOption);
+
+          headers.forEach((header, index) => {
+            const option = document.createElement("option");
+            option.value = String(index);
+            option.textContent = header || `عمود ${index + 1}`;
+            select.appendChild(option);
+          });
+
+          if (
+            desiredValue &&
+            select.querySelector(`option[value="${desiredValue}"]`)
+          ) {
+            select.value = desiredValue;
+          } else {
+            select.value = "";
+            paneState.searchColumnIndex = -1;
+          }
+        }
+
+        function updatePaneSelectionSummary(scaffold, paneState) {
+          if (!scaffold || !paneState) return;
+          const summaryEl = scaffold.selectionSummary;
+          if (!summaryEl) return;
+          const total = Array.isArray(paneState.rows)
+            ? paneState.rows.length
+            : 0;
+          const visible = Array.isArray(paneState.filteredRows)
+            ? paneState.filteredRows.length
+            : total;
+          const selected = paneState.selectedIds
+            ? paneState.selectedIds.size
+            : 0;
+
+          summaryEl.textContent = `عرض ${visible} من ${total} سجل | تم تحديد ${selected}`;
+        }
+
+        function setPaneMode(paneElement, paneState, mode) {
+          if (!paneElement || !paneState) return;
+          const normalized =
+            mode === "form" && paneState.formAvailable ? "form" : "list";
+          paneState.mode = normalized;
+          paneElement.dataset.mode = normalized;
+
+          const scaffold = paneElement.__scaffold;
+          if (scaffold) {
+            if (scaffold.listButton) {
+              scaffold.listButton.classList.toggle(
+                "is-active",
+                normalized === "list"
+              );
+            }
+            if (scaffold.addButton) {
+              scaffold.addButton.classList.toggle(
+                "is-active",
+                normalized === "form"
+              );
+              scaffold.addButton.disabled = !paneState.formAvailable;
+            }
+            if (scaffold.viewContainer) {
+              scaffold.viewContainer.style.display =
+                normalized === "list" ? "" : "none";
+            }
+            if (scaffold.formContainer) {
+              scaffold.formContainer.style.display =
+                normalized === "form" && paneState.formAvailable ? "" : "none";
+            }
+          }
         }
 
         function normalizeTabRegister(tabRegisterData) {
@@ -3540,7 +3892,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
       renderMaterialsModule(paneElement);
     } else {
       paneElement.innerHTML =
-        '<p class="error-text">واجهة كتالوج المواد غير متاحة حالياً.</p>';
+        '<p class="error-text">????? ?????? ?????? ??? ????? ??????.</p>';
     }
     return;
   }
@@ -3550,7 +3902,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
       renderDirectExpenseShell(paneElement);
     } else {
       paneElement.innerHTML =
-        '<p class="error-text">واجهة المصروفات غير متاحة حالياً.</p>';
+        '<p class="error-text">????? ????????? ??? ????? ??????.</p>';
     }
     return;
   }
@@ -3574,51 +3926,141 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
     });
   }
 
-  const scaffold = ensureGenericPaneScaffold(paneElement);
-  const viewContainer = scaffold.viewContainer;
-  const formContainer = scaffold.formContainer;
+  const paneState = getPaneState(paneId);
+  if (!(paneState.selectedIds instanceof Set)) {
+    paneState.selectedIds = new Set();
+  }
+  paneState.sourceSheet = trimmedSource;
+  paneState.formMeta = formMeta || null;
+  paneState.formAvailable = Boolean(formMeta?.formId);
+  if (typeof paneState.searchColumnIndex !== "number") {
+    paneState.searchColumnIndex = -1;
+  }
+  if (typeof paneState.mode !== "string" || !paneState.mode) {
+    paneState.mode = "list";
+  }
+  paneState.searchText = paneState.searchText || "";
+
+  const scaffold = ensureGenericPaneScaffold(paneElement, paneState);
+  paneState.scaffold = scaffold;
+
+  const {
+    viewContainer,
+    formContainer,
+    listButton,
+    addButton,
+    searchInput,
+    columnSelect,
+    selectVisibleBtn,
+    clearSelectionBtn,
+    applyBulkBtn,
+  } = scaffold;
+
+  if (!viewContainer || !formContainer) {
+    return;
+  }
 
   const entityKey = resolveEntityKeyForPane(paneId);
 
-  const fetchData = () => {
+  const sanitizeSelection = () => {
+    const headers = Array.isArray(paneState.headers)
+      ? paneState.headers
+      : [];
+    const rows = Array.isArray(paneState.rows) ? paneState.rows : [];
+    if (!headers.length || !rows.length) {
+      paneState.selectedIds.clear();
+      return;
+    }
+    const validIds = new Set();
+    rows.forEach((row) => {
+      const meta = resolveRecordMetadata(headers, row);
+      if (meta.recordId) validIds.add(meta.recordId);
+    });
+    paneState.selectedIds.forEach((value) => {
+      if (!validIds.has(value)) {
+        paneState.selectedIds.delete(value);
+      }
+    });
+  };
+
+  const renderData = () => {
+    paneState.filteredRows = applyPaneFilters(paneState);
+    const selection = {
+      ids: paneState.selectedIds,
+      onUpdate: () => updatePaneSelectionSummary(scaffold, paneState),
+    };
+    renderGenericTable(
+      viewContainer,
+      {
+        headers: Array.isArray(paneState.headers)
+          ? paneState.headers
+          : [],
+        rows: Array.isArray(paneState.filteredRows)
+          ? paneState.filteredRows
+          : [],
+      },
+      {
+        paneId,
+        entityKey,
+        formMeta,
+        selection,
+        onAttachments: (recordId, record) =>
+          openAttachmentsModal({
+            paneId,
+            entityKey,
+            recordId,
+            record,
+            onUpdated: fetchData,
+          }),
+        onViewRecord: (record) =>
+          openGenericRecordModal({ paneId, entityKey, record }),
+      }
+    );
+    updatePaneSearchOptions(scaffold, paneState);
+    updatePaneSelectionSummary(scaffold, paneState);
+  };
+
+  function fetchData() {
+    if (!trimmedSource) {
+      paneState.headers = [];
+      paneState.rows = [];
+      paneState.filteredRows = [];
+      viewContainer.innerHTML =
+        '<p class="error-text">?? ??? ????? ???? ?????? ???? ???????.</p>';
+      updatePaneSearchOptions(scaffold, paneState);
+      updatePaneSelectionSummary(scaffold, paneState);
+      return;
+    }
+
     if (!(window.google && google.script && google.script.run)) {
       viewContainer.innerHTML =
-        '<p class="error-text">خدمة Google Apps Script غير متاحة.</p>';
+        '<p class="error-text">???? Google Apps Script ??? ?????.</p>';
       return;
     }
 
     viewContainer.innerHTML =
-      '<p class="muted">جارٍ تحميل البيانات، يرجى الانتظار...</p>';
+      '<p class="muted">???? ????? ????????? ???? ????????...</p>';
 
     google.script.run
       .withFailureHandler((err) => {
         console.error("loadGenericTab failed", err);
         viewContainer.innerHTML =
-          '<p class="error-text">تعذر تحميل البيانات.</p>';
+          '<p class="error-text">???? ????? ????????.</p>';
       })
       .withSuccessHandler((result) => {
-        renderGenericTable(viewContainer, result, {
-          paneId,
-          entityKey,
-          formMeta,
-          onAttachments: (recordId, record) =>
-            openAttachmentsModal({
-              paneId,
-              entityKey,
-              recordId,
-              record,
-              onUpdated: fetchData,
-            }),
-          onViewRecord: (record) =>
-            openGenericRecordModal({ paneId, entityKey, record }),
-        });
+        paneState.headers = Array.isArray(result?.headers)
+          ? result.headers
+          : [];
+        paneState.rows = Array.isArray(result?.rows) ? result.rows : [];
+        sanitizeSelection();
+        renderData();
       })
       .getSheetData(trimmedSource);
-  };
+  }
 
   const handleUploadAction = () => {
     const recordId = window.prompt(
-      "أدخل معرّف السجل الذي ترغب في رفع المرفقات له:",
+      "???? ????? ????? ???? ???? ?? ??? ???????? ??:",
       ""
     );
     if (!recordId) return;
@@ -3631,37 +4073,126 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
     });
   };
 
-  const handleAddAction = () => {
-    if (!formMeta?.formId) {
-      showToast("لا يوجد نموذج مرتبط بهذا التبويب.", "info");
-      return;
+  if (listButton && !listButton.dataset.bound) {
+    listButton.dataset.bound = "true";
+    listButton.addEventListener("click", () => {
+      setPaneMode(paneElement, paneState, "list");
+    });
+  }
+
+  if (addButton) {
+    addButton.disabled = !paneState.formAvailable;
+    if (!addButton.dataset.bound) {
+      addButton.dataset.bound = "true";
+      addButton.addEventListener("click", () => {
+        if (!paneState.formAvailable) {
+          showToast("لا يوجد نموذج إدخال متاح لهذا التبويب.", "info");
+          return;
+        }
+        setPaneMode(paneElement, paneState, "form");
+        const firstInput = formContainer.querySelector(
+          "input, select, textarea"
+        );
+        if (firstInput) firstInput.focus();
+      });
     }
-    formContainer.dataset.formVisible = "true";
-    const firstInput = formContainer.querySelector(
-      "input, select, textarea"
-    );
-    if (firstInput) firstInput.focus();
-    formContainer.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
+  }
+
+  if (searchInput) {
+    searchInput.value = paneState.searchText || "";
+    if (!searchInput.dataset.bound) {
+      searchInput.dataset.bound = "true";
+      searchInput.addEventListener("input", (event) => {
+        paneState.searchText = event.target.value || "";
+        renderData();
+      });
+    }
+  }
+
+  updatePaneSearchOptions(scaffold, paneState);
+
+  if (columnSelect && !columnSelect.dataset.bound) {
+    columnSelect.dataset.bound = "true";
+    columnSelect.addEventListener("change", (event) => {
+      const value = event.target.value;
+      paneState.searchColumnIndex =
+        value === "" ? -1 : Number.parseInt(value, 10);
+      if (!Number.isFinite(paneState.searchColumnIndex)) {
+        paneState.searchColumnIndex = -1;
+      }
+      renderData();
+    });
+  }
+
+  if (selectVisibleBtn && !selectVisibleBtn.dataset.bound) {
+    selectVisibleBtn.dataset.bound = "true";
+    selectVisibleBtn.addEventListener("click", () => {
+      const headers = Array.isArray(paneState.headers)
+        ? paneState.headers
+        : [];
+      const rows = Array.isArray(paneState.filteredRows)
+        ? paneState.filteredRows
+        : [];
+      rows.forEach((row) => {
+        const meta = resolveRecordMetadata(headers, row);
+        if (meta.recordId) paneState.selectedIds.add(meta.recordId);
+      });
+      renderData();
+      showToast("تم تحديد السجلات المعروضة.", "success");
+    });
+  }
+
+  if (clearSelectionBtn && !clearSelectionBtn.dataset.bound) {
+    clearSelectionBtn.dataset.bound = "true";
+    clearSelectionBtn.addEventListener("click", () => {
+      if (!paneState.selectedIds.size) {
+        showToast("لا توجد سجلات محددة حاليًا.", "info");
+        return;
+      }
+      paneState.selectedIds.clear();
+      renderData();
+    });
+  }
+
+  if (applyBulkBtn && !applyBulkBtn.dataset.bound) {
+    applyBulkBtn.dataset.bound = "true";
+    applyBulkBtn.addEventListener("click", () => {
+      const count = paneState.selectedIds.size;
+      if (!count) {
+        showToast("لم يتم اختيار أي سجلات ليتم تطبيق الإجراء عليها.", "info");
+        return;
+      }
+      const detail = {
+        paneId,
+        entityKey,
+        selectedIds: Array.from(paneState.selectedIds),
+        headers: paneState.headers,
+      };
+      paneElement.dispatchEvent(
+        new CustomEvent("pane:bulk-action", { detail })
+      );
+      showToast(`?? ????? ${count} ??? ???????? ?????.`, "success");
+    });
+  }
 
   renderPaneHeader(paneElement, paneName, {
     formMeta,
-    onAdd: handleAddAction,
+    onAdd: () => setPaneMode(paneElement, paneState, "form"),
     onRefresh: fetchData,
     onUpload: handleUploadAction,
+    hideAddButton: true,
   });
 
   renderGenericFormPane(formContainer, {
     paneId,
     formMeta,
-    onSubmitted: () => fetchData(),
+    onSubmitted: () => {
+      fetchData();
+      setPaneMode(paneElement, paneState, "list");
+    },
   });
 
-  if (!trimmedSource) {
-    viewContainer.innerHTML =
-      '<p class="error-text">لم يتم تعيين مصدر بيانات لهذا التبويب.</p>';
-    return;
-  }
+  setPaneMode(paneElement, paneState, paneState.mode);
 
   fetchData();
 }
@@ -3670,13 +4201,16 @@ function renderGenericTable(container, data, options = {}) {
   if (!container) return;
   const headers = Array.isArray(data?.headers) ? data.headers : [];
   const rows = Array.isArray(data?.rows) ? data.rows : [];
+  const selection = options?.selection || null;
+  const selectedIds =
+    selection && selection.ids instanceof Set ? selection.ids : new Set();
 
   container.innerHTML = "";
 
   if (!headers.length) {
     const emptyMessage = document.createElement("p");
     emptyMessage.className = "muted";
-    emptyMessage.textContent = "لا توجد بيانات متاحة للعرض.";
+    emptyMessage.textContent = "?? ???? ?????? ????? ?????.";
     container.appendChild(emptyMessage);
     return;
   }
@@ -3687,9 +4221,17 @@ function renderGenericTable(container, data, options = {}) {
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
 
+  const selectTh = document.createElement("th");
+  selectTh.className = "generic-table__select-header";
+  const selectAllCheckbox = document.createElement("input");
+  selectAllCheckbox.type = "checkbox";
+  selectAllCheckbox.className = "generic-table__select-all";
+  selectTh.appendChild(selectAllCheckbox);
+  headerRow.appendChild(selectTh);
+
   const actionsTh = document.createElement("th");
   actionsTh.className = "generic-table__actions-header";
-  actionsTh.textContent = "إجراءات";
+  actionsTh.textContent = "???????";
   headerRow.appendChild(actionsTh);
 
   headers.forEach((header) => {
@@ -3700,15 +4242,35 @@ function renderGenericTable(container, data, options = {}) {
   thead.appendChild(headerRow);
 
   const tbody = document.createElement("tbody");
+  const rowEntries = [];
 
-  rows.forEach((row) => {
-    const tr = document.createElement("tr");
+  const buildRecordObject = (row) => {
     const record = {};
     headers.forEach((header, index) => {
       record[header] = Array.isArray(row) ? row[index] : row?.[index];
     });
+    return record;
+  };
 
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
     const metadata = resolveRecordMetadata(headers, row);
+    const record = buildRecordObject(row);
+    const isSelected =
+      metadata.recordId && selectedIds.has(metadata.recordId);
+
+    const selectCell = document.createElement("td");
+    selectCell.className = "generic-table__select-cell";
+    const rowCheckbox = document.createElement("input");
+    rowCheckbox.type = "checkbox";
+    rowCheckbox.className = "generic-table__select";
+    rowCheckbox.checked = Boolean(isSelected);
+    if (!metadata.recordId) {
+      rowCheckbox.disabled = true;
+    }
+    selectCell.appendChild(rowCheckbox);
+    tr.appendChild(selectCell);
+
     const actionCell = document.createElement("td");
     actionCell.className = "generic-table__actions-cell";
     const actionWrapper = document.createElement("div");
@@ -3717,7 +4279,7 @@ function renderGenericTable(container, data, options = {}) {
     const viewBtn = document.createElement("button");
     viewBtn.type = "button";
     viewBtn.className = "ghost-button ghost-button--small";
-    viewBtn.textContent = "عرض";
+    viewBtn.textContent = "???";
     viewBtn.addEventListener("click", () => {
       if (typeof options.onViewRecord === "function") {
         options.onViewRecord(
@@ -3730,7 +4292,7 @@ function renderGenericTable(container, data, options = {}) {
     const attachBtn = document.createElement("button");
     attachBtn.type = "button";
     attachBtn.className = "ghost-button ghost-button--small";
-    attachBtn.textContent = "مرفقات";
+    attachBtn.textContent = "??????";
     attachBtn.addEventListener("click", () => {
       if (typeof options.onAttachments === "function") {
         options.onAttachments(metadata.recordId, record);
@@ -3764,44 +4326,263 @@ function renderGenericTable(container, data, options = {}) {
       tr.appendChild(td);
     });
 
+    if (isSelected) {
+      tr.classList.add("generic-table__row--selected");
+    }
+
     tbody.appendChild(tr);
+
+    rowEntries.push({
+      checkbox: rowCheckbox,
+      rowElement: tr,
+      metadata,
+    });
+
+    rowCheckbox.addEventListener("change", () => {
+      if (!metadata.recordId) return;
+      if (rowCheckbox.checked) {
+        selectedIds.add(metadata.recordId);
+        tr.classList.add("generic-table__row--selected");
+      } else {
+        selectedIds.delete(metadata.recordId);
+        tr.classList.remove("generic-table__row--selected");
+      }
+      refreshSelectAllState();
+      if (typeof selection?.onUpdate === "function") {
+        selection.onUpdate();
+      }
+    });
   });
+
+  const refreshSelectAllState = () => {
+    const selectable = rowEntries.filter(
+      (entry) => !entry.checkbox.disabled
+    );
+    if (!selectable.length) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+      return;
+    }
+    const selectedCount = selectable.filter(
+      (entry) => entry.checkbox.checked
+    ).length;
+    selectAllCheckbox.checked = selectedCount === selectable.length;
+    selectAllCheckbox.indeterminate =
+      selectedCount > 0 && selectedCount < selectable.length;
+  };
+
+  selectAllCheckbox.addEventListener("change", () => {
+    const shouldSelect = selectAllCheckbox.checked;
+    rowEntries.forEach(({ checkbox, metadata, rowElement }) => {
+      if (checkbox.disabled) return;
+      checkbox.checked = shouldSelect;
+      if (metadata.recordId) {
+        if (shouldSelect) {
+          selectedIds.add(metadata.recordId);
+          rowElement.classList.add("generic-table__row--selected");
+        } else {
+          selectedIds.delete(metadata.recordId);
+          rowElement.classList.remove("generic-table__row--selected");
+        }
+      }
+    });
+    refreshSelectAllState();
+    if (typeof selection?.onUpdate === "function") {
+      selection.onUpdate();
+    }
+  });
+
+  refreshSelectAllState();
 
   table.appendChild(thead);
   table.appendChild(tbody);
   container.appendChild(table);
 }
 
-function ensureGenericPaneScaffold(paneElement) {
-  if (!paneElement) return { viewContainer: null, formContainer: null };
+function ensureGenericPaneScaffold(paneElement, paneState = {}) {
+  if (!paneElement) {
+    return {
+      controls: null,
+      viewContainer: null,
+      formContainer: null,
+    };
+  }
 
-  let body = paneElement.querySelector(".generic-pane__body");
-  const header = paneElement.querySelector(".pane-header");
+  const scaffold = paneElement.__scaffold || {};
+  let header = paneElement.querySelector(".pane-header");
+  if (!header) {
+    header = document.createElement("div");
+    header.className = "pane-header";
+    paneElement.prepend(header);
+  }
+
+  let controls =
+    scaffold.controls ||
+    paneElement.querySelector(".generic-pane__controls");
+  if (!controls) {
+    controls = document.createElement("div");
+    controls.className = "generic-pane__controls";
+    if (header && header.nextSibling) {
+      paneElement.insertBefore(controls, header.nextSibling);
+    } else if (header) {
+      paneElement.appendChild(controls);
+    } else {
+      paneElement.prepend(controls);
+    }
+  }
+  scaffold.controls = controls;
+
+  let modeSwitch =
+    scaffold.modeSwitch || controls.querySelector(".pane-mode-switch");
+  if (!modeSwitch) {
+    modeSwitch = document.createElement("div");
+    modeSwitch.className = "pane-mode-switch";
+    controls.appendChild(modeSwitch);
+  }
+  scaffold.modeSwitch = modeSwitch;
+
+  let listButton =
+    scaffold.listButton ||
+    modeSwitch.querySelector('button[data-mode="list"]');
+  if (!listButton) {
+    listButton = document.createElement("button");
+    listButton.type = "button";
+    listButton.className = "pane-mode-button";
+    listButton.dataset.mode = "list";
+    listButton.textContent = "قائمة البيانات";
+    modeSwitch.appendChild(listButton);
+  }
+  scaffold.listButton = listButton;
+
+  let addButton =
+    scaffold.addButton || modeSwitch.querySelector('button[data-mode="form"]');
+  if (!addButton) {
+    addButton = document.createElement("button");
+    addButton.type = "button";
+    addButton.className = "pane-mode-button";
+    addButton.dataset.mode = "form";
+    addButton.textContent = "إدخال البيانات";
+    modeSwitch.appendChild(addButton);
+  }
+  scaffold.addButton = addButton;
+
+  let searchBar =
+    scaffold.searchBar || controls.querySelector(".pane-search-bar");
+  if (!searchBar) {
+    searchBar = document.createElement("div");
+    searchBar.className = "pane-search-bar";
+    controls.appendChild(searchBar);
+  }
+  scaffold.searchBar = searchBar;
+
+  let searchInput =
+    scaffold.searchInput ||
+    searchBar.querySelector('input[type="search"]');
+  if (!searchInput) {
+    searchInput = document.createElement("input");
+    searchInput.type = "search";
+    searchInput.dir = "rtl";
+    searchInput.placeholder = "ابحث في السجلات";
+    searchBar.appendChild(searchInput);
+  }
+  scaffold.searchInput = searchInput;
+
+  let columnSelect =
+    scaffold.columnSelect || searchBar.querySelector("select");
+  if (!columnSelect) {
+    columnSelect = document.createElement("select");
+    searchBar.appendChild(columnSelect);
+  }
+  scaffold.columnSelect = columnSelect;
+
+  let searchSummary =
+    scaffold.searchSummary ||
+    searchBar.querySelector(".pane-search-summary");
+  if (!searchSummary) {
+    searchSummary = document.createElement("span");
+    searchSummary.className = "pane-search-summary";
+    searchSummary.textContent = "عرض 0 من 0 سجل | تم تحديد 0";
+    searchBar.appendChild(searchSummary);
+  }
+  scaffold.searchSummary = searchSummary;
+
+  let bulkActions =
+    scaffold.bulkActions || controls.querySelector(".pane-bulk-actions");
+  if (!bulkActions) {
+    bulkActions = document.createElement("div");
+    bulkActions.className = "pane-bulk-actions";
+    controls.appendChild(bulkActions);
+  }
+  scaffold.bulkActions = bulkActions;
+
+  let selectVisibleBtn =
+    scaffold.selectVisibleBtn ||
+    bulkActions.querySelector('button[data-action="select-visible"]');
+  if (!selectVisibleBtn) {
+    selectVisibleBtn = document.createElement("button");
+    selectVisibleBtn.type = "button";
+    selectVisibleBtn.className = "ghost-button";
+    selectVisibleBtn.dataset.action = "select-visible";
+    selectVisibleBtn.textContent = "تحديد المعروض";
+    bulkActions.appendChild(selectVisibleBtn);
+  }
+  scaffold.selectVisibleBtn = selectVisibleBtn;
+
+  let clearSelectionBtn =
+    scaffold.clearSelectionBtn ||
+    bulkActions.querySelector('button[data-action="clear-selection"]');
+  if (!clearSelectionBtn) {
+    clearSelectionBtn = document.createElement("button");
+    clearSelectionBtn.type = "button";
+    clearSelectionBtn.className = "ghost-button";
+    clearSelectionBtn.dataset.action = "clear-selection";
+    clearSelectionBtn.textContent = "إلغاء التحديد";
+    bulkActions.appendChild(clearSelectionBtn);
+  }
+  scaffold.clearSelectionBtn = clearSelectionBtn;
+
+  let applyBulkBtn =
+    scaffold.applyBulkBtn ||
+    bulkActions.querySelector('button[data-action="apply-bulk"]');
+  if (!applyBulkBtn) {
+    applyBulkBtn = document.createElement("button");
+    applyBulkBtn.type = "button";
+    applyBulkBtn.className = "accent-button";
+    applyBulkBtn.dataset.action = "apply-bulk";
+    applyBulkBtn.textContent = "تطبيق الإجراء";
+    bulkActions.appendChild(applyBulkBtn);
+  }
+  scaffold.applyBulkBtn = applyBulkBtn;
+
+  let body = scaffold.body || paneElement.querySelector(".generic-pane__body");
   if (!body) {
     body = document.createElement("div");
     body.className = "generic-pane__body";
-    if (header && header.nextSibling) {
-      paneElement.insertBefore(body, header.nextSibling);
-    } else {
-      paneElement.appendChild(body);
-    }
+    paneElement.appendChild(body);
   }
+  scaffold.body = body;
 
-  let viewContainer = body.querySelector(".generic-pane__view");
+  let viewContainer =
+    scaffold.viewContainer || body.querySelector(".generic-pane__view");
   if (!viewContainer) {
     viewContainer = document.createElement("div");
     viewContainer.className = "generic-pane__view";
     body.appendChild(viewContainer);
   }
+  scaffold.viewContainer = viewContainer;
 
-  let formContainer = body.querySelector(".generic-pane__form");
+  let formContainer =
+    scaffold.formContainer || body.querySelector(".generic-pane__form");
   if (!formContainer) {
     formContainer = document.createElement("div");
     formContainer.className = "generic-pane__form";
     body.appendChild(formContainer);
   }
+  scaffold.formContainer = formContainer;
 
-  return { body, viewContainer, formContainer };
+  scaffold.paneState = paneState;
+  paneElement.__scaffold = scaffold;
+  return scaffold;
 }
 
 function resolveRecordMetadata(headers, row) {
@@ -4069,20 +4850,35 @@ function renderGenericDynamicForm(container, fields, options = {}) {
 
 function openGenericRecordModal({ paneId, entityKey, record }) {
   if (!record || typeof record !== "object") return;
+  const metadata = record.__meta || {};
+  const recordId =
+    metadata.recordId ||
+    metadata.id ||
+    record.ID ||
+    record.Id ||
+    record.id ||
+    "";
+  const resolvedLabel =
+    metadata.label ||
+    metadata.recordId ||
+    record.Name ||
+    record.Title ||
+    recordId ||
+    "";
+
   const overlay = document.createElement("div");
   overlay.className = "generic-modal-overlay";
 
   const dialog = document.createElement("div");
-  dialog.className = "generic-modal";
+  dialog.className = "generic-modal generic-modal--wide";
   overlay.appendChild(dialog);
 
   const header = document.createElement("div");
   header.className = "generic-modal__header";
   const title = document.createElement("h3");
   title.className = "generic-modal__title";
-  const label = record.__meta?.label || record.__meta?.recordId || "";
-  title.textContent = label
-    ? `تفاصيل السجل (${label})`
+  title.textContent = resolvedLabel
+    ? "تفاصيل السجل (" + resolvedLabel + ")"
     : "تفاصيل السجل";
   header.appendChild(title);
 
@@ -4097,22 +4893,6 @@ function openGenericRecordModal({ paneId, entityKey, record }) {
   body.className = "generic-modal__body";
   dialog.appendChild(body);
 
-  const list = document.createElement("dl");
-  list.style.display = "grid";
-  list.style.gridTemplateColumns = "minmax(160px, 1fr) minmax(180px, 2fr)";
-  list.style.gap = "0.5rem 1rem";
-  Object.keys(record).forEach((key) => {
-    if (key === "__meta") return;
-    const dt = document.createElement("dt");
-    dt.textContent = key;
-    const dd = document.createElement("dd");
-    const value = record[key];
-    dd.textContent = value == null || value === "" ? "—" : String(value);
-    list.appendChild(dt);
-    list.appendChild(dd);
-  });
-  body.appendChild(list);
-
   const footer = document.createElement("div");
   footer.className = "generic-modal__footer";
   dialog.appendChild(footer);
@@ -4126,7 +4906,6 @@ function openGenericRecordModal({ paneId, entityKey, record }) {
     document.removeEventListener("keydown", handleKeydown);
     overlay.remove();
   };
-
   const handleKeydown = (event) => {
     if (event.key === "Escape") {
       event.preventDefault();
@@ -4141,6 +4920,217 @@ function openGenericRecordModal({ paneId, entityKey, record }) {
   });
   document.addEventListener("keydown", handleKeydown);
   document.body.appendChild(overlay);
+
+  const renderFallback = (sourceRecord) => {
+    body.innerHTML = "";
+    const fields = document.createElement("div");
+    fields.className = "detail-fields";
+    const source = sourceRecord || record;
+    Object.keys(source || {}).forEach((key) => {
+      if (key === "__meta") return;
+      const value = source[key];
+      const field = document.createElement("div");
+      field.className = "detail-field";
+      const labelEl = document.createElement("span");
+      labelEl.className = "detail-field__label";
+      labelEl.textContent = key;
+      const valueEl = document.createElement("span");
+      valueEl.className = "detail-field__value";
+      valueEl.textContent =
+        value == null || value === "" ? "-" : String(value);
+      field.appendChild(labelEl);
+      field.appendChild(valueEl);
+      fields.appendChild(field);
+    });
+    if (!fields.children.length) {
+      const empty = document.createElement("p");
+      empty.className = "detail-empty";
+      empty.textContent = "لا توجد تفاصيل متاحة لهذا السجل.";
+      body.appendChild(empty);
+      return;
+    }
+    body.appendChild(fields);
+  };
+
+  const renderDetail = (detail) => {
+    body.innerHTML = "";
+    const sections = Array.isArray(detail?.sections) ? detail.sections : [];
+    if (!sections.length) {
+      renderFallback(detail?.record || record);
+      return;
+    }
+    if (detail?.title) {
+      title.textContent = detail.title;
+    }
+
+    const tabsContainer = document.createElement("div");
+    tabsContainer.className = "detail-tabs";
+    const nav = document.createElement("div");
+    nav.className = "detail-tabs__nav";
+    const contentWrapper = document.createElement("div");
+    contentWrapper.className = "detail-tabs__content";
+
+    sections.forEach((section, idx) => {
+      const sectionId = section.id || ("section-" + idx);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "detail-tabs__button";
+      button.dataset.tabTarget = sectionId;
+      button.textContent =
+        section.label ||
+        section.title ||
+        "القسم " + (idx + 1);
+      nav.appendChild(button);
+
+      const pane = document.createElement("div");
+      pane.className = "detail-tab-pane";
+      pane.dataset.tabPane = sectionId;
+
+      if (section.layout === "table" && Array.isArray(section.headers)) {
+        const table = document.createElement("table");
+        table.className = "detail-table";
+        const theadEl = document.createElement("thead");
+        const headRow = document.createElement("tr");
+        section.headers.forEach((header) => {
+          const th = document.createElement("th");
+          th.textContent = header;
+          headRow.appendChild(th);
+        });
+        theadEl.appendChild(headRow);
+        table.appendChild(theadEl);
+        const tbodyEl = document.createElement("tbody");
+        const rowsData = Array.isArray(section.rows) ? section.rows : [];
+        if (!rowsData.length) {
+          const emptyRow = document.createElement("tr");
+          const emptyCell = document.createElement("td");
+          emptyCell.colSpan = section.headers.length || 1;
+          emptyCell.className = "detail-empty";
+          emptyCell.textContent = "لا توجد بيانات متاحة.";
+          emptyRow.appendChild(emptyCell);
+          tbodyEl.appendChild(emptyRow);
+        } else {
+          rowsData.forEach((row) => {
+            const trRow = document.createElement("tr");
+            section.headers.forEach((_, colIdx) => {
+              const td = document.createElement("td");
+              const value = Array.isArray(row) ? row[colIdx] : row?.[colIdx];
+              const headerLabel = section.headers[colIdx] || "";
+              const normalizedHeader = headerLabel.toLowerCase();
+              const isLinkValue =
+                typeof value === "string" &&
+                (value.startsWith("http://") || value.startsWith("https://"));
+              const isLinkColumn =
+                normalizedHeader.includes("drive") ||
+                normalizedHeader.includes("url") ||
+                normalizedHeader.includes("link") ||
+                normalizedHeader.includes("رابط");
+              if (isLinkValue && isLinkColumn) {
+                const link = document.createElement("a");
+                link.href = value;
+                link.target = "_blank";
+                link.rel = "noopener";
+                link.textContent = "عرض الرابط";
+                td.appendChild(link);
+              } else {
+                td.textContent =
+                  value == null || value === "" ? "-" : String(value);
+              }
+              trRow.appendChild(td);
+            });
+            tbodyEl.appendChild(trRow);
+          });
+        }
+        table.appendChild(tbodyEl);
+        pane.appendChild(table);
+      } else if (section.layout === "fields" && Array.isArray(section.fields)) {
+        const fieldsList = document.createElement("div");
+        fieldsList.className = "detail-fields";
+        section.fields.forEach((field) => {
+          const fieldWrapper = document.createElement("div");
+          fieldWrapper.className = "detail-field";
+          const labelEl = document.createElement("span");
+          labelEl.className = "detail-field__label";
+          labelEl.textContent = field.label || field.key || "";
+          const valueEl = document.createElement("span");
+          valueEl.className = "detail-field__value";
+          valueEl.textContent =
+            field.value == null || field.value === ""
+              ? "-"
+              : String(field.value);
+          fieldWrapper.appendChild(labelEl);
+          fieldWrapper.appendChild(valueEl);
+          fieldsList.appendChild(fieldWrapper);
+        });
+        if (!fieldsList.children.length) {
+          const empty = document.createElement("p");
+          empty.className = "detail-empty";
+          empty.textContent = "لا توجد بيانات متاحة في هذا القسم.";
+          pane.appendChild(empty);
+        } else {
+          pane.appendChild(fieldsList);
+        }
+      } else if (section.layout === "html" && section.html) {
+        pane.innerHTML = section.html;
+      } else {
+        const fallbackMessage = document.createElement("p");
+        fallbackMessage.className = "detail-empty";
+        fallbackMessage.textContent = "لا توجد بيانات متاحة في هذا القسم.";
+        pane.appendChild(fallbackMessage);
+      }
+
+      contentWrapper.appendChild(pane);
+    });
+
+    tabsContainer.appendChild(nav);
+    tabsContainer.appendChild(contentWrapper);
+    body.appendChild(tabsContainer);
+
+    const activateSection = (targetId) => {
+      nav.querySelectorAll(".detail-tabs__button").forEach((btn) => {
+        btn.classList.toggle("is-active", btn.dataset.tabTarget === targetId);
+      });
+      contentWrapper.querySelectorAll(".detail-tab-pane").forEach((pane) => {
+        pane.classList.toggle("active", pane.dataset.tabPane === targetId);
+      });
+    };
+
+    nav.addEventListener("click", (event) => {
+      const btn = event.target.closest(".detail-tabs__button");
+      if (!btn) return;
+      const targetId = btn.dataset.tabTarget;
+      if (!targetId) return;
+      activateSection(targetId);
+    });
+
+    const initialButton = nav.querySelector(".detail-tabs__button");
+    if (initialButton) {
+      activateSection(initialButton.dataset.tabTarget);
+    }
+  };
+
+  const safeRecord = (() => {
+    const clone = {};
+    Object.keys(record).forEach((key) => {
+      if (key === "__meta") return;
+      clone[key] = record[key];
+    });
+    return clone;
+  })();
+
+  if (recordId && window.google && google.script && google.script.run) {
+    body.innerHTML = "<p class='muted'>جارٍ تحميل التفاصيل والملفات المرتبطة...</p>";
+    google.script.run
+      .withFailureHandler((err) => {
+        console.error("getRecordDetail failed", err);
+        renderFallback();
+      })
+      .withSuccessHandler((detail) => {
+        renderDetail(detail);
+      })
+      .getRecordDetail(paneId, recordId, entityKey || "", safeRecord);
+  } else {
+    renderFallback();
+  }
 }
 
 function openAttachmentsModal({
@@ -5563,7 +6553,7 @@ function renderPaneHeader(paneElement, paneName, options = {}) {
   }
   buttonGroup.appendChild(refreshButton);
 
-  if (formId) {
+  if (formId && options.hideAddButton !== true) {
     const addButton = document.createElement("button");
     addButton.type = "button";
     addButton.className = "accent-button";
