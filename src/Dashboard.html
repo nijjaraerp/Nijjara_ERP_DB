@@ -2909,6 +2909,50 @@ select:focus {
             contentSelector: "#hr-workspace .workspace-content",
           },
         };
+        const HR_API_HANDLERS = Object.freeze({
+          Sub_HR_Employees: {
+            fetch: "getEmployees",
+            create: "saveEmployee",
+            update: "updateEmployee",
+            remove: "deleteEmployee",
+          },
+          Sub_HR_Attendance: {
+            fetch: "getAttendanceRecords",
+            create: "saveAttendanceRecord",
+            update: "updateAttendanceRecord",
+            remove: "deleteAttendanceRecord",
+          },
+          Sub_HR_Leave_Requests: {
+            fetch: "getLeaveRequests",
+            create: "saveLeaveRequest",
+            update: "updateLeaveRequest",
+            remove: "deleteLeaveRequest",
+          },
+          Sub_HR_Leave: {
+            fetch: "getLeaveRecords",
+            create: "saveLeaveRecord",
+            update: "updateLeaveRecord",
+            remove: "deleteLeaveRecord",
+          },
+          Sub_HR_Advances: {
+            fetch: "getAdvanceRecords",
+            create: "saveAdvanceRecord",
+            update: "updateAdvanceRecord",
+            remove: "deleteAdvanceRecord",
+          },
+          Sub_HR_Deductions: {
+            fetch: "getDeductionRecords",
+            create: "saveDeductionRecord",
+            update: "updateDeductionRecord",
+            remove: "deleteDeductionRecord",
+          },
+          Sub_HR_Payroll: {
+            fetch: "getPayrollRecords",
+            create: "savePayrollRecord",
+            update: "updatePayrollRecord",
+            remove: "deletePayrollRecord",
+          },
+        });
         let lastWorkspaceNavRendered = null;
         let currencyFormatter;
         try {
@@ -3863,6 +3907,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
 
   const paneId = String(paneName);
   const trimmedSource = (sourceSheet || "").trim();
+  const paneApiConfig = HR_API_HANDLERS[paneId] || null;
   let paneElement = contentElement.querySelector(
     `[data-generic-pane="${paneId}"]`
   );
@@ -3933,6 +3978,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
   paneState.sourceSheet = trimmedSource;
   paneState.formMeta = formMeta || null;
   paneState.formAvailable = Boolean(formMeta?.formId);
+  paneState.apiConfig = paneApiConfig;
   if (typeof paneState.searchColumnIndex !== "number") {
     paneState.searchColumnIndex = -1;
   }
@@ -4021,7 +4067,17 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
   };
 
   function fetchData() {
-    if (!trimmedSource) {
+    const fetchAction = paneApiConfig?.fetch
+      ? String(paneApiConfig.fetch)
+      : "";
+    const hasGoogleRunner =
+      window.google && google.script && google.script.run;
+    const hasCustomFetch =
+      fetchAction &&
+      hasGoogleRunner &&
+      typeof google.script.run[fetchAction] === "function";
+
+    if (!trimmedSource && !hasCustomFetch) {
       paneState.headers = [];
       paneState.rows = [];
       paneState.filteredRows = [];
@@ -4032,7 +4088,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
       return;
     }
 
-    if (!(window.google && google.script && google.script.run)) {
+    if (!hasGoogleRunner) {
       viewContainer.innerHTML =
         '<p class="error-text">???? Google Apps Script ??? ?????.</p>';
       return;
@@ -4041,7 +4097,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
     viewContainer.innerHTML =
       '<p class="muted">???? ????? ????????? ???? ????????...</p>';
 
-    google.script.run
+    const runner = google.script.run
       .withFailureHandler((err) => {
         console.error("loadGenericTab failed", err);
         viewContainer.innerHTML =
@@ -4054,8 +4110,13 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
         paneState.rows = Array.isArray(result?.rows) ? result.rows : [];
         sanitizeSelection();
         renderData();
-      })
-      .getSheetData(trimmedSource);
+      });
+
+    if (hasCustomFetch) {
+      runner[fetchAction]();
+    } else {
+      runner.getSheetData(trimmedSource);
+    }
   }
 
   const handleUploadAction = () => {
@@ -4186,6 +4247,7 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
   renderGenericFormPane(formContainer, {
     paneId,
     formMeta,
+    submitAction: paneApiConfig?.create,
     onSubmitted: () => {
       fetchData();
       setPaneMode(paneElement, paneState, "list");
@@ -4828,7 +4890,14 @@ function renderGenericDynamicForm(container, fields, options = {}) {
     submitButton.disabled = true;
     submitButton.textContent = "جارٍ الحفظ...";
 
-    google.script.run
+    const submitAction = options?.submitAction
+      ? String(options.submitAction)
+      : "";
+    const hasCustomSubmit =
+      submitAction &&
+      typeof google.script.run[submitAction] === "function";
+
+    const runner = google.script.run
       .withFailureHandler((err) => {
         console.error("submitDynamicForm failed", err);
         submitButton.disabled = false;
@@ -4838,13 +4907,27 @@ function renderGenericDynamicForm(container, fields, options = {}) {
       .withSuccessHandler((result) => {
         submitButton.disabled = false;
         submitButton.textContent = "حفظ";
-        showToast(result?.message || "تم حفظ البيانات بنجاح.", "success");
-        form.reset();
-        if (typeof options.onSubmitted === "function") {
-          options.onSubmitted(result);
+        const isSuccess = result?.success !== false;
+        showToast(
+          result?.message ||
+            (isSuccess ? "تم حفظ البيانات بنجاح." : "تعذر حفظ البيانات."),
+          isSuccess ? "success" : "error"
+        );
+        if (isSuccess) {
+          form.reset();
+          if (typeof options.onSubmitted === "function") {
+            options.onSubmitted(result);
+          }
         }
-      })
-      .submitDynamicForm(formId, payload, { paneId: options?.paneId || "" });
+      });
+
+    if (hasCustomSubmit) {
+      runner[submitAction](payload);
+    } else {
+      runner.submitDynamicForm(formId, payload, {
+        paneId: options?.paneId || "",
+      });
+    }
   });
 }
 

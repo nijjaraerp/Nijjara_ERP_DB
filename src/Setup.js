@@ -43,6 +43,57 @@ function appendRowsIfEmpty(sheet, rows) {
     sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
 }
 
+function appendRowsIfMissing(sheet, rows, keyIndexes) {
+  if (!sheet || !Array.isArray(rows) || !rows.length) {
+    return;
+  }
+
+  const keys = Array.isArray(keyIndexes) && keyIndexes.length ? keyIndexes : null;
+  if (!keys) {
+    appendRowsIfEmpty(sheet, rows);
+    return;
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    appendRowsIfEmpty(sheet, rows);
+    return;
+  }
+
+  const width = Math.max(sheet.getLastColumn(), rows[0].length);
+  const existingData = sheet.getRange(2, 1, lastRow - 1, width).getValues();
+  const existingKeys = new Set();
+
+  existingData.forEach((row) => {
+    const signature = keys
+      .map((index) => String(row[index] ?? ""))
+      .join("||");
+    if (signature) {
+      existingKeys.add(signature);
+    }
+  });
+
+  const newRows = [];
+  rows.forEach((row) => {
+    const signature = keys
+      .map((index) => String(row[index] ?? ""))
+      .join("||");
+    if (!signature) return;
+    if (!existingKeys.has(signature)) {
+      newRows.push(row);
+      existingKeys.add(signature);
+    }
+  });
+
+  if (!newRows.length) {
+    return;
+  }
+
+  sheet
+    .getRange(lastRow + 1, 1, newRows.length, rows[0].length)
+    .setValues(newRows);
+}
+
 function createOrClearSheet(ss, name, headers) {
   let sh = ss.getSheetByName(name);
   if (!sh) sh = ss.insertSheet(name);
@@ -1194,6 +1245,110 @@ function seedSysTabRegister(ss) {
       "FIN_KPIs",
       "FIN_VIEW_REPORTS",
     ],
+    [
+      "TAB",
+      "Tab_HR_Management",
+      "HR Management",
+      "إدارة الموارد البشرية",
+      "",
+      "",
+      "",
+      "",
+      40,
+      "",
+      "HR_VIEW_EMPLOYEES",
+    ],
+    [
+      "SUB",
+      "Tab_HR_Management",
+      "HR Management",
+      "إدارة الموارد البشرية",
+      "Sub_HR_Employees",
+      "Employees",
+      "الموظفون",
+      "/hr/employees",
+      1,
+      "HR_Employees",
+      "HR_VIEW_EMPLOYEES",
+    ],
+    [
+      "SUB",
+      "Tab_HR_Management",
+      "HR Management",
+      "إدارة الموارد البشرية",
+      "Sub_HR_Attendance",
+      "Attendance",
+      "الحضور",
+      "/hr/attendance",
+      2,
+      "HR_Attendance",
+      "HR_VIEW_EMPLOYEES",
+    ],
+    [
+      "SUB",
+      "Tab_HR_Management",
+      "HR Management",
+      "إدارة الموارد البشرية",
+      "Sub_HR_Leave",
+      "Leave",
+      "الإجازات",
+      "/hr/leave",
+      3,
+      "HR_Leave",
+      "HR_VIEW_EMPLOYEES",
+    ],
+    [
+      "SUB",
+      "Tab_HR_Management",
+      "HR Management",
+      "إدارة الموارد البشرية",
+      "Sub_HR_Leave_Requests",
+      "Leave Requests",
+      "طلبات الإجازة",
+      "/hr/leave-requests",
+      4,
+      "HR_Leave_Requests",
+      "HR_VIEW_EMPLOYEES",
+    ],
+    [
+      "SUB",
+      "Tab_HR_Management",
+      "HR Management",
+      "إدارة الموارد البشرية",
+      "Sub_HR_Advances",
+      "Advances",
+      "السلف",
+      "/hr/advances",
+      5,
+      "HR_Advances",
+      "HR_VIEW_EMPLOYEES",
+    ],
+    [
+      "SUB",
+      "Tab_HR_Management",
+      "HR Management",
+      "إدارة الموارد البشرية",
+      "Sub_HR_Deductions",
+      "Deductions",
+      "الخصومات",
+      "/hr/deductions",
+      6,
+      "HR_Deductions",
+      "HR_VIEW_EMPLOYEES",
+    ],
+    [
+      "SUB",
+      "Tab_HR_Management",
+      "HR Management",
+      "إدارة الموارد البشرية",
+      "Sub_HR_Payroll",
+      "Payroll",
+      "الرواتب",
+      "/hr/payroll",
+      7,
+      "HR_Payroll",
+      "HR_VIEW_EMPLOYEES",
+    ],
   ];
   appendRowsIfEmpty(sh, rows);
 }
@@ -1275,9 +1430,12 @@ function seedSysProfileView(ss) {
   appendRowsIfEmpty(sh, rows);
 }
 
-function seedSysDynamicForms(ss) {
-  const sh = ss.getSheetByName("SYS_Dynamic_Forms");
-  const rows = [
+let dynamicFormCache = null;
+function getDynamicFormDefinitions() {
+  if (dynamicFormCache) {
+    return dynamicFormCache;
+  }
+  dynamicFormCache = [
     [
       "FORM_SYS_AddUser",
       "إضافة مستخدم جديد",
@@ -4698,8 +4856,1418 @@ function seedSysDynamicForms(ss) {
       "Notes",
       "",
     ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التعريف",
+      "HR_Emp_ID",
+      "معرّف الموظف",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_FullNameEN",
+      "الاسم (إنجليزي)",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Employees",
+      "Full_Name_EN",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_FullNameAR",
+      "الاسم (عربي)",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Employees",
+      "Full_Name_AR",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_DOB",
+      "تاريخ الميلاد",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Date_of_Birth",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_Gender",
+      "النوع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Gender",
+      "HR_Employees",
+      "Gender",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_NationalID",
+      "الرقم القومي",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "National_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_Marital",
+      "الحالة الاجتماعية",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Marital_Status",
+      "HR_Employees",
+      "Marital_Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_Military",
+      "الموقف من الخدمة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Military_Status",
+      "HR_Employees",
+      "Military_Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_MobileMain",
+      "رقم الجوال الرئيسي",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Mobile_Main",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_MobileSub",
+      "رقم جوال بديل",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Mobile_Sub",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_Email",
+      "البريد الإلكتروني",
+      "Email",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Email",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_Address",
+      "العنوان",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Home_Address",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_EmergencyContact",
+      "جهة الاتصال للطوارئ",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Emergency_Contact",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_Relation",
+      "صلة القرابة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Relation",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_ECMobile",
+      "رقم الطوارئ",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "EC_Mobile",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "العمل",
+      "HR_Emp_JobTitle",
+      "المسمى الوظيفي",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Job_Titles",
+      "HR_Employees",
+      "Job_Title",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "العمل",
+      "HR_Emp_Department",
+      "القسم",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Departments",
+      "HR_Employees",
+      "Department",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "العمل",
+      "HR_Emp_HireDate",
+      "تاريخ التعيين",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Employees",
+      "Hire_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "العمل",
+      "HR_Emp_ContractType",
+      "نوع التعاقد",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Contract_Types",
+      "HR_Employees",
+      "Contract_Type",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "الحالة والرواتب",
+      "HR_Emp_Status",
+      "حالة الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Active",
+      "DD_Employee_Status",
+      "HR_Employees",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "الحالة والرواتب",
+      "HR_Emp_BasicSalary",
+      "الراتب الأساسي",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Basic_Salary",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "الحالة والرواتب",
+      "HR_Emp_Allowances",
+      "البدلات",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Allowances",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "الحالة والرواتب",
+      "HR_Emp_Deductions",
+      "الخصومات",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Deductions",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التعريف",
+      "HR_Att_ID",
+      "معرّف الحضور",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Attendance_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التعريف",
+      "HR_Att_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Attendance",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التوقيت",
+      "HR_Att_Date",
+      "التاريخ",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Attendance",
+      "Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التوقيت",
+      "HR_Att_CheckIn",
+      "وقت الحضور",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Check_In",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التوقيت",
+      "HR_Att_CheckOut",
+      "وقت الانصراف",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Check_Out",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Hours",
+      "ساعات العمل",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Hours",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_OTMinutes",
+      "دقائق إضافية",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "OT_Minutes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_OTAmount",
+      "قيمة الإضافي",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "OT_Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Late",
+      "دقائق التأخير",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Late_Minutes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Early",
+      "مغادرة مبكرة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "EarlyLeave_Minutes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Overtime",
+      "إجمالي الإضافي",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Overtime_Minutes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Status",
+      "الحالة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "Present",
+      "DD_Attendance_Status",
+      "HR_Attendance",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "الملاحظات",
+      "HR_Att_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التعريف",
+      "HR_LR_ID",
+      "معرّف الطلب",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Leave_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التعريف",
+      "HR_LR_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Leave_Requests",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الفترة",
+      "HR_LR_Type",
+      "نوع الإجازة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Leave_Types",
+      "HR_Leave_Requests",
+      "Leave_Type",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الفترة",
+      "HR_LR_Start",
+      "تاريخ البداية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Start_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الفترة",
+      "HR_LR_End",
+      "تاريخ النهاية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "End_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التفاصيل",
+      "HR_LR_DaysCount",
+      "عدد الأيام",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Days_Count",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التفاصيل",
+      "HR_LR_Days",
+      "أيام الإجازة",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Days",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التفاصيل",
+      "HR_LR_Approver",
+      "المعتمد",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Users",
+      "HR_Leave_Requests",
+      "Approver",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التفاصيل",
+      "HR_LR_Reason",
+      "سبب الإجازة",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Reason",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الحالة",
+      "HR_LR_Status",
+      "حالة الطلب",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Pending",
+      "DD_Leave_Status",
+      "HR_Leave_Requests",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الملاحظات",
+      "HR_LR_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "التعريف",
+      "HR_Leave_ID",
+      "معرّف الإجازة",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave",
+      "Leave_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "التعريف",
+      "HR_Leave_Emp",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Leave",
+      "Emp_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الفترة",
+      "HR_Leave_Type",
+      "نوع الإجازة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Leave_Types",
+      "HR_Leave",
+      "Leave_Type",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الفترة",
+      "HR_Leave_Start",
+      "تاريخ البداية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Leave",
+      "Start_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الفترة",
+      "HR_Leave_End",
+      "تاريخ النهاية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Leave",
+      "End_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "التفاصيل",
+      "HR_Leave_DaysCount",
+      "عدد الأيام",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave",
+      "Days_Count",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الحالة",
+      "HR_Leave_Status",
+      "الحالة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Approved",
+      "DD_Leave_Status",
+      "HR_Leave",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الملاحظات",
+      "HR_Leave_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التعريف",
+      "HR_Adv_ID",
+      "معرّف السلفة",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Advances",
+      "Advance_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التعريف",
+      "HR_Adv_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Advances",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التفاصيل",
+      "HR_Adv_IssueDate",
+      "تاريخ الإصدار",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Advances",
+      "Issue_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التفاصيل",
+      "HR_Adv_Amount",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Advances",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التفاصيل",
+      "HR_Adv_Settlement",
+      "فترة السداد",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Advances",
+      "Settlement_Period",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التفاصيل",
+      "HR_Adv_Installment",
+      "قسط السلفة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Advances",
+      "Advance_Installment",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "الحالة",
+      "HR_Adv_Status",
+      "حالة السلفة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Pending",
+      "DD_Advance_Status",
+      "HR_Advances",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "الملاحظات",
+      "HR_Adv_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Advances",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التعريف",
+      "HR_Ded_ID",
+      "معرّف الخصم",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Deductions",
+      "Deduction_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التفاصيل",
+      "HR_Ded_Penalty",
+      "نوع المخالفة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Penalties",
+      "HR_Deductions",
+      "Penalty_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التفاصيل",
+      "HR_Ded_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Deductions",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التفاصيل",
+      "HR_Ded_Date",
+      "تاريخ الخصم",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Deductions",
+      "Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التفاصيل",
+      "HR_Ded_Amount",
+      "قيمة الخصم",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Deductions",
+      "Deduction_Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "التعريف",
+      "HR_Payroll_ID",
+      "معرّف البيان",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Payroll",
+      "Payroll_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "التعريف",
+      "HR_Payroll_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Payroll",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "الفترة",
+      "HR_Payroll_Start",
+      "تاريخ البداية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Payroll",
+      "Start_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "الفترة",
+      "HR_Payroll_End",
+      "تاريخ النهاية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Payroll",
+      "End_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_Basic",
+      "الراتب الأساسي",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Payroll",
+      "Basic_Salary",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_OT",
+      "إجمالي الإضافي",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Payroll",
+      "Total_OT_Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_Advance",
+      "قسط السلفة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Payroll",
+      "Advance_Installment",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_Deductions",
+      "الخصومات",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Payroll",
+      "Deduction_Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_Net",
+      "صافي الراتب",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Payroll",
+      "Net_Pay",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "الحالة",
+      "HR_Payroll_Status",
+      "حالة البيان",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Draft",
+      "DD_Payroll_Status",
+      "HR_Payroll",
+      "Status",
+      "",
+    ],
   ];
-  appendRowsIfEmpty(sh, rows);
+  return dynamicFormCache;
+}
+
+function seedSysDynamicForms(ss) {
+  const sh = ss.getSheetByName("SYS_Dynamic_Forms");
+  const rows = getDynamicFormDefinitions();
+  appendRowsIfMissing(sh, rows, [0, 5]);
 }
 
 function seedSysDropdowns(ss) {
@@ -4767,6 +6335,53 @@ function seedSysDropdowns(ss) {
     ["DD_Custody_Status", "Open", "مفتوحة", "TRUE", 1],
     ["DD_Custody_Status", "Closed", "مغلقة", "TRUE", 2],
     ["DD_Custody_Status", "Overdue", "متأخرة", "TRUE", 3],
+    ["DD_Gender", "Male", "ذكر", "TRUE", 1],
+    ["DD_Gender", "Female", "أنثى", "TRUE", 2],
+    ["DD_Marital_Status", "Single", "أعزب", "TRUE", 1],
+    ["DD_Marital_Status", "Married", "متزوج", "TRUE", 2],
+    ["DD_Marital_Status", "Divorced", "مطلق", "TRUE", 3],
+    ["DD_Marital_Status", "Widowed", "أرمل", "TRUE", 4],
+    ["DD_Military_Status", "Completed", "أنهى الخدمة", "TRUE", 1],
+    ["DD_Military_Status", "Exempted", "معفى", "TRUE", 2],
+    ["DD_Military_Status", "In_Progress", "يؤدي الخدمة", "TRUE", 3],
+    ["DD_Military_Status", "Not_Applicable", "غير مطلوب", "TRUE", 4],
+    ["DD_Job_Titles", "HR Specialist", "أخصائي موارد بشرية", "TRUE", 1],
+    ["DD_Job_Titles", "Accountant", "محاسب", "TRUE", 2],
+    ["DD_Job_Titles", "Project Manager", "مدير مشروع", "TRUE", 3],
+    ["DD_Job_Titles", "Site Engineer", "مهندس موقع", "TRUE", 4],
+    ["DD_Job_Titles", "Procurement Officer", "مسؤول مشتريات", "TRUE", 5],
+    ["DD_Job_Titles", "Administrator", "مسؤول إداري", "TRUE", 6],
+    ["DD_Contract_Types", "Full_Time", "دوام كامل", "TRUE", 1],
+    ["DD_Contract_Types", "Part_Time", "دوام جزئي", "TRUE", 2],
+    ["DD_Contract_Types", "Contract", "عقد", "TRUE", 3],
+    ["DD_Contract_Types", "Temporary", "مؤقت", "TRUE", 4],
+    ["DD_Contract_Types", "Internship", "تدريب", "TRUE", 5],
+    ["DD_Employee_Status", "Active", "نشط", "TRUE", 1],
+    ["DD_Employee_Status", "Probation", "تحت التجربة", "TRUE", 2],
+    ["DD_Employee_Status", "On_Leave", "في إجازة", "TRUE", 3],
+    ["DD_Employee_Status", "Terminated", "منتهي الخدمة", "TRUE", 4],
+    ["DD_Attendance_Status", "Present", "حاضر", "TRUE", 1],
+    ["DD_Attendance_Status", "Absent", "غائب", "TRUE", 2],
+    ["DD_Attendance_Status", "Late", "متأخر", "TRUE", 3],
+    ["DD_Attendance_Status", "On_Leave", "في إجازة", "TRUE", 4],
+    ["DD_Attendance_Status", "Remote", "عمل عن بُعد", "TRUE", 5],
+    ["DD_Leave_Types", "Annual", "إجازة سنوية", "TRUE", 1],
+    ["DD_Leave_Types", "Sick", "إجازة مرضية", "TRUE", 2],
+    ["DD_Leave_Types", "Emergency", "إجازة طارئة", "TRUE", 3],
+    ["DD_Leave_Types", "Unpaid", "إجازة بدون راتب", "TRUE", 4],
+    ["DD_Leave_Types", "Maternity", "إجازة أمومة", "TRUE", 5],
+    ["DD_Leave_Status", "Pending", "قيد المراجعة", "TRUE", 1],
+    ["DD_Leave_Status", "Approved", "مقبولة", "TRUE", 2],
+    ["DD_Leave_Status", "Rejected", "مرفوضة", "TRUE", 3],
+    ["DD_Leave_Status", "Cancelled", "ملغاة", "TRUE", 4],
+    ["DD_Advance_Status", "Pending", "قيد الاعتماد", "TRUE", 1],
+    ["DD_Advance_Status", "Approved", "معتمدة", "TRUE", 2],
+    ["DD_Advance_Status", "Disbursed", "مصروفة", "TRUE", 3],
+    ["DD_Advance_Status", "Settled", "مقفلة", "TRUE", 4],
+    ["DD_Payroll_Status", "Draft", "مسودة", "TRUE", 1],
+    ["DD_Payroll_Status", "Submitted", "قيد المراجعة", "TRUE", 2],
+    ["DD_Payroll_Status", "Approved", "معتمد", "TRUE", 3],
+    ["DD_Payroll_Status", "Paid", "مدفوع", "TRUE", 4],
   ];
 
   const deptSheet = ss.getSheetByName("HR_Departments");
@@ -4839,7 +6454,47 @@ function seedSysDropdowns(ss) {
     });
   }
 
-  appendRowsIfEmpty(sh, rows);
+  const usersSheet = ss.getSheetByName("SYS_Users");
+  if (usersSheet && usersSheet.getLastRow() > 1) {
+    const userData = usersSheet.getDataRange().getValues();
+    const headers = userData[0];
+    const idIdx = headers.indexOf("User_Id");
+    const nameIdx = headers.indexOf("Full_Name");
+    userData.slice(1).forEach((row, index) => {
+      const userId = idIdx >= 0 ? row[idIdx] : "";
+      if (!userId) return;
+      const label = nameIdx >= 0 ? row[nameIdx] : userId;
+      rows.push([
+        "DD_Users",
+        userId,
+        label || userId,
+        "TRUE",
+        40 + index,
+      ]);
+    });
+  }
+
+  const penaltiesSheet = ss.getSheetByName("HR_Penalties");
+  if (penaltiesSheet && penaltiesSheet.getLastRow() > 1) {
+    const penaltyData = penaltiesSheet.getDataRange().getValues();
+    const headers = penaltyData[0];
+    const idIdx = headers.indexOf("Penalty_ID");
+    const nameIdx = headers.indexOf("Penalty_Name");
+    penaltyData.slice(1).forEach((row, index) => {
+      const penaltyId = idIdx >= 0 ? row[idIdx] : "";
+      if (!penaltyId) return;
+      const penaltyName = nameIdx >= 0 ? row[nameIdx] : penaltyId;
+      rows.push([
+        "DD_Penalties",
+        penaltyId,
+        penaltyName || penaltyId,
+        "TRUE",
+        50 + index,
+      ]);
+    });
+  }
+
+  appendRowsIfMissing(sh, rows, [0, 1]);
 }
 
 function seedHrDepartments(ss) {
@@ -5055,8 +6710,6 @@ function auditAndSeedERP() {
   });
   // Seed missing data using existing seeder functions (idempotent)
   seedCoreData();
-  seedProjectFormAndDropdowns();
-  seedHrDepartments(ss);
   Logger.log('✅ Audit and seeding complete. Created sheets: ' + created.join(', '));
   return created;
 }
@@ -5179,6 +6832,7 @@ function seedFinanceViews(ss) {
   seedViewFromSource(ss, "FIN_InDirExpense_Repeated", "PV_FIN_InDirExpense_Repeated");
 }
 
+// Internal helper invoked by seedAllModules to refresh PV_HR_* sheets.
 function seedHrViews(ss) {
   seedViewFromSource(ss, "HR_Employees", "PV_HR_Employees");
   seedViewFromSource(ss, "HR_Departments", "PV_HR_Departments");
@@ -5552,12 +7206,7 @@ function seedCoreData() {
   seedSysDocuments(ss);
   seedSysSessions(ss);
   seedSysAuditLog(ss);
-  seedProjectFormAndDropdowns();
-  seedFinanceViewSheets(ss);
-  seedHrDepartments(ss);
-  seedProjectViews(ss);
-  seedFinanceViews(ss);
-  seedHrViews(ss);
+  seedAllModules(ss);
   Logger.log("✅ Core SYS + Admin seeding completed.");
 }
 /**
@@ -5568,15 +7217,15 @@ function seedCoreData() {
  *
  * (FIXED: Now safely handles empty 'PRJ_Clients' and 'SYS_Users' sheets)
  */
-function seedProjectFormAndDropdowns() {
-  const ss = getTargetSpreadsheet();
+function seedProjectFormAndDropdowns(ss) {
+  const workbook = ss || getTargetSpreadsheet();
   
   // Get all required sheets
-  const formsSheet = ss.getSheetByName('SYS_Dynamic_Forms');
-  const dropsSheet = ss.getSheetByName('SYS_Dropdowns');
-  const clientsSheet = ss.getSheetByName('PRJ_Clients');
-  const usersSheet = ss.getSheetByName('SYS_Users');
-  const projectsSheet = ss.getSheetByName('PRJ_Main');
+  const formsSheet = workbook.getSheetByName('SYS_Dynamic_Forms');
+  const dropsSheet = workbook.getSheetByName('SYS_Dropdowns');
+  const clientsSheet = workbook.getSheetByName('PRJ_Clients');
+  const usersSheet = workbook.getSheetByName('SYS_Users');
+  const projectsSheet = workbook.getSheetByName('PRJ_Main');
 
   // Safety check to ensure all sheets exist
   if (!formsSheet || !dropsSheet || !clientsSheet || !usersSheet) {
@@ -5589,7 +7238,6 @@ function seedProjectFormAndDropdowns() {
     ].filter(Boolean).join(', ');
     
     Logger.log(`Error: Missing one or more required sheets: ${missing}.`);
-    SpreadsheetApp.getUi().alert(`Error: Missing required sheets: ${missing}`);
     return;
   }
 
@@ -5817,62 +7465,68 @@ function seedProjectFormAndDropdowns() {
     Logger.log(`Wrote ${allNewDropdowns.length} rows to SYS_Dropdowns.`);
   }
 
-  seedProjectViewSheets(ss);
-
   Logger.log('Seeding complete.');
-  SpreadsheetApp.getUi().alert('Success! The Project Form and all required dropdowns have been seeded.');
+  Logger.log('✅ Project forms and dropdowns seeded successfully.');
 }
 
+// Internal helper invoked by seedAllModules to refresh PV_PRJ_* sheets.
 function seedProjectViewSheets(ss) {
   try {
-    const pvMain = ss.getSheetByName('PV_PRJ_Main');
+    const workbook = ss || getTargetSpreadsheet();
+    if (!workbook) {
+      Logger.log('seedProjectViewSheets skipped: workbook unavailable.');
+      return;
+    }
+    const pvMain = workbook.getSheetByName('PV_PRJ_Main');
     if (pvMain) {
       const maxRows = pvMain.getMaxRows();
       if (maxRows > 1) {
         pvMain.getRange(2, 1, maxRows - 1, pvMain.getMaxColumns()).clearContent();
       }
-      const pvMainFormula = `=ARRAYFORMULA(IF(LEN(PRJ_Main!A2:A)=0,"",
-  {
-    PRJ_Main!A2:A,
-    PRJ_Main!B2:B,
-    PRJ_Main!D2:D,
-    PRJ_Main!F2:F,
-    PRJ_Main!G2:G,
-    IF(LEN(PRJ_Main!H2:H), PRJ_Main!H2:H, IF((PRJ_Main!F2:F<>"")*(PRJ_Main!G2:G<>""), PRJ_Main!F2:F + PRJ_Main!G2:G, "")),
-    PRJ_Main!I2:I,
-    PRJ_Main!J2:J,
-    PRJ_Main!K2:K,
-    PRJ_Main!L2:L,
-    PRJ_Main!O2:O,
-    IFERROR(SUMIF(PRJ_Costs!B:B, PRJ_Main!A2:A, PRJ_Costs!F:F), 0),
-    IF((PRJ_Main!O2:O="")*(IFERROR(SUMIF(PRJ_Costs!B:B, PRJ_Main!A2:A, PRJ_Costs!F:F), 0)=0), "", PRJ_Main!O2:O - IFERROR(SUMIF(PRJ_Costs!B:B, PRJ_Main!A2:A, PRJ_Costs!F:F), 0)),
-    IF((PRJ_Main!G2:G>0)*(PRJ_Main!F2:F<>""), ROUND(100 * IF(((IF(PRJ_Main!I2:I<>"", PRJ_Main!I2:I, TODAY()) - PRJ_Main!F2:F) / PRJ_Main!G2:G) < 0, 0, IF(((IF(PRJ_Main!I2:I<>"", PRJ_Main!I2:I, TODAY()) - PRJ_Main!F2:F) / PRJ_Main!G2:G) > 1, 1, (IF(PRJ_Main!I2:I<>"", PRJ_Main!I2:I, TODAY()) - PRJ_Main!F2:F) / PRJ_Main!G2:G)), 1), ""),
-    PRJ_Main!M2:M,
-    PRJ_Main!V2:V
-  }
-))`;
+      const pvMainFormula = `=ARRAYFORMULA(
+  LET(
+    ids, PRJ_Main!A2:A,
+    names, PRJ_Main!B2:B,
+    clients, PRJ_Main!D2:D,
+    startDates, PRJ_Main!F2:F,
+    plannedDays, PRJ_Main!G2:G,
+    plannedEnd, PRJ_Main!H2:H,
+    actualEnd, PRJ_Main!I2:I,
+    status, PRJ_Main!J2:J,
+    types, PRJ_Main!K2:K,
+    priority, PRJ_Main!L2:L,
+    notes, PRJ_Main!M2:M,
+    budget, PRJ_Main!O2:O,
+    manager, PRJ_Main!V2:V,
+    actualCost, IF(ids="",,IFERROR(SUMIF(PRJ_Costs!B:B, ids, PRJ_Costs!F:F), 0)),
+    computedPlanEnd, IF(LEN(plannedEnd), plannedEnd, IF((startDates<>"")*(plannedDays<>""), startDates + plannedDays, "")),
+    budgetDiff, IF((budget="")*(actualCost=0),"", IF(budget="", -actualCost, budget - actualCost)),
+    progressRaw, IF((plannedDays>0)*(startDates<>""), (IF(actualEnd<>"", actualEnd, TODAY()) - startDates)/plannedDays, ""),
+    progressPct, IF(progressRaw="", "", ROUND(100*MAX(0, MIN(progressRaw, 1)), 1)),
+    output, {ids, names, clients, startDates, plannedDays, computedPlanEnd, actualEnd, status, types, priority, budget, actualCost, budgetDiff, progressPct, notes, manager}
+  ,
+    IF(ids="",,output)
+  )
+)`;
       pvMain.getRange(2, 1).setFormula(pvMainFormula);
       Logger.log('✅ PV_PRJ_Main formulas seeded.');
     }
 
-    const pvCosts = ss.getSheetByName('PV_PRJ_Costs');
+    const pvCosts = workbook.getSheetByName('PV_PRJ_Costs');
     if (pvCosts) {
       const maxRows = pvCosts.getMaxRows();
       if (maxRows > 1) {
         pvCosts.getRange(2, 1, maxRows - 1, pvCosts.getMaxColumns()).clearContent();
       }
-      const pvCostsFormula = `=QUERY({
-  PRJ_Costs!B2:B,
-  IFERROR(VLOOKUP(PRJ_Costs!B2:B, PRJ_Main!A2:B, 2, FALSE), ""),
-  PRJ_Costs!C2:C,
-  PRJ_Costs!D2:D,
-  PRJ_Costs!E2:E,
-  PRJ_Costs!F2:F,
-  PRJ_Costs!H2:H,
-  PRJ_Costs!G2:G
-},
-"select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8 where Col1 is not null order by Col3 label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 ''",
-0)`;
+      const pvCostsFormula = `=ARRAYFORMULA(
+  LET(
+    projectIds, PRJ_Costs!B2:B,
+    projectNames, IF(projectIds="", "", IFERROR(VLOOKUP(projectIds, PRJ_Main!A:B, 2, FALSE), "")),
+    data, {projectIds, projectNames, PRJ_Costs!C2:C, PRJ_Costs!D2:D, PRJ_Costs!E2:E, PRJ_Costs!F2:F, PRJ_Costs!H2:H, PRJ_Costs!G2:G}
+  ,
+    IF(projectIds="",,data)
+  )
+)`;
       pvCosts.getRange(2, 1).setFormula(pvCostsFormula);
       Logger.log('✅ PV_PRJ_Costs query seeded.');
     }
@@ -5881,6 +7535,138 @@ function seedProjectViewSheets(ss) {
   }
 }
 
+function collectDynamicFormRows(formIds) {
+  const definitions = getDynamicFormDefinitions();
+  const targetIds = new Set(formIds);
+  return definitions.filter((row) => targetIds.has(row[0]));
+}
+
+const FINANCE_FORM_IDS = [
+  'FORM_FIN_AddDirectExpense',
+  'FORM_FIN_EditDirectExpense',
+  'FORM_FIN_AddIndirectExpenseRep',
+  'FORM_FIN_EditIndirectExpenseRep',
+  'FORM_FIN_AddIndirectExpenseOnce',
+  'FORM_FIN_EditIndirectExpenseOnce',
+  'FORM_FIN_AddProjectRevenue',
+  'FORM_FIN_EditProjectRevenue',
+  'FORM_FIN_AddRevenue',
+  'FORM_FIN_EditRevenue',
+  'FORM_FIN_AddJournalEntry',
+  'FORM_FIN_EditJournalEntry',
+  'FORM_FIN_AddCustody',
+  'FORM_FIN_EditCustody',
+];
+
+const FINANCE_DROPDOWN_KEYS = [
+  'DD_Expense_Category',
+  'DD_Payment_Status',
+  'DD_Payment_Method',
+  'DD_Indirect_Frequency',
+  'DD_Revenue_Type',
+  'DD_Account',
+  'DD_Custody_Status',
+];
+
+function seedFinanceFormAndDropdowns(ss) {
+  const workbook = ss || getTargetSpreadsheet();
+  const formsSheet = workbook.getSheetByName('SYS_Dynamic_Forms');
+  const dropdownSheet = workbook.getSheetByName('SYS_Dropdowns');
+
+  if (!formsSheet || !dropdownSheet) {
+    Logger.log('seedFinanceFormAndDropdowns skipped: required sheets missing.');
+    return;
+  }
+
+  FINANCE_FORM_IDS.forEach((formId) => clearOldData(formsSheet, formId, 0));
+
+  const financeRows = collectDynamicFormRows(FINANCE_FORM_IDS);
+  if (financeRows.length) {
+    formsSheet
+      .getRange(formsSheet.getLastRow() + 1, 1, financeRows.length, financeRows[0].length)
+      .setValues(financeRows);
+  }
+
+  FINANCE_DROPDOWN_KEYS.forEach((key) => clearOldData(dropdownSheet, key, 0));
+  seedSysDropdowns(workbook);
+
+  Logger.log('✅ Finance forms and dropdowns seeded successfully.');
+}
+
+const HR_FORM_IDS = [
+  'FORM_HR_AddEmployee',
+  'FORM_HR_AddAttendance',
+  'FORM_HR_AddLeaveRequest',
+  'FORM_HR_AddLeave',
+  'FORM_HR_AddAdvance',
+  'FORM_HR_AddDeduction',
+  'FORM_HR_AddPayroll',
+];
+
+const HR_DROPDOWN_KEYS = [
+  'DD_Departments',
+  'DD_Job_Titles',
+  'DD_Gender',
+  'DD_Marital_Status',
+  'DD_Military_Status',
+  'DD_Employee_Status',
+  'DD_Attendance_Status',
+  'DD_Leave_Types',
+  'DD_Leave_Status',
+  'DD_Advance_Status',
+  'DD_Payroll_Status',
+  'DD_Penalties',
+  'DD_Employees',
+];
+
+function seedHrFormAndDropdowns(ss) {
+  const workbook = ss || getTargetSpreadsheet();
+  const formsSheet = workbook.getSheetByName('SYS_Dynamic_Forms');
+  const dropdownSheet = workbook.getSheetByName('SYS_Dropdowns');
+
+  if (!formsSheet || !dropdownSheet) {
+    Logger.log('seedHrFormAndDropdowns skipped: required sheets missing.');
+    return;
+  }
+
+  HR_FORM_IDS.forEach((formId) => clearOldData(formsSheet, formId, 0));
+
+  const hrRows = collectDynamicFormRows(HR_FORM_IDS);
+  if (hrRows.length) {
+    formsSheet
+      .getRange(formsSheet.getLastRow() + 1, 1, hrRows.length, hrRows[0].length)
+      .setValues(hrRows);
+  }
+
+  HR_DROPDOWN_KEYS.forEach((key) => clearOldData(dropdownSheet, key, 0));
+  seedSysDropdowns(workbook);
+
+  Logger.log('✅ HR forms and dropdowns seeded successfully.');
+}
+
+/**
+ * High-level orchestrator for provisioning Projects, Finance, and HR modules.
+ * Prefer calling this instead of invoking the individual seed helpers directly.
+ */
+function seedAllModules(ss) {
+  const workbook = ss || getTargetSpreadsheet();
+
+  seedProjectFormAndDropdowns(workbook);
+  seedProjectViewSheets(workbook);
+  seedProjectViews(workbook);
+
+  seedFinanceFormAndDropdowns(workbook);
+  seedFinanceViewSheets(workbook);
+  seedFinanceViews(workbook);
+
+  seedHrDepartments(workbook);
+  seedHrFormAndDropdowns(workbook);
+  seedHrViews(workbook);
+
+  Logger.log('✅ All modules seeded successfully.');
+}
+
+// Internal helper invoked by seedAllModules to refresh PV_FIN_* sheets.
 function seedFinanceViewSheets(ss) {
   try {
     const direct = ss.getSheetByName('PV_FIN_DirectExpenses_View');

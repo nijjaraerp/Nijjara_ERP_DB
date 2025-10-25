@@ -285,6 +285,86 @@ const DYNAMIC_FORMS_FALLBACK = Object.freeze({
     titleEn: "Log Project Revenue",
     titleAr: "تسجيل إيراد مشروع",
   },
+  Sub_HR_Employees: {
+    formId: "FORM_HR_AddEmployee",
+    titleEn: "Add Employee",
+    titleAr: "إضافة موظف",
+  },
+  Sub_HR_Attendance: {
+    formId: "FORM_HR_AddAttendance",
+    titleEn: "Log Attendance",
+    titleAr: "تسجيل الحضور",
+  },
+  Sub_HR_Leave_Requests: {
+    formId: "FORM_HR_AddLeaveRequest",
+    titleEn: "Submit Leave Request",
+    titleAr: "تقديم طلب إجازة",
+  },
+  Sub_HR_Leave: {
+    formId: "FORM_HR_AddLeave",
+    titleEn: "Record Leave",
+    titleAr: "تسجيل إجازة",
+  },
+  Sub_HR_Advances: {
+    formId: "FORM_HR_AddAdvance",
+    titleEn: "Log Advance",
+    titleAr: "تسجيل سلفة",
+  },
+  Sub_HR_Deductions: {
+    formId: "FORM_HR_AddDeduction",
+    titleEn: "Log Deduction",
+    titleAr: "تسجيل خصم",
+  },
+  Sub_HR_Payroll: {
+    formId: "FORM_HR_AddPayroll",
+    titleEn: "Create Payroll Entry",
+    titleAr: "إنشاء بيان راتب",
+  },
+});
+
+const HR_PANE_CONFIG = Object.freeze({
+  Sub_HR_Employees: {
+    sheetName: CONFIG.SHEETS.HR_EMPLOYEES,
+    idColumn: "Employee_ID",
+    entity: "HR_Employees",
+    idPrefix: "EMP",
+  },
+  Sub_HR_Attendance: {
+    sheetName: CONFIG.SHEETS.HR_ATTENDANCE,
+    idColumn: "Attendance_ID",
+    entity: "HR_Attendance",
+    idPrefix: "ATT",
+  },
+  Sub_HR_Leave_Requests: {
+    sheetName: CONFIG.SHEETS.HR_LEAVE_REQUESTS,
+    idColumn: "Leave_ID",
+    entity: "HR_Leave_Requests",
+    idPrefix: "LRQ",
+  },
+  Sub_HR_Leave: {
+    sheetName: CONFIG.SHEETS.HR_LEAVE,
+    idColumn: "Leave_ID",
+    entity: "HR_Leave",
+    idPrefix: "LVE",
+  },
+  Sub_HR_Advances: {
+    sheetName: CONFIG.SHEETS.HR_ADVANCES,
+    idColumn: "Advance_ID",
+    entity: "HR_Advances",
+    idPrefix: "ADV",
+  },
+  Sub_HR_Deductions: {
+    sheetName: CONFIG.SHEETS.HR_DEDUCTIONS,
+    idColumn: "Deduction_ID",
+    entity: "HR_Deductions",
+    idPrefix: "DED",
+  },
+  Sub_HR_Payroll: {
+    sheetName: CONFIG.SHEETS.HR_PAYROLL,
+    idColumn: "Payroll_ID",
+    entity: "HR_Payroll",
+    idPrefix: "PAY",
+  },
 });
 
 /** ---- DEBUGGING UTILITIES ---- */
@@ -4248,6 +4328,31 @@ function mergeTabRegisterFallbacks_(tabs) {
     if (!existing.permissions && normalizedFallback.permissions) {
       existing.permissions = normalizedFallback.permissions;
     }
+
+    if (Array.isArray(normalizedFallback.subTabs) && normalizedFallback.subTabs.length) {
+      const seenSubIds = new Set(
+        Array.isArray(existing.subTabs)
+          ? existing.subTabs
+              .map((sub) => String(sub?.subId || "").toLowerCase())
+              .filter(Boolean)
+          : []
+      );
+
+      normalizedFallback.subTabs.forEach((sub) => {
+        const subKey = String(sub?.subId || "").toLowerCase();
+        if (!subKey || seenSubIds.has(subKey)) return;
+        seenSubIds.add(subKey);
+        existing.subTabs = Array.isArray(existing.subTabs) ? existing.subTabs : [];
+        existing.subTabs.push({
+          subId: sub.subId,
+          subLabelEn: sub.subLabelEn || "",
+          subLabelAr: sub.subLabelAr || "",
+          route: sub.route || "",
+          sortOrder: parseSortOrder(sub.sortOrder),
+          sourceSheet: sub.sourceSheet || "",
+        });
+      });
+    }
   });
 
   const merged = Array.from(tabMap.values()).map((tab) => ({
@@ -4284,6 +4389,444 @@ function mergeTabRegisterFallbacks_(tabs) {
   });
 
   return merged;
+}
+
+function logAction(userId, actionType, entityType, recordId, details = {}) {
+  const FNAME = "logAction";
+  try {
+    const sheet = getSheet_(CONFIG.SHEETS.AUDIT);
+    if (!sheet) {
+      debugLog(FNAME, "missingSheet", { entityType, actionType });
+      return false;
+    }
+
+    const now = new Date();
+    const actorEmail = getActorEmail_();
+    let detailsText = "";
+    if (details != null) {
+      if (typeof details === "string") {
+        detailsText = details;
+      } else {
+        detailsText = safeStringify_(sanitizeForLog(details));
+      }
+    }
+
+    const scoped =
+      details && typeof details === "object" && details !== null
+        ? details.scope || details.Scope || ""
+        : "";
+    const sheetHint =
+      details && typeof details === "object" && details !== null
+        ? details.sheet || details.Sheet || entityType || ""
+        : entityType || "";
+
+    const payload = {
+      Timestamp: now,
+      User: actorEmail || userId || "",
+      Action: actionType || "",
+      Details: detailsText,
+      Entity: entityType || "",
+      Entity_Id: recordId || "",
+      Scope: scoped || entityType || "",
+      Sheet: sheetHint || entityType || "",
+      Target_Id: recordId || "",
+      Actor_Id: userId || "",
+    };
+
+    appendRow_(sheet, payload);
+    return true;
+  } catch (error) {
+    debugError(FNAME, error, { entityType, actionType, recordId });
+    return false;
+  }
+}
+
+function normalizeHrKeyToken_(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/^sub_/, "")
+    .replace(/^hr_/, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function getHrSheetConfig_(key) {
+  if (!key) return null;
+  const normalized = normalizeHrKeyToken_(key);
+  if (!normalized) return null;
+  for (const [paneId, config] of Object.entries(HR_PANE_CONFIG)) {
+    const paneToken = normalizeHrKeyToken_(paneId);
+    if (paneToken === normalized) {
+      return config;
+    }
+  }
+  return null;
+}
+
+function getHrSheetContext_(config) {
+  if (!config) throw new Error("HR configuration missing");
+  const sheet = getSheet_(config.sheetName);
+  if (!sheet) {
+    throw new Error(`Sheet ${config.sheetName} not found`);
+  }
+  const lastCol = sheet.getLastColumn();
+  const headers =
+    lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
+  if (!headers.length) {
+    throw new Error(`Sheet ${config.sheetName} is missing headers`);
+  }
+  const idIndex = headers.indexOf(config.idColumn);
+  if (idIndex < 0) {
+    throw new Error(
+      `${config.idColumn} column missing in ${config.sheetName}`
+    );
+  }
+  return { sheet, headers, idIndex };
+}
+
+function buildFlexibleLookup_(data) {
+  const map = new Map();
+  if (!data || typeof data !== "object") return map;
+  Object.keys(data).forEach((key) => {
+    const value = data[key];
+    const original = String(key || "");
+    const lower = original.toLowerCase();
+    const compact = normalizeHrKeyToken_(original);
+    map.set(original, value);
+    map.set(lower, value);
+    map.set(compact, value);
+  });
+  return map;
+}
+
+function generateHrRecordId_(config) {
+  const prefix = String(config.idPrefix || config.idColumn || "HR").toUpperCase();
+  const token = Utilities.getUuid().split("-")[0].toUpperCase();
+  return `${prefix}-${token}`;
+}
+
+function getHrRecords_(key) {
+  const config = getHrSheetConfig_(key);
+  if (!config) {
+    return sanitizeForClientResponse_({ headers: [], rows: [] });
+  }
+  const { headers, rows } = loadSheetData_(config.sheetName);
+  return sanitizeForClientResponse_({ headers, rows });
+}
+
+function createHrRecord_(key, data = {}) {
+  const FNAME = "createHrRecord_";
+  try {
+    const config = getHrSheetConfig_(key);
+    if (!config) throw new Error("HR configuration not found");
+    const { sheet, headers, idIndex } = getHrSheetContext_(config);
+    const lookup = buildFlexibleLookup_(data);
+    let recordId = lookup.get(config.idColumn);
+    if (!recordId) {
+      recordId = lookup.get(config.idColumn.toLowerCase());
+    }
+    if (!recordId) {
+      recordId = lookup.get(normalizeHrKeyToken_(config.idColumn));
+    }
+    if (!recordId) {
+      recordId = generateHrRecordId_(config);
+    }
+
+    const now = new Date();
+    const actor = getActorEmail_();
+    const currentUser = getCurrentUser();
+    const rowValues = headers.map((header, index) => {
+      if (index === idIndex) {
+        return recordId;
+      }
+      const candidates = [
+        header,
+        String(header || "").toLowerCase(),
+        normalizeHrKeyToken_(header),
+      ];
+      for (const candidate of candidates) {
+        if (candidate && lookup.has(candidate)) {
+          return lookup.get(candidate);
+        }
+      }
+      return "";
+    });
+
+    const createdAtIdx = headers.indexOf("Created_At");
+    if (createdAtIdx >= 0) rowValues[createdAtIdx] = now;
+    const createdByIdx = headers.indexOf("Created_By");
+    if (createdByIdx >= 0) rowValues[createdByIdx] = actor;
+    const updatedAtIdx = headers.indexOf("Updated_At");
+    if (updatedAtIdx >= 0) rowValues[updatedAtIdx] = now;
+    const updatedByIdx = headers.indexOf("Updated_By");
+    if (updatedByIdx >= 0) rowValues[updatedByIdx] = actor;
+
+    sheet.appendRow(rowValues);
+
+    const rowObject = headers.reduce((acc, header, idx) => {
+      acc[header] = rowValues[idx];
+      return acc;
+    }, {});
+
+    logAction(currentUser?.User_Id || "", "CREATE", config.entity, recordId, {
+      sheet: config.sheetName,
+      data: rowObject,
+    });
+
+    return sanitizeForClientResponse_({
+      success: true,
+      recordId,
+      message: "تم إنشاء السجل بنجاح.",
+    });
+  } catch (error) {
+    debugError(FNAME, error, { key });
+    throw error;
+  }
+}
+
+function updateHrRecord_(key, recordId, updates = {}) {
+  const FNAME = "updateHrRecord_";
+  try {
+    const config = getHrSheetConfig_(key);
+    if (!config) throw new Error("HR configuration not found");
+    const { sheet, headers, idIndex } = getHrSheetContext_(config);
+    const lookup = buildFlexibleLookup_(updates);
+    const normalizedId = recordId || lookup.get(config.idColumn);
+    if (!normalizedId) throw new Error("Record identifier is required");
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "لا توجد بيانات لتحديثها.",
+      });
+    }
+
+    const dataRange = sheet.getRange(2, 1, lastRow - 1, headers.length);
+    const rows = dataRange.getValues();
+    const targetIndex = rows.findIndex((row) =>
+      keysEqual_(row[idIndex], normalizedId)
+    );
+
+    if (targetIndex < 0) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "تعذر العثور على السجل المطلوب.",
+      });
+    }
+
+    const rowNumber = targetIndex + 2;
+    const currentRow = rows[targetIndex];
+    const updatedRow = currentRow.slice();
+    const applied = {};
+
+    headers.forEach((header, index) => {
+      if (index === idIndex) return;
+      const candidates = [
+        header,
+        String(header || "").toLowerCase(),
+        normalizeHrKeyToken_(header),
+      ];
+      for (const candidate of candidates) {
+        if (candidate && lookup.has(candidate)) {
+          const value = lookup.get(candidate);
+          updatedRow[index] = value;
+          applied[header] = value;
+          return;
+        }
+      }
+    });
+
+    const now = new Date();
+    const actor = getActorEmail_();
+    const currentUser = getCurrentUser();
+    const updatedAtIdx = headers.indexOf("Updated_At");
+    if (updatedAtIdx >= 0) {
+      updatedRow[updatedAtIdx] = now;
+      applied[headers[updatedAtIdx]] = now;
+    }
+    const updatedByIdx = headers.indexOf("Updated_By");
+    if (updatedByIdx >= 0) {
+      updatedRow[updatedByIdx] = actor;
+      applied[headers[updatedByIdx]] = actor;
+    }
+
+    sheet.getRange(rowNumber, 1, 1, headers.length).setValues([updatedRow]);
+
+    logAction(currentUser?.User_Id || "", "UPDATE", config.entity, normalizedId, {
+      sheet: config.sheetName,
+      updates: applied,
+    });
+
+    return sanitizeForClientResponse_({
+      success: true,
+      recordId: normalizedId,
+      message: "تم تحديث السجل بنجاح.",
+    });
+  } catch (error) {
+    debugError(FNAME, error, { key, recordId });
+    throw error;
+  }
+}
+
+function deleteHrRecord_(key, recordId) {
+  const FNAME = "deleteHrRecord_";
+  try {
+    const config = getHrSheetConfig_(key);
+    if (!config) throw new Error("HR configuration not found");
+    const { sheet, headers, idIndex } = getHrSheetContext_(config);
+    const normalizedId = String(recordId || "").trim();
+    if (!normalizedId) throw new Error("Record identifier is required");
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "لا توجد بيانات لحذفها.",
+      });
+    }
+
+    const dataRange = sheet.getRange(2, 1, lastRow - 1, headers.length);
+    const rows = dataRange.getValues();
+    const targetIndex = rows.findIndex((row) =>
+      keysEqual_(row[idIndex], normalizedId)
+    );
+
+    if (targetIndex < 0) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "تعذر العثور على السجل المطلوب.",
+      });
+    }
+
+    const rowNumber = targetIndex + 2;
+    sheet.deleteRow(rowNumber);
+
+    const currentUser = getCurrentUser();
+    logAction(currentUser?.User_Id || "", "DELETE", config.entity, normalizedId, {
+      sheet: config.sheetName,
+    });
+
+    return sanitizeForClientResponse_({
+      success: true,
+      recordId: normalizedId,
+      message: "تم حذف السجل بنجاح.",
+    });
+  } catch (error) {
+    debugError(FNAME, error, { key, recordId });
+    throw error;
+  }
+}
+
+function getEmployees() {
+  return getHrRecords_("Sub_HR_Employees");
+}
+
+function getAttendanceRecords() {
+  return getHrRecords_("Sub_HR_Attendance");
+}
+
+function getLeaveRequests() {
+  return getHrRecords_("Sub_HR_Leave_Requests");
+}
+
+function getLeaveRecords() {
+  return getHrRecords_("Sub_HR_Leave");
+}
+
+function getAdvanceRecords() {
+  return getHrRecords_("Sub_HR_Advances");
+}
+
+function getDeductionRecords() {
+  return getHrRecords_("Sub_HR_Deductions");
+}
+
+function getPayrollRecords() {
+  return getHrRecords_("Sub_HR_Payroll");
+}
+
+function saveEmployee(data) {
+  return createHrRecord_("Sub_HR_Employees", data);
+}
+
+function saveAttendanceRecord(data) {
+  return createHrRecord_("Sub_HR_Attendance", data);
+}
+
+function saveLeaveRequest(data) {
+  return createHrRecord_("Sub_HR_Leave_Requests", data);
+}
+
+function saveLeaveRecord(data) {
+  return createHrRecord_("Sub_HR_Leave", data);
+}
+
+function saveAdvanceRecord(data) {
+  return createHrRecord_("Sub_HR_Advances", data);
+}
+
+function saveDeductionRecord(data) {
+  return createHrRecord_("Sub_HR_Deductions", data);
+}
+
+function savePayrollRecord(data) {
+  return createHrRecord_("Sub_HR_Payroll", data);
+}
+
+function updateEmployee(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Employees", recordId, updates);
+}
+
+function updateAttendanceRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Attendance", recordId, updates);
+}
+
+function updateLeaveRequest(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Leave_Requests", recordId, updates);
+}
+
+function updateLeaveRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Leave", recordId, updates);
+}
+
+function updateAdvanceRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Advances", recordId, updates);
+}
+
+function updateDeductionRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Deductions", recordId, updates);
+}
+
+function updatePayrollRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Payroll", recordId, updates);
+}
+
+function deleteEmployee(recordId) {
+  return deleteHrRecord_("Sub_HR_Employees", recordId);
+}
+
+function deleteAttendanceRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Attendance", recordId);
+}
+
+function deleteLeaveRequest(recordId) {
+  return deleteHrRecord_("Sub_HR_Leave_Requests", recordId);
+}
+
+function deleteLeaveRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Leave", recordId);
+}
+
+function deleteAdvanceRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Advances", recordId);
+}
+
+function deleteDeductionRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Deductions", recordId);
+}
+
+function deletePayrollRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Payroll", recordId);
 }
 
 function renderPaneHeader(paneElement, paneName) {
