@@ -413,6 +413,8 @@ function getSheetSchemas() {
       "Planned_End_Date",
       "End_Date",
       "Status",
+      "Project_Type",
+      "Project_Priority",
       "Notes",
       "Proj_Budget",
       "Budget",
@@ -430,6 +432,7 @@ function getSheetSchemas() {
       "Task_ID",
       "Project_ID",
       "Task_Name",
+      "Task_Priority",
       "Assignee_ID",
       "Planned_Start",
       "Planned_End",
@@ -483,6 +486,34 @@ function getSheetSchemas() {
       "Active",
       "Updated_At",
       "Updated_By",
+    ],
+    PV_PRJ_Main: [
+      "معرّف المشروع",
+      "اسم المشروع",
+      "العميل",
+      "تاريخ البدء",
+      "الأيام المخططة",
+      "تاريخ الانتهاء المخطط",
+      "تاريخ الانتهاء الفعلي",
+      "حالة المشروع",
+      "نوع المشروع",
+      "أولوية المشروع",
+      "الميزانية",
+      "التكلفة الفعلية",
+      "الفرق عن الميزانية",
+      "نسبة التقدم",
+      "ملاحظات",
+      "مدير المشروع",
+    ],
+    PV_PRJ_Costs: [
+      "معرّف المشروع",
+      "اسم المشروع",
+      "تاريخ التكلفة",
+      "فئة التكلفة",
+      "الوصف",
+      "المبلغ",
+      "أنشئ بواسطة",
+      "تاريخ الإنشاء",
     ],
     PRJ_InDirExp_Allocations: [
       "Allocation_ID",
@@ -839,7 +870,7 @@ function seedSysTabRegister(ss) {
       "التكاليف",
       "/projects/costs",
       3,
-      "PRJ_Costs",
+      "PV_PRJ_Costs",
       "PRJ_VIEW_PROJECTS",
     ],
     [
@@ -2171,6 +2202,10 @@ function seedProjectFormAndDropdowns() {
   clearOldData(formsSheet, 'FORM_PRJ_AddTask', 0);
   clearOldData(formsSheet, 'FORM_PRJ_AddCost', 0);
   clearOldData(formsSheet, 'FORM_PRJ_AddRevenue', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_EditProject', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_ViewProject', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_EditTask', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_ViewTask', 0);
   
   // Clear old dropdowns
   clearOldData(dropsSheet, 'DD_Project_Status', 0); // 0 is the column index for 'Key'
@@ -2178,6 +2213,9 @@ function seedProjectFormAndDropdowns() {
   clearOldData(dropsSheet, 'DD_Managers', 0);
   clearOldData(dropsSheet, 'DD_Projects', 0);
   clearOldData(dropsSheet, 'DD_Project_Assignees', 0);
+  clearOldData(dropsSheet, 'DD_Project_Type', 0);
+  clearOldData(dropsSheet, 'DD_Project_Priority', 0);
+  clearOldData(dropsSheet, 'DD_Task_Priority', 0);
   clearOldData(dropsSheet, 'DD_Task_Status', 0);
   clearOldData(dropsSheet, 'DD_Cost_Categories', 0);
   clearOldData(dropsSheet, 'DD_Revenue_Type', 0);
@@ -2191,6 +2229,8 @@ function seedProjectFormAndDropdowns() {
     ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Client_ID', 'العميل', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Clients', 'PRJ_Main', 'Client_ID', ''],
     ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Contract_ID', 'معرّف العقد', 'Text', '', '', 'No', '', '', 'PRJ_Main', 'Contract_ID', ''],
     ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Status', 'حالة المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', 'New', 'DD_Project_Status', 'PRJ_Main', 'Status', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'تصنيف المشروع', 'PRJ_Project_Type', 'نوع المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Type', 'PRJ_Main', 'Project_Type', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'تصنيف المشروع', 'PRJ_Project_Priority', 'أولوية المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'No', 'Medium', 'DD_Project_Priority', 'PRJ_Main', 'Project_Priority', ''],
     ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Start_Date', 'تاريخ البدء', 'Date', '', '', 'Yes', '', '', 'PRJ_Main', 'Start_Date', ''],
     ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_Days', 'الأيام المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Days', ''],
     ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_End_Date', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Main', 'Planned_End_Date', ''],
@@ -2202,9 +2242,54 @@ function seedProjectFormAndDropdowns() {
     ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'PRJ_Tasks', 'Project_ID', ''],
     ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Name', 'اسم المهمة', 'Text', '', '', 'Yes', '', '', 'PRJ_Tasks', 'Task_Name', ''],
     ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التعيينات', 'PRJ_Task_Assignee', 'المسؤول', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Assignees', 'PRJ_Tasks', 'Assignee_ID', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'تصنيف المهمة', 'PRJ_Task_Priority', 'أولوية المهمة', 'Dropdown', 'SYS_Dropdowns', '', 'No', 'Medium', 'DD_Task_Priority', 'PRJ_Tasks', 'Task_Priority', ''],
     ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PStart', 'تاريخ البدء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_Start', ''],
     ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PEnd', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_End', ''],
     ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'الحالة', 'PRJ_Task_Status', 'حالة المهمة', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', 'Not_Started', 'DD_Task_Status', 'PRJ_Tasks', 'Status', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Project_Name', 'اسم المشروع', 'Text', '', '', 'Yes', '', '', 'PRJ_Main', 'Project_Name', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Client_ID', 'العميل', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Clients', 'PRJ_Main', 'Client_ID', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Contract_ID', 'معرّف العقد', 'Text', '', '', 'No', '', '', 'PRJ_Main', 'Contract_ID', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Status', 'حالة المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Project_Status', 'PRJ_Main', 'Status', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Project_Type', 'نوع المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Type', 'PRJ_Main', 'Project_Type', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Project_Priority', 'أولوية المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Priority', 'PRJ_Main', 'Project_Priority', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Start_Date', 'تاريخ البدء', 'Date', '', '', 'Yes', '', '', 'PRJ_Main', 'Start_Date', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_Days', 'الأيام المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Days', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_End_Date', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Main', 'Planned_End_Date', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Budget', 'الميزانية', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Budget', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Planned_Material_Expense', 'تكلفة المواد المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Material_Expense', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Manager', 'مدير المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Managers', 'PRJ_Main', 'Manager', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Notes', 'ملاحظات', 'Paragraph', '', '', 'No', '', '', 'PRJ_Main', 'Notes', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Project_Name', 'اسم المشروع', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Project_Name', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Client_ID', 'العميل', 'Display', '', '', 'No', '', 'DD_Clients', 'PRJ_Main', 'Client_ID', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Contract_ID', 'معرّف العقد', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Contract_ID', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Status', 'حالة المشروع', 'Display', '', '', 'No', '', 'DD_Project_Status', 'PRJ_Main', 'Status', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Project_Type', 'نوع المشروع', 'Display', '', '', 'No', '', 'DD_Project_Type', 'PRJ_Main', 'Project_Type', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Project_Priority', 'أولوية المشروع', 'Display', '', '', 'No', '', 'DD_Project_Priority', 'PRJ_Main', 'Project_Priority', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Start_Date', 'تاريخ البدء', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Start_Date', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_Days', 'الأيام المخططة', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Days', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_End_Date', 'تاريخ الانتهاء المخطط', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Planned_End_Date', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Budget', 'الميزانية', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Budget', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Planned_Material_Expense', 'تكلفة المواد المخططة', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Material_Expense', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Manager', 'مدير المشروع', 'Display', '', '', 'No', '', 'DD_Managers', 'PRJ_Main', 'Manager', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Notes', 'ملاحظات', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Notes', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Name', 'اسم المهمة', 'Text', '', '', 'Yes', '', '', 'PRJ_Tasks', 'Task_Name', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'PRJ_Tasks', 'Project_ID', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'تصنيف المهمة', 'PRJ_Task_Priority', 'أولوية المهمة', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Task_Priority', 'PRJ_Tasks', 'Task_Priority', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التعيينات', 'PRJ_Task_Assignee', 'المسؤول', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Assignees', 'PRJ_Tasks', 'Assignee_ID', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PStart', 'تاريخ البدء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_Start', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PEnd', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_End', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_AStart', 'تاريخ البدء الفعلي', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Actual_Start', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_AEnd', 'تاريخ الانتهاء الفعلي', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Actual_End', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'الحالة', 'PRJ_Task_Status', 'حالة المهمة', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Task_Status', 'PRJ_Tasks', 'Status', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Name', 'اسم المهمة', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Task_Name', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Project', 'المشروع', 'Display', '', '', 'No', '', 'DD_Projects', 'PRJ_Tasks', 'Project_ID', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'تصنيف المهمة', 'PRJ_Task_Priority', 'أولوية المهمة', 'Display', '', '', 'No', '', 'DD_Task_Priority', 'PRJ_Tasks', 'Task_Priority', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التعيينات', 'PRJ_Task_Assignee', 'المسؤول', 'Display', '', '', 'No', '', 'DD_Project_Assignees', 'PRJ_Tasks', 'Assignee_ID', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PStart', 'تاريخ البدء المخطط', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_Start', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PEnd', 'تاريخ الانتهاء المخطط', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_End', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_AStart', 'تاريخ البدء الفعلي', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Actual_Start', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_AEnd', 'تاريخ الانتهاء الفعلي', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Actual_End', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'الحالة', 'PRJ_Task_Status', 'حالة المهمة', 'Display', '', '', 'No', '', 'DD_Task_Status', 'PRJ_Tasks', 'Status', ''],
     ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'البيانات الأساسية', 'PRJ_Cost_ID', 'معرّف التكلفة', 'Auto', '', '', 'No', '', '', 'PRJ_Costs', 'Cost_ID', ''],
     ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'البيانات الأساسية', 'PRJ_Cost_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'PRJ_Costs', 'Project_ID', ''],
     ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'البيانات الأساسية', 'PRJ_Cost_Date', 'تاريخ التكلفة', 'Date', '', '', 'Yes', '', '', 'PRJ_Costs', 'Date', ''],
@@ -2228,6 +2313,16 @@ function seedProjectFormAndDropdowns() {
     ['DD_Project_Status', 'Completed', 'مكتمل', 'TRUE', 3],
     ['DD_Project_Status', 'On_Hold', 'معلق', 'TRUE', 4],
     ['DD_Project_Status', 'Cancelled', 'ملغى', 'TRUE', 5],
+    ['DD_Project_Type', 'Internal', 'مشروع داخلي', 'TRUE', 1],
+    ['DD_Project_Type', 'Client_Project', 'مشروع عميل', 'TRUE', 2],
+    ['DD_Project_Type', 'Maintenance', 'صيانة', 'TRUE', 3],
+    ['DD_Project_Priority', 'High', 'عالية', 'TRUE', 1],
+    ['DD_Project_Priority', 'Medium', 'متوسطة', 'TRUE', 2],
+    ['DD_Project_Priority', 'Low', 'منخفضة', 'TRUE', 3],
+    ['DD_Task_Priority', 'Critical', 'حرجة', 'TRUE', 1],
+    ['DD_Task_Priority', 'High', 'مرتفعة', 'TRUE', 2],
+    ['DD_Task_Priority', 'Medium', 'متوسطة', 'TRUE', 3],
+    ['DD_Task_Priority', 'Low', 'منخفضة', 'TRUE', 4],
     ['DD_Task_Status', 'Not_Started', 'لم يبدأ', 'TRUE', 1],
     ['DD_Task_Status', 'In_Progress', 'قيد التنفيذ', 'TRUE', 2],
     ['DD_Task_Status', 'Completed', 'مكتملة', 'TRUE', 3],
@@ -2326,8 +2421,68 @@ function seedProjectFormAndDropdowns() {
     Logger.log(`Wrote ${allNewDropdowns.length} rows to SYS_Dropdowns.`);
   }
 
+  seedProjectViewSheets(ss);
+
   Logger.log('Seeding complete.');
   SpreadsheetApp.getUi().alert('Success! The Project Form and all required dropdowns have been seeded.');
+}
+
+function seedProjectViewSheets(ss) {
+  try {
+    const pvMain = ss.getSheetByName('PV_PRJ_Main');
+    if (pvMain) {
+      const maxRows = pvMain.getMaxRows();
+      if (maxRows > 1) {
+        pvMain.getRange(2, 1, maxRows - 1, pvMain.getMaxColumns()).clearContent();
+      }
+      const pvMainFormula = `=ARRAYFORMULA(IF(LEN(PRJ_Main!A2:A)=0,"",
+  {
+    PRJ_Main!A2:A,
+    PRJ_Main!B2:B,
+    PRJ_Main!D2:D,
+    PRJ_Main!F2:F,
+    PRJ_Main!G2:G,
+    IF(LEN(PRJ_Main!H2:H), PRJ_Main!H2:H, IF((PRJ_Main!F2:F<>"")*(PRJ_Main!G2:G<>""), PRJ_Main!F2:F + PRJ_Main!G2:G, "")),
+    PRJ_Main!I2:I,
+    PRJ_Main!J2:J,
+    PRJ_Main!K2:K,
+    PRJ_Main!L2:L,
+    PRJ_Main!O2:O,
+    IFERROR(SUMIF(PRJ_Costs!B:B, PRJ_Main!A2:A, PRJ_Costs!F:F), 0),
+    IF((PRJ_Main!O2:O="")*(IFERROR(SUMIF(PRJ_Costs!B:B, PRJ_Main!A2:A, PRJ_Costs!F:F), 0)=0), "", PRJ_Main!O2:O - IFERROR(SUMIF(PRJ_Costs!B:B, PRJ_Main!A2:A, PRJ_Costs!F:F), 0)),
+    IF((PRJ_Main!G2:G>0)*(PRJ_Main!F2:F<>""), ROUND(100 * IF(((IF(PRJ_Main!I2:I<>"", PRJ_Main!I2:I, TODAY()) - PRJ_Main!F2:F) / PRJ_Main!G2:G) < 0, 0, IF(((IF(PRJ_Main!I2:I<>"", PRJ_Main!I2:I, TODAY()) - PRJ_Main!F2:F) / PRJ_Main!G2:G) > 1, 1, (IF(PRJ_Main!I2:I<>"", PRJ_Main!I2:I, TODAY()) - PRJ_Main!F2:F) / PRJ_Main!G2:G)), 1), ""),
+    PRJ_Main!M2:M,
+    PRJ_Main!V2:V
+  }
+))`;
+      pvMain.getRange(2, 1).setFormula(pvMainFormula);
+      Logger.log('✅ PV_PRJ_Main formulas seeded.');
+    }
+
+    const pvCosts = ss.getSheetByName('PV_PRJ_Costs');
+    if (pvCosts) {
+      const maxRows = pvCosts.getMaxRows();
+      if (maxRows > 1) {
+        pvCosts.getRange(2, 1, maxRows - 1, pvCosts.getMaxColumns()).clearContent();
+      }
+      const pvCostsFormula = `=QUERY({
+  PRJ_Costs!B2:B,
+  IFERROR(VLOOKUP(PRJ_Costs!B2:B, PRJ_Main!A2:B, 2, FALSE), ""),
+  PRJ_Costs!C2:C,
+  PRJ_Costs!D2:D,
+  PRJ_Costs!E2:E,
+  PRJ_Costs!F2:F,
+  PRJ_Costs!H2:H,
+  PRJ_Costs!G2:G
+},
+"select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8 where Col1 is not null order by Col3 label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 ''",
+0)`;
+      pvCosts.getRange(2, 1).setFormula(pvCostsFormula);
+      Logger.log('✅ PV_PRJ_Costs query seeded.');
+    }
+  } catch (err) {
+    Logger.log(`seedProjectViewSheets error: ${err}`);
+  }
 }
 
 
