@@ -4232,6 +4232,7 @@ function mergeTabRegisterFallbacks_(tabs) {
     }
 
     const existing = tabMap.get(key);
+    // Only supplement missing metadata; do not inject fallback sub-tabs when a tab already exists.
     if (!existing.tabLabelEn && normalizedFallback.tabLabelEn) {
       existing.tabLabelEn = normalizedFallback.tabLabelEn;
     }
@@ -4247,62 +4248,6 @@ function mergeTabRegisterFallbacks_(tabs) {
     if (!existing.permissions && normalizedFallback.permissions) {
       existing.permissions = normalizedFallback.permissions;
     }
-
-    if (!Array.isArray(existing.subTabs)) {
-      existing.subTabs = [];
-    }
-
-    const subMap = new Map(
-      existing.subTabs.map((sub) => [
-        String(sub.subId || "").toLowerCase(),
-        sub,
-      ])
-    );
-
-    normalizedFallback.subTabs.forEach((sub) => {
-      const subKey = String(sub.subId || "").toLowerCase();
-      if (!subKey) return;
-
-      if (!subMap.has(subKey)) {
-        const clone = { ...sub };
-        existing.subTabs.push(clone);
-        subMap.set(subKey, clone);
-        return;
-      }
-
-      const current = subMap.get(subKey);
-      if (!current.subLabelEn && sub.subLabelEn) {
-        current.subLabelEn = sub.subLabelEn;
-      }
-      if (!current.subLabelAr && sub.subLabelAr) {
-        current.subLabelAr = sub.subLabelAr;
-      }
-      if (
-        (current.sortOrder == null || !Number.isFinite(current.sortOrder)) &&
-        sub.sortOrder != null
-      ) {
-        current.sortOrder = sub.sortOrder;
-      }
-      if (!current.route && sub.route) {
-        current.route = sub.route;
-      }
-      if (!current.sourceSheet && sub.sourceSheet) {
-        current.sourceSheet = sub.sourceSheet;
-      }
-    });
-
-    existing.subTabs.sort((a, b) => {
-      const aOrder =
-        a.sortOrder != null && Number.isFinite(a.sortOrder)
-          ? a.sortOrder
-          : Number.MAX_SAFE_INTEGER;
-      const bOrder =
-        b.sortOrder != null && Number.isFinite(b.sortOrder)
-          ? b.sortOrder
-          : Number.MAX_SAFE_INTEGER;
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      return String(a.subId || "").localeCompare(String(b.subId || ""));
-    });
   });
 
   const merged = Array.from(tabMap.values()).map((tab) => ({
