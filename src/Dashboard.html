@@ -209,7 +209,7 @@
       }
       .navbar-buttons {
         display: inline-flex;
-        gap: 0.5rem;
+        gap: 0.6rem;
         margin-inline-start: 1rem;
       }
       .app-brand {
@@ -217,24 +217,164 @@
         color: var(--color-accent);
       }
       .nav-btn {
-        background: 0 0;
-        border: none;
+        --nav-color: var(--color-accent);
+        --nav-color-soft: rgba(212, 175, 55, 0.18);
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        min-width: 120px;
+        padding: 0.55rem 1.1rem 0.85rem;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
         color: var(--color-text-secondary);
-        padding: 0.4rem 0.75rem;
-        border-radius: 8px;
         cursor: pointer;
-        transition: background 0.2s, color 0.2s;
+        position: relative;
+        transition: transform 0.25s ease, box-shadow 0.25s ease,
+          border-color 0.25s ease, color 0.25s ease,
+          background 0.25s ease, padding 0.25s ease;
+      }
+      .nav-btn::after {
+        content: "";
+        position: absolute;
+        inset: 4px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.02);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+        pointer-events: none;
       }
       .nav-btn:hover {
+        border-color: var(--nav-color-soft);
+        color: var(--color-text-primary);
+      }
+      .nav-btn:hover::after {
+        opacity: 1;
+      }
+      .nav-btn.active {
+        transform: translateY(-6px);
+        padding-top: 0.95rem;
+        padding-bottom: 1.35rem;
+        box-shadow: 0 18px 34px rgba(0, 0, 0, 0.45);
+        color: var(--nav-color);
+        border-color: var(--nav-color);
+        background: rgba(0, 0, 0, 0.4);
+      }
+      .nav-btn.active::after {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.45);
+      }
+      .nav-btn__icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--nav-color-soft, rgba(255, 255, 255, 0.06));
+        color: var(--color-text-secondary);
+        transition: background 0.25s ease, color 0.25s ease,
+          box-shadow 0.25s ease;
+      }
+      .nav-btn.active .nav-btn__icon {
+        background: var(--nav-color);
+        color: #1f1f1f;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
+      }
+      .nav-btn__label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+      }
+      .nav-btn[data-theme="projects"] {
+        --nav-color: #5a8cff;
+        --nav-color-soft: rgba(90, 140, 255, 0.26);
+      }
+      .nav-btn[data-theme="finance"] {
+        --nav-color: #d2aa50;
+        --nav-color-soft: rgba(210, 170, 80, 0.26);
+      }
+      .nav-btn[data-theme="hr"] {
+        --nav-color: #66d6a8;
+        --nav-color-soft: rgba(102, 214, 168, 0.26);
+      }
+      .nav-btn[data-theme="users"] {
+        --nav-color: #c86ed2;
+        --nav-color-soft: rgba(200, 110, 210, 0.26);
+      }
+      .nav-btn[data-theme="portal"] {
+        --nav-color: var(--color-accent);
+        --nav-color-soft: rgba(212, 175, 55, 0.26);
+      }
+      .nav-icon-button {
+        width: 40px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        transition: transform 0.25s ease, box-shadow 0.25s ease,
+          border-color 0.25s ease, background 0.25s ease;
+      }
+      .nav-icon-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 18px rgba(0, 0, 0, 0.35);
+        border-color: rgba(255, 255, 255, 0.22);
         background: rgba(255, 255, 255, 0.08);
         color: var(--color-text-primary);
       }
-      .nav-btn.active {
-        background: rgba(212, 175, 55, 0.18);
-        color: var(--color-accent);
-      }
       .navbar-user {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         color: var(--color-text-secondary);
+      }
+      .navbar-user__text {
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .app-icon {
+        width: 20px;
+        height: 20px;
+        fill: none;
+        stroke: var(--icon-color, #d0d0d0);
+        stroke-width: 1.7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .app-icon--lg {
+        width: 22px;
+        height: 22px;
+      }
+      .app-icon--dark {
+        --icon-color: #1f1f1f;
+      }
+      .icon-wrapper {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .nav-icon-button .app-icon {
+        --icon-color: currentColor;
+      }
+      .nav-btn__icon .app-icon {
+        --icon-color: currentColor;
+      }
+      .nav-btn.active .nav-btn__icon .app-icon {
+        --icon-color: var(--nav-color);
+      }
+      .navbar-user .app-icon {
+        --icon-color: #d0d0d0;
       }
 
       #portal-view {
@@ -446,18 +586,55 @@
         border-radius: 12px;
         overflow: hidden;
       }
+      .pane-table-container {
+        border: 1px solid var(--theme-accent-24);
+        border-radius: 16px;
+        background: rgba(18, 18, 18, 0.9);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        width: 100%;
+      }
+      .pane-table-scroll {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        overflow-x: hidden;
+        max-height: 60vh;
+      }
+      .pane-table-scroll table {
+        width: 100%;
+        table-layout: fixed;
+      }
       table {
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed;
+      }
+      .generic-table {
+        table-layout: fixed;
       }
       table thead {
         background: rgba(255, 255, 255, 0.04);
+      }
+      .pane-table-scroll thead {
+        position: sticky;
+        top: 0;
+        background: var(--theme-accent-16);
+        z-index: 2;
+      }
+      .pane-table-scroll thead th {
+        color: var(--theme-accent);
       }
       td,
       th {
         padding: 0.65rem 0.9rem;
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         text-align: right;
+        overflow: hidden;
+        word-break: break-word;
+      }
+      th {
+        white-space: normal;
       }
       tbody tr:hover {
         background: rgba(255, 255, 255, 0.04);
@@ -473,36 +650,65 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1.2rem;
-        padding: 1rem 0 0.5rem;
+        gap: 1.5rem;
+        padding: 1rem 0 0.75rem;
         width: 100%;
       }
       .pane-mode-switch {
         display: inline-flex;
-        gap: 0.75rem;
+        gap: 1rem;
         align-items: center;
         justify-content: center;
         flex-wrap: wrap;
         width: 100%;
       }
       .pane-mode-button {
-        min-width: 170px;
-        padding: 0.85rem 2.2rem;
+        min-width: 200px;
+        padding: 0.85rem 2.5rem;
         border-radius: 999px;
         border: 1px solid var(--theme-accent-24);
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--color-text-secondary);
+        background: linear-gradient(
+          180deg,
+          rgba(18, 18, 18, 0.9),
+          rgba(18, 18, 18, 0.7)
+        );
+        color: var(--theme-accent);
         font-weight: 700;
         font-size: 1.05rem;
         text-align: center;
         transition: background 0.25s ease, color 0.25s ease,
           box-shadow 0.25s ease, border-color 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
       }
       .pane-mode-button.is-active {
         background: var(--theme-accent);
-        color: #0f0f0f;
+        color: #111111;
         border-color: var(--theme-accent);
-        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
+      }
+      .pane-mode-button:not(.is-active) {
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4);
+      }
+      .pane-mode-button__content {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+      }
+      .pane-mode-button .app-icon {
+        --icon-color: #d0d0d0;
+      }
+      .pane-mode-button.is-active .app-icon {
+        --icon-color: #1f1f1f;
+      }
+      .pane-mode-button:focus-visible {
+        outline: 2px solid var(--theme-accent);
+        outline-offset: 3px;
+      }
+      .pane-mode-button:hover {
+        border-color: var(--theme-accent);
       }
       .pane-mode-button:disabled {
         opacity: 0.5;
@@ -517,36 +723,50 @@
         gap: 0.75rem;
         width: 100%;
       }
-      .pane-search-bar input[type="search"] {
-        min-width: 220px;
-        padding: 0.55rem 0.85rem;
+      .pane-search-bar input[type="search"],
+      .pane-search-bar select {
+        min-width: 200px;
+        padding: 0.6rem 1rem;
         border-radius: 999px;
         border: 1px solid var(--theme-accent-24);
-        background: rgba(18, 18, 18, 0.92);
+        background: rgba(12, 12, 12, 0.9);
         color: var(--color-text-primary);
+        min-height: 44px;
       }
       .pane-search-bar select {
-        min-width: 180px;
-        padding: 0.55rem 0.85rem;
-        border-radius: 999px;
-        border: 1px solid var(--theme-accent-24);
-        background: rgba(18, 18, 18, 0.92);
-        color: var(--color-text-secondary);
+        cursor: pointer;
+      }
+      .pane-search-bar select option {
+        background: #c4c4c4;
+        color: #1a1a1a;
       }
       .pane-search-summary {
         color: var(--color-text-secondary);
         font-size: 0.9rem;
+        flex-basis: 100%;
+        text-align: center;
       }
       .pane-bulk-actions {
         display: flex;
         gap: 0.6rem;
         flex-wrap: wrap;
         justify-content: center;
+        align-items: center;
         width: 100%;
       }
       .pane-bulk-actions .ghost-button,
       .pane-bulk-actions .accent-button {
         padding: 0.45rem 1rem;
+        min-height: 42px;
+      }
+      .icon-label {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+      }
+      .icon-label .app-icon {
+        --icon-color: currentColor;
       }
       .generic-table__select-header,
       .generic-table__select-cell {
@@ -677,6 +897,12 @@
         align-items: start;
         width: 100%;
       }
+      .generic-pane--exempt .generic-pane__controls {
+        display: none;
+      }
+      .generic-pane--exempt .generic-pane__body {
+        grid-template-columns: 1fr;
+      }
       @media (max-width: 980px) {
         .generic-pane__body {
           grid-template-columns: 1fr;
@@ -738,6 +964,10 @@
       .generic-form__field textarea {
         min-height: 120px;
         resize: vertical;
+      }
+      select option {
+        background: #c4c4c4;
+        color: #1a1a1a;
       }
       .generic-form__actions {
         display: flex;
@@ -1588,24 +1818,59 @@
         gap: 0.35rem;
       }
       .icon-btn {
-        width: 32px;
-        height: 32px;
-        display: inline-grid;
-        place-items: center;
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         border: 1px solid var(--color-border);
-        background: transparent;
-        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 10px;
         cursor: pointer;
-        transition: background 0.2s;
+        --icon-color: #d0d0d0;
+        color: var(--icon-color);
+        transition: background 0.2s ease, color 0.2s ease,
+          border-color 0.2s ease, transform 0.2s ease;
       }
       .icon-btn:hover {
-        background: rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.18);
+        color: #f6f6f6;
+        transform: translateY(-2px);
+      }
+      .icon-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+        background: rgba(255, 255, 255, 0.04);
+        border-color: var(--color-border);
+      }
+      .icon-btn--accent {
+        border-color: var(--theme-accent);
+        background: var(--theme-accent-16);
+        --icon-color: #1f1f1f;
+        color: #1f1f1f;
+      }
+      .icon-btn--accent:hover {
+        background: var(--theme-accent);
+        color: #111;
+        border-color: var(--theme-accent);
+      }
+      .icon-btn--light {
+        --icon-color: #1f1f1f;
+        background: rgba(240, 240, 240, 0.92);
+        border-color: rgba(0, 0, 0, 0.08);
+      }
+      .icon-btn--light:hover {
+        background: rgba(240, 240, 240, 1);
+        color: #111111;
+        border-color: rgba(0, 0, 0, 0.18);
       }
       .icon-btn svg {
         width: 16px;
         height: 16px;
         fill: none;
-        stroke: #cfcfcf;
+        stroke: currentColor;
         stroke-width: 1.6;
         stroke-linecap: round;
         stroke-linejoin: round;
@@ -2029,11 +2294,15 @@
         align-items: center;
       }
 
-      /* --- Readable selects (fix white-on-white) --- */
-      select,
+      /* --- Unified field styling --- */
+      select {
+        background-color: rgba(18, 18, 18, 0.92) !important;
+        color: var(--color-text-primary) !important;
+        border: 1px solid var(--theme-accent-24);
+      }
       select option {
-        background-color: #ffffff !important;
-        color: #000000 !important;
+        background-color: #d4d4d4 !important;
+        color: #1a1a1a !important;
       }
       select:focus {
         outline: 2px solid var(--theme-accent-24);
@@ -2256,7 +2525,12 @@ select:focus {
       </div>
       <div class="app-navbar__right">
         <span id="navbar-user-label" class="navbar-user"></span>
-        <button id="logout-button" class="nav-btn">تسجيل الخروج</button>
+        <button
+          id="logout-button"
+          class="nav-icon-button"
+          title="تسجيل الخروج"
+          aria-label="تسجيل الخروج"
+        ></button>
       </div>
     </nav>
 
@@ -2275,9 +2549,12 @@ select:focus {
         <header class="workspace-header">
           <h2 class="workspace-title">المشاريع</h2>
           <div>
-            <button class="ghost-button" data-go="portal-view">
-              العودة للبوابة
-            </button>
+            <button
+              class="nav-icon-button"
+              data-go="portal-view"
+              title="العودة للبوابة"
+              aria-label="العودة للبوابة"
+            ></button>
           </div>
         </header>
         <section class="workspace-content">
@@ -2293,9 +2570,12 @@ select:focus {
         <header class="workspace-header">
           <h2 class="workspace-title">المالية</h2>
           <div>
-            <button class="ghost-button" data-go="portal-view">
-              العودة للبوابة
-            </button>
+            <button
+              class="nav-icon-button"
+              data-go="portal-view"
+              title="العودة للبوابة"
+              aria-label="العودة للبوابة"
+            ></button>
           </div>
         </header>
         <section class="workspace-content">
@@ -2311,9 +2591,12 @@ select:focus {
         <header class="workspace-header">
           <h2 class="workspace-title">الموارد البشرية</h2>
           <div>
-            <button class="ghost-button" data-go="portal-view">
-              العودة للبوابة
-            </button>
+            <button
+              class="nav-icon-button"
+              data-go="portal-view"
+              title="العودة للبوابة"
+              aria-label="العودة للبوابة"
+            ></button>
           </div>
         </header>
         <section class="workspace-content">
@@ -2841,6 +3124,7 @@ select:focus {
         const navbar = document.getElementById("app-navbar");
         const userLabel = document.getElementById("navbar-user-label");
         const navButtonsContainer = document.getElementById("navbar-buttons");
+        const logoutButton = document.getElementById("logout-button");
         const txtSearch = document.getElementById("users-search");
         const selDept = document.getElementById("department-filter");
         const selRole = document.getElementById("role-filter");
@@ -2906,6 +3190,122 @@ select:focus {
         const permissionsTbody = document.getElementById("permissions-tbody");
         const rolePermsTbody = document.getElementById("role-perms-tbody");
         const propertiesTbody = document.getElementById("properties-tbody");
+        const ICON_PATHS = Object.freeze({
+          home:
+            "<path d=\"M3 11.5 12 4l9 7.5\"/><path d=\"M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10\"/><path d=\"M10 21v-5h4v5\"/>",
+          projects:
+            "<path d=\"M4 21V7h6v14z\"/><path d=\"M10 21V3h6v18z\"/><path d=\"M6 11h2\"/><path d=\"M6 15h2\"/><path d=\"M14 7h2\"/><path d=\"M14 11h2\"/><path d=\"M14 15h2\"/>",
+          finance:
+            "<circle cx=\"9\" cy=\"9\" r=\"3\"/><path d=\"M4 21v-4a4 4 0 0 1 4-4h12\"/><path d=\"M15 3h5v12h-5z\"/>",
+          hr: "<circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M5 20v-1a7 7 0 0 1 14 0v1\"/>",
+          system:
+            "<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M4.6 9a7 7 0 0 1 0 6\"/><path d=\"M19.4 15a7 7 0 0 1 0-6\"/><path d=\"M12 5.5V4\"/><path d=\"M12 20v-1.5\"/><path d=\"M7 9l-1-1\"/><path d=\"M18 16l-1-1\"/><path d=\"M7 15l-1 1\"/><path d=\"M18 8l-1 1\"/>",
+          logout:
+            "<path d=\"M16 17l5-5-5-5\"/><path d=\"M21 12H9\"/><path d=\"M9 5V3H3v18h6v-2\"/>",
+          portal:
+            "<path d=\"M12 3l6 4v14H6V7z\"/><path d=\"M10 21v-6h4v6\"/><path d=\"M12 3v4\"/>",
+          refresh:
+            "<path d=\"M21 3v6h-6\"/><path d=\"M3 21v-6h6\"/><path d=\"M5.6 5.6A9 9 0 0 1 20 8\"/><path d=\"M19.4 18.4A9 9 0 0 1 4 16\"/>",
+          view:
+            "<path d=\"M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>",
+          add: "<path d=\"M12 5v14\"/><path d=\"M5 12h14\"/>",
+          activate:
+            "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8.5 12.5l2.5 2.5 4.5-5\"/>",
+          deactivate:
+            "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M8 8l8 8\"/><path d=\"M8 16l8-8\"/>",
+          hide:
+            "<path d=\"M1 12s4-7 11-7c3.5 0 6.6 1.9 9 5\"/><path d=\"M23 12s-4 7-11 7c-3.5 0-6.6-1.9-9-5\"/><path d=\"M3 3l18 18\"/>",
+          unhide:
+            "<path d=\"M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>",
+          password:
+            "<rect x=\"3\" y=\"11\" width=\"18\" height=\"10\" rx=\"2\"/><path d=\"M7 11V8a5 5 0 0 1 10 0v3\"/><path d=\"M12 15v3\"/>",
+          archive:
+            "<path d=\"M3 5h18v4H3z\"/><path d=\"M5 9v10h14V9\"/><path d=\"M10 13h4\"/>",
+          edit: "<path d=\"M4 21l2-2 10-10-2-2-10 10-2 4z\"/><path d=\"M14 5l5 5\"/>",
+          delete:
+            "<path d=\"M5 7h14\"/><path d=\"M10 7V5h4v2\"/><path d=\"M8 7l1 12h6l1-12\"/>",
+          file:
+            "<path d=\"M7 3h7l5 5v13H7z\"/><path d=\"M14 3v5h5\"/><path d=\"M10 13h6\"/><path d=\"M10 17h6\"/>",
+          impersonate:
+            "<path d=\"M3 12c2-4 6-6 9-6s7 2 9 6c-2 4-6 6-9 6s-7-2-9-6z\"/><path d=\"M9 12h.01\"/><path d=\"M15 12h.01\"/><path d=\"M9 15c1 .8 2 .8 3 0 1 .8 2 .8 3 0\"/>",
+          audit:
+            "<path d=\"M7 3h10v4H7z\"/><path d=\"M5 7h14v14H5z\"/><path d=\"M9 11h6\"/><path d=\"M9 15h6\"/>",
+          userProps:
+            "<path d=\"M4 5h12v14H4z\"/><path d=\"M16 9h4v10h-4z\"/><path d=\"M8 9h4\"/><path d=\"M8 13h6\"/>",
+          assign:
+            "<circle cx=\"9\" cy=\"8\" r=\"4\"/><path d=\"M4 20v-1a5 5 0 0 1 10 0v1\"/><path d=\"M16 11v6\"/><path d=\"M19 14h-6\"/>",
+        });
+
+        function createIconElement(name, { size = 20, variant } = {}) {
+          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.setAttribute("viewBox", "0 0 24 24");
+          svg.setAttribute("focusable", "false");
+          svg.setAttribute("aria-hidden", "true");
+          svg.classList.add("app-icon");
+          if (size >= 22) {
+            svg.classList.add("app-icon--lg");
+          }
+          if (variant === "dark") {
+            svg.classList.add("app-icon--dark");
+          }
+          const markup = ICON_PATHS[name] || "";
+          svg.innerHTML = markup;
+          return svg;
+        }
+
+        function createIconButton(iconName, options = {}) {
+          const button = document.createElement("button");
+          button.type = options.type || "button";
+          button.className = options.className || "icon-btn";
+          if (options.title) button.title = options.title;
+          if (options.ariaLabel) button.setAttribute("aria-label", options.ariaLabel);
+          if (options.disabled) button.disabled = true;
+          const icon = createIconElement(iconName, {
+            size: options.iconSize || 18,
+            variant: options.variant,
+          });
+          button.appendChild(icon);
+          return button;
+        }
+
+        function setButtonIconLabel(button, iconName, text, options = {}) {
+          if (!button) return;
+          const {
+            wrapperClass = "pane-mode-button__content",
+            iconSize = 20,
+            variant,
+            textClass,
+          } = options;
+          button.innerHTML = "";
+          const wrapper = document.createElement("span");
+          wrapper.className = wrapperClass;
+          const iconWrap = document.createElement("span");
+          iconWrap.className = "icon-wrapper";
+          iconWrap.appendChild(
+            createIconElement(iconName, { size: iconSize, variant })
+          );
+          wrapper.appendChild(iconWrap);
+          if (text) {
+            const textSpan = document.createElement("span");
+            textSpan.textContent = text;
+            if (textClass) textSpan.classList.add(textClass);
+            wrapper.appendChild(textSpan);
+          }
+          button.appendChild(wrapper);
+        }
+
+        if (logoutButton && logoutButton.childElementCount === 0) {
+          logoutButton.appendChild(createIconElement("logout", { size: 20 }));
+        }
+
+        const portalBackButtons = Array.from(
+          document.querySelectorAll('[data-go="portal-view"]')
+        );
+        portalBackButtons.forEach((btn) => {
+          if (btn && btn.childElementCount === 0) {
+            btn.appendChild(createIconElement("portal", { size: 20 }));
+          }
+        });
         const workspaceConfigs = {
           "projects-workspace": {
             tabId: "Tab_PRJ_Management",
@@ -3009,6 +3409,42 @@ select:focus {
           if (normalized.includes("HR")) return "hr";
           return "users";
         }
+        const NAV_ICON_MAP = Object.freeze({
+          portal: "home",
+          projects: "projects",
+          finance: "finance",
+          hr: "hr",
+          users: "system",
+        });
+        const EXCLUDED_PANE_LABELS = new Set([
+          "نظرة عامة",
+          "الجلسات",
+          "سجل التدقيق",
+          "الإعدادات",
+          "مؤشرات الأداء",
+          "تحليل الإجازات",
+          "حساب الجدول الزمني",
+          "لوحة المتابعة",
+          "توزيع المصروفات غير المباشرة",
+          "ملخص الأستاذ العام",
+          "Overview",
+          "Sessions",
+          "Audit",
+          "Audit Log",
+          "Audit Trail",
+          "Settings",
+          "KPIs",
+          "Performance Indicators",
+          "Leave Analysis",
+          "Leave Analytics",
+          "Schedule Calculator",
+          "Timesheet Calculator",
+          "Dashboard",
+          "Monitoring Board",
+          "Indirect Expense Allocation",
+          "Indirect Cost Allocation",
+          "General Ledger Summary",
+        ]);
         const DEFAULT_SYS_SUB_TABS = [
           {
             tabId: "Tab_SYS_Management",
@@ -3387,6 +3823,10 @@ select:focus {
                 "is-active",
                 normalized === "list"
               );
+              scaffold.listButton.setAttribute(
+                "aria-pressed",
+                normalized === "list" ? "true" : "false"
+              );
             }
             if (scaffold.addButton) {
               scaffold.addButton.classList.toggle(
@@ -3394,6 +3834,10 @@ select:focus {
                 normalized === "form"
               );
               scaffold.addButton.disabled = !paneState.formAvailable;
+              scaffold.addButton.setAttribute(
+                "aria-pressed",
+                normalized === "form" ? "true" : "false"
+              );
             }
             if (scaffold.viewContainer) {
               scaffold.viewContainer.style.display =
@@ -3767,7 +4211,24 @@ select:focus {
           const btn = document.createElement("button");
           btn.className = "nav-btn";
           btn.dataset.target = target;
-          btn.textContent = label;
+          const themeKey =
+            target === "portal-view"
+              ? "portal"
+              : resolveThemeFromIdentifier(target || label);
+          if (themeKey) {
+            btn.dataset.theme = themeKey;
+          }
+          const iconName =
+            NAV_ICON_MAP[target] || NAV_ICON_MAP[themeKey] || NAV_ICON_MAP.users;
+          const iconHolder = document.createElement("span");
+          iconHolder.className = "nav-btn__icon";
+          iconHolder.appendChild(createIconElement(iconName, { size: 22 }));
+          const labelSpan = document.createElement("span");
+          labelSpan.className = "nav-btn__label";
+          labelSpan.textContent = label;
+          btn.title = label;
+          btn.appendChild(iconHolder);
+          btn.appendChild(labelSpan);
           return btn;
         }
         function renderNav(navConfig = []) {
@@ -3898,8 +4359,11 @@ select:focus {
             const button = document.createElement("button");
             button.type = "button";
             button.className = "nav-item";
-            button.textContent =
+            const labelText =
               sub.subLabelAr || sub.subLabelEn || sub.subId || "";
+            button.textContent = labelText;
+            button.dataset.label = labelText;
+            button.title = labelText;
             button.dataset.subId = sub.subId;
             if (sub.route) button.dataset.route = sub.route;
             const subSource = (sub.sourceSheet || "").trim();
@@ -3908,7 +4372,7 @@ select:focus {
               navEl
                 .querySelectorAll(".nav-item")
                 .forEach((item) => item.classList.toggle("active", item === button));
-              loadGenericTab(sub.subId, subSource, contentElement);
+              loadGenericTab(sub.subId, subSource, contentElement, labelText);
             });
             navEl.appendChild(button);
           });
@@ -3924,7 +4388,7 @@ select:focus {
           navEl.dataset.rendered = "true";
         }
 
-function loadGenericTab(paneName, sourceSheet, contentElement) {
+function loadGenericTab(paneName, sourceSheet, contentElement, paneLabel = "") {
   if (!contentElement || !paneName) return;
 
   const paneId = String(paneName);
@@ -3994,6 +4458,12 @@ function loadGenericTab(paneName, sourceSheet, contentElement) {
   }
 
   const paneState = getPaneState(paneId);
+  const normalizedLabel =
+    typeof paneLabel === "string" ? paneLabel.trim() : "";
+  paneState.paneLabel = normalizedLabel;
+  paneState.designExempt = normalizedLabel
+    ? EXCLUDED_PANE_LABELS.has(normalizedLabel)
+    : false;
   if (!(paneState.selectedIds instanceof Set)) {
     paneState.selectedIds = new Set();
   }
@@ -4268,12 +4738,23 @@ function renderGenericTable(container, data, options = {}) {
   container.innerHTML = "";
 
   if (!headers.length) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "pane-table-container";
+    const scroll = document.createElement("div");
+    scroll.className = "pane-table-scroll";
     const emptyMessage = document.createElement("p");
     emptyMessage.className = "muted";
     emptyMessage.textContent = "لا توجد بيانات متاحة بعد.";
-    container.appendChild(emptyMessage);
+    scroll.appendChild(emptyMessage);
+    wrapper.appendChild(scroll);
+    container.appendChild(wrapper);
     return;
   }
+
+  const wrapper = document.createElement("div");
+  wrapper.className = "pane-table-container";
+  const scrollContainer = document.createElement("div");
+  scrollContainer.className = "pane-table-scroll";
 
   const table = document.createElement("table");
   table.className = "sys-table generic-table";
@@ -4286,6 +4767,8 @@ function renderGenericTable(container, data, options = {}) {
   const selectAllCheckbox = document.createElement("input");
   selectAllCheckbox.type = "checkbox";
   selectAllCheckbox.className = "generic-table__select-all";
+  selectAllCheckbox.title = "تحديد كل السجلات";
+  selectAllCheckbox.setAttribute("aria-label", "تحديد كل السجلات");
   selectTh.appendChild(selectAllCheckbox);
   headerRow.appendChild(selectTh);
 
@@ -4328,19 +4811,26 @@ function renderGenericTable(container, data, options = {}) {
     if (!metadata.recordId) {
       rowCheckbox.disabled = true;
     }
+    rowCheckbox.title = metadata.label
+      ? `تحديد ${metadata.label}`
+      : "تحديد السجل";
+    rowCheckbox.setAttribute(
+      "aria-label",
+      metadata.label ? `تحديد ${metadata.label}` : "تحديد السجل"
+    );
     selectCell.appendChild(rowCheckbox);
     tr.appendChild(selectCell);
 
     const actionCell = document.createElement("td");
     actionCell.className = "generic-table__actions-cell";
     const actionWrapper = document.createElement("div");
-    actionWrapper.className = "generic-table__actions";
+    actionWrapper.className = "generic-table__actions icon-row";
 
-    const viewBtn = document.createElement("button");
-    viewBtn.type = "button";
-    viewBtn.className = "ghost-button ghost-button--small";
-    viewBtn.textContent = "عرض التفاصيل";
-    viewBtn.title = "عرض التفاصيل";
+    const viewBtn = createIconButton("view", {
+      className: "icon-btn",
+      title: "عرض التفاصيل",
+      ariaLabel: "عرض التفاصيل",
+    });
     viewBtn.addEventListener("click", () => {
       if (typeof options.onViewRecord === "function") {
         options.onViewRecord(
@@ -4446,7 +4936,9 @@ function renderGenericTable(container, data, options = {}) {
 
   table.appendChild(thead);
   table.appendChild(tbody);
-  container.appendChild(table);
+  scrollContainer.appendChild(table);
+  wrapper.appendChild(scrollContainer);
+  container.appendChild(wrapper);
 }
 
 function ensureGenericPaneScaffold(paneElement, paneState = {}) {
@@ -4459,6 +4951,9 @@ function ensureGenericPaneScaffold(paneElement, paneState = {}) {
   }
 
   const scaffold = paneElement.__scaffold || {};
+  const isExempt = Boolean(paneState?.designExempt);
+  paneElement.classList.toggle("generic-pane--exempt", isExempt);
+
   let header = paneElement.querySelector(".pane-header");
   if (!header) {
     header = document.createElement("div");
@@ -4516,6 +5011,34 @@ function ensureGenericPaneScaffold(paneElement, paneState = {}) {
   }
   scaffold.addButton = addButton;
 
+  const paneLabelText =
+    typeof paneState?.paneLabel === "string"
+      ? paneState.paneLabel.trim()
+      : "";
+  const viewLabel = paneLabelText
+    ? `عرض ${paneLabelText}`
+    : "عرض البيانات";
+  const addLabel =
+    paneState?.formMeta?.titleAr ||
+    paneState?.formMeta?.titleEn ||
+    (paneLabelText ? `إضافة ${paneLabelText}` : "إضافة بيانات");
+
+  if (!isExempt) {
+    setButtonIconLabel(listButton, "view", viewLabel);
+    setButtonIconLabel(addButton, "add", addLabel);
+    listButton.title = viewLabel;
+    listButton.setAttribute("aria-label", viewLabel);
+    addButton.title = addLabel;
+    addButton.setAttribute("aria-label", addLabel);
+  } else {
+    listButton.textContent = "قائمة البيانات";
+    addButton.textContent = "إدخال البيانات";
+    listButton.removeAttribute("title");
+    listButton.removeAttribute("aria-label");
+    addButton.removeAttribute("title");
+    addButton.removeAttribute("aria-label");
+  }
+
   let searchBar =
     scaffold.searchBar || controls.querySelector(".pane-search-bar");
   if (!searchBar) {
@@ -4536,6 +5059,14 @@ function ensureGenericPaneScaffold(paneElement, paneState = {}) {
     searchBar.appendChild(searchInput);
   }
   scaffold.searchInput = searchInput;
+  if (paneState) {
+    const placeholder =
+      !paneState.designExempt && paneState.paneLabel
+        ? `بحث في ${paneState.paneLabel}`
+        : "ابحث في السجلات";
+    searchInput.placeholder = placeholder;
+    searchInput.setAttribute("title", placeholder);
+  }
 
   let columnSelect =
     scaffold.columnSelect || searchBar.querySelector("select");
@@ -4573,7 +5104,6 @@ function ensureGenericPaneScaffold(paneElement, paneState = {}) {
     selectVisibleBtn.type = "button";
     selectVisibleBtn.className = "ghost-button";
     selectVisibleBtn.dataset.action = "select-visible";
-    selectVisibleBtn.textContent = "تحديد المعروض";
     bulkActions.appendChild(selectVisibleBtn);
   }
   scaffold.selectVisibleBtn = selectVisibleBtn;
@@ -4586,7 +5116,6 @@ function ensureGenericPaneScaffold(paneElement, paneState = {}) {
     clearSelectionBtn.type = "button";
     clearSelectionBtn.className = "ghost-button";
     clearSelectionBtn.dataset.action = "clear-selection";
-    clearSelectionBtn.textContent = "إلغاء التحديد";
     bulkActions.appendChild(clearSelectionBtn);
   }
   scaffold.clearSelectionBtn = clearSelectionBtn;
@@ -4599,10 +5128,49 @@ function ensureGenericPaneScaffold(paneElement, paneState = {}) {
     applyBulkBtn.type = "button";
     applyBulkBtn.className = "accent-button";
     applyBulkBtn.dataset.action = "apply-bulk";
-    applyBulkBtn.textContent = "تطبيق الإجراء";
     bulkActions.appendChild(applyBulkBtn);
   }
   scaffold.applyBulkBtn = applyBulkBtn;
+
+  if (!isExempt) {
+    selectVisibleBtn.classList.add("ghost-button");
+    clearSelectionBtn.classList.add("ghost-button");
+    applyBulkBtn.classList.add("accent-button");
+    setButtonIconLabel(selectVisibleBtn, "view", "تحديد المعروض", {
+      wrapperClass: "icon-label",
+      iconSize: 18,
+    });
+    setButtonIconLabel(clearSelectionBtn, "refresh", "إلغاء التحديد", {
+      wrapperClass: "icon-label",
+      iconSize: 18,
+    });
+    setButtonIconLabel(applyBulkBtn, "activate", "تطبيق الإجراء", {
+      wrapperClass: "icon-label",
+      iconSize: 18,
+    });
+    selectVisibleBtn.title = "تحديد السجلات المعروضة";
+    selectVisibleBtn.setAttribute("aria-label", "تحديد السجلات المعروضة");
+    clearSelectionBtn.title = "إلغاء كل التحديد الحالي";
+    clearSelectionBtn.setAttribute("aria-label", "إلغاء كل التحديد الحالي");
+    applyBulkBtn.title = "تطبيق الإجراء الجماعي";
+    applyBulkBtn.setAttribute("aria-label", "تطبيق الإجراء الجماعي");
+  } else {
+    if (!selectVisibleBtn.textContent) {
+      selectVisibleBtn.textContent = "تحديد المعروض";
+    }
+    if (!clearSelectionBtn.textContent) {
+      clearSelectionBtn.textContent = "إلغاء التحديد";
+    }
+    if (!applyBulkBtn.textContent) {
+      applyBulkBtn.textContent = "تطبيق الإجراء";
+    }
+    selectVisibleBtn.removeAttribute("title");
+    selectVisibleBtn.removeAttribute("aria-label");
+    clearSelectionBtn.removeAttribute("title");
+    clearSelectionBtn.removeAttribute("aria-label");
+    applyBulkBtn.removeAttribute("title");
+    applyBulkBtn.removeAttribute("aria-label");
+  }
 
   let body = scaffold.body || paneElement.querySelector(".generic-pane__body");
   if (!body) {
@@ -6597,10 +7165,11 @@ function renderPaneHeader(paneElement, paneName, options = {}) {
   header.appendChild(buttonGroup);
 
   if (options.enableAttachments) {
-    const attachButton = document.createElement("button");
-    attachButton.type = "button";
-    attachButton.className = "ghost-button";
-    attachButton.textContent = "تحميل المرفقات";
+    const attachButton = createIconButton("file", {
+      className: "icon-btn",
+      title: "تحميل المرفقات",
+      ariaLabel: "تحميل المرفقات",
+    });
     if (typeof options.onUpload === "function") {
       attachButton.addEventListener("click", (event) => {
         options.onUpload.call(paneElement, event);
@@ -6613,10 +7182,11 @@ function renderPaneHeader(paneElement, paneName, options = {}) {
     buttonGroup.appendChild(attachButton);
   }
 
-  const refreshButton = document.createElement("button");
-  refreshButton.type = "button";
-  refreshButton.className = "ghost-button";
-  refreshButton.textContent = "تحديث البيانات";
+  const refreshButton = createIconButton("refresh", {
+    className: "icon-btn",
+    title: "تحديث البيانات",
+    ariaLabel: "تحديث البيانات",
+  });
   if (typeof options.onRefresh === "function") {
     refreshButton.addEventListener("click", (event) => {
       options.onRefresh.call(paneElement, event);
@@ -6627,10 +7197,13 @@ function renderPaneHeader(paneElement, paneName, options = {}) {
   buttonGroup.appendChild(refreshButton);
 
   if (formId && options.hideAddButton !== true) {
-    const addButton = document.createElement("button");
-    addButton.type = "button";
-    addButton.className = "accent-button";
-    addButton.textContent = "إضافة جديد";
+    const addLabelText =
+      formEntry?.titleAr || formEntry?.titleEn || "إضافة جديد";
+    const addButton = createIconButton("add", {
+      className: "icon-btn icon-btn--accent",
+      title: addLabelText,
+      ariaLabel: addLabelText,
+    });
 
     if (typeof options.onAdd === "function") {
       addButton.addEventListener("click", (event) => {
@@ -8820,11 +9393,11 @@ function renderDirectExpenseForm(paneElement, options = {}) {
         });
 
         /* Logout */
-        document
-          .getElementById("logout-button")
-          .addEventListener("click", () => {
+        if (logoutButton) {
+          logoutButton.addEventListener("click", () => {
             navbar.classList.add("hidden");
-            userLabel.textContent = "";
+            userLabel.innerHTML = "";
+            userLabel.removeAttribute("title");
             const welcome = document.getElementById("portal-welcome-message");
             if (welcome) welcome.textContent = "";
             bootstrapData = {};
@@ -8840,6 +9413,7 @@ function renderDirectExpenseForm(paneElement, options = {}) {
             switchView("login-screen");
             showToast("You have been signed out.", "info", "Logged Out");
           });
+        }
 
         /* ---------- KPIs ---------- */
         function fetchKPIs() {
@@ -8993,6 +9567,13 @@ function renderDirectExpenseForm(paneElement, options = {}) {
             } else {
               selectedUsers.delete(userId);
             }
+            const row = checkbox.closest("tr");
+            if (row) {
+              row.classList.toggle(
+                "generic-table__row--selected",
+                checkbox.checked
+              );
+            }
             syncSelectAllState();
             syncBulkActionsState();
           });
@@ -9012,6 +9593,13 @@ function renderDirectExpenseForm(paneElement, options = {}) {
                 selectedUsers.add(id);
               } else {
                 selectedUsers.delete(id);
+              }
+              const row = cb.closest("tr");
+              if (row) {
+                row.classList.toggle(
+                  "generic-table__row--selected",
+                  cb.checked
+                );
               }
             });
           syncSelectAllState();
@@ -9254,98 +9842,97 @@ function renderDirectExpenseForm(paneElement, options = {}) {
             if (u.userId) visibleIds.add(u.userId);
             const tr = document.createElement("tr");
             const checked = u.userId && selectedUsers.has(u.userId);
-            tr.innerHTML = `
-              <td class="select-cell">
-                <input type="checkbox" class="row-select" data-id="${escapeHtml(
-                  u.userId
-                )}" ${checked ? "checked" : ""} ${u.userId ? "" : "disabled"} />
-              </td>
-              <td>${escapeHtml(u.userId)}</td>
-              <td>${escapeHtml(u.fullName)}</td>
-              <td>${escapeHtml(u.username)}</td>
-              <td>${escapeHtml(u.email)}</td>
-              <td>${escapeHtml(u.department)}</td>
-              <td>${escapeHtml(u.role)}</td>
-              <td>${
-                u.isActive
-                  ? '<span class="badge badge--ok">نشط</span>'
-                  : '<span class="badge badge--no">غير نشط</span>'
-              }</td>
-              <td>${formatDateTime(u.lastLogin)}</td>
-              <td>${formatDateTime(u.updatedAt)}</td>
-              <td>
-                <div class="icon-row">
-                  <button class="icon-btn" data-act="view" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="عرض الملف" aria-label="عرض الملف">
-                    <svg viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                  </button>
-                  <button class="icon-btn" data-act="edit" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="تعديل" aria-label="تعديل">
-                    <svg viewBox="0 0 24 24"><path d="M3 21l3-1 11-11-2-2L4 18l-1 3z"/><path d="M14 4l2 2"/></svg>
-                  </button>
-                  <button class="icon-btn" data-act="assign" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="تعيين دور" aria-label="تعيين دور">
-                    <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M4 20v-1a5 5 0 0 1 10 0v1"/><path d="M16 11v6"/><path d="M19 14h-6"/></svg>
-                  </button>
-                  <button class="icon-btn" data-act="reset" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="إعادة كلمة المرور" aria-label="إعادة كلمة المرور">
-                    <svg viewBox="0 0 24 24"><path d="M12 11v6"/><path d="M9 14h6"/><path d="M6 11V8a6 6 0 1 1 12 0v3"/></svg>
-                  </button>
-                  <button class="icon-btn" data-act="toggle" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="${
-              u.isActive ? "تعطيل" : "تفعيل"
-            }" aria-label="تفعيل/تعطيل">
-                    <svg viewBox="0 0 24 24">${
-                      u.isActive
-                        ? '<path d="M18 6L6 18"/><path d="M6 6l12 12"/>'
-                        : '<path d="M5 12h14"/><path d="M12 5v14"/>'
-                    }</svg>
-                  </button>
-                  <button class="icon-btn" data-act="docs" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="مستندات" aria-label="مستندات">
-                    <svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6"/><path d="M10 17h6"/></svg>
-                  </button>
-                  <button class="icon-btn" data-act="impersonate" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="انتحال" aria-label="انتحال">
-                    <svg viewBox="0 0 24 24"><path d="M3 12c2-4 6-6 9-6s7 2 9 6c-2 4-6 6-9 6s-7-2-9-6z"/><path d="M9 12h.01"/><path d="M15 12h.01"/><path d="M9 15c1 .8 2 .8 3 0 1 .8 2 .8 3 0"/></svg>
-                  </button>
-                  <button class="icon-btn" data-act="delete" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="حذف رمزي" aria-label="حذف رمزي">
-                    <svg viewBox="0 0 24 24"><path d="M5 7h14"/><path d="M10 7V5h4v2"/><path d="M8 7l1 12h6l1-12"/></svg>
-                  </button>
-                  <button class="icon-btn" data-act="audit" data-id="${escapeHtml(
-                    u.userId
-                  )}" title="سجل التدقيق" aria-label="سجل التدقيق">
-                    <svg viewBox="0 0 24 24"><path d="M7 3h10v4H7z"/><path d="M5 7h14v14H5z"/><path d="M9 11h6M9 15h6"/></svg>
-                  </button>
-                </div>
-              </td>`;
-            frag.appendChild(tr);
-            const checkboxEl = tr.querySelector("input.row-select");
-            if (checkboxEl) {
-              if (u.userId) {
-                checkboxEl.dataset.id = u.userId;
-                checkboxEl.checked = !!checked;
-              } else {
-                checkboxEl.disabled = true;
-                checkboxEl.removeAttribute("data-id");
-              }
+
+            const selectTd = document.createElement("td");
+            selectTd.className = "select-cell";
+            const rowCheckbox = document.createElement("input");
+            rowCheckbox.type = "checkbox";
+            rowCheckbox.className = "row-select";
+            if (u.userId) {
+              rowCheckbox.dataset.id = u.userId;
+              rowCheckbox.checked = !!checked;
+              const checkboxLabel = u.fullName
+                ? `تحديد ${u.fullName}`
+                : `تحديد ${u.userId}`;
+              rowCheckbox.title = checkboxLabel;
+              rowCheckbox.setAttribute("aria-label", checkboxLabel);
+            } else {
+              rowCheckbox.disabled = true;
             }
-            tr.querySelectorAll(".icon-btn").forEach((btn) => {
+            selectTd.appendChild(rowCheckbox);
+            tr.appendChild(selectTd);
+
+            const appendTextCell = (value) => {
+              const td = document.createElement("td");
+              td.textContent = value || "";
+              tr.appendChild(td);
+            };
+
+            appendTextCell(u.userId);
+            appendTextCell(u.fullName);
+            appendTextCell(u.username);
+            appendTextCell(u.email);
+            appendTextCell(u.department);
+            appendTextCell(u.role);
+
+            const statusTd = document.createElement("td");
+            statusTd.innerHTML = u.isActive
+              ? '<span class="badge badge--ok">نشط</span>'
+              : '<span class="badge badge--no">غير نشط</span>';
+            tr.appendChild(statusTd);
+
+            const lastLoginTd = document.createElement("td");
+            lastLoginTd.textContent = formatDateTime(u.lastLogin);
+            tr.appendChild(lastLoginTd);
+
+            const updatedTd = document.createElement("td");
+            updatedTd.textContent = formatDateTime(u.updatedAt);
+            tr.appendChild(updatedTd);
+
+            const actionsTd = document.createElement("td");
+            const actionsRow = document.createElement("div");
+            actionsRow.className = "icon-row";
+
+            const pushAction = (act, icon, title, ariaLabel = title) => {
+              const btn = createIconButton(icon, {
+                className: "icon-btn",
+                title,
+                ariaLabel,
+              });
+              btn.dataset.act = act;
               if (u.userId) {
                 btn.dataset.id = u.userId;
               } else {
-                btn.removeAttribute("data-id");
+                btn.disabled = true;
               }
-            });
+              actionsRow.appendChild(btn);
+            };
+
+            pushAction("view", "view", "عرض الملف");
+            pushAction("edit", "edit", "تعديل");
+            pushAction("assign", "assign", "تعيين دور");
+            pushAction("reset", "password", "إعادة كلمة المرور");
+
+            const toggleTitle = u.isActive ? "تعطيل" : "تفعيل";
+            pushAction(
+              "toggle",
+              u.isActive ? "deactivate" : "activate",
+              toggleTitle
+            );
+
+            pushAction("docs", "file", "مستندات");
+            pushAction("impersonate", "impersonate", "انتحال");
+            pushAction("delete", "delete", "حذف رمزي");
+            pushAction("audit", "audit", "سجل التدقيق");
+
+            actionsTd.appendChild(actionsRow);
+            tr.appendChild(actionsTd);
+
+            if (checked) {
+              tr.classList.add("generic-table__row--selected");
+            }
+
+            frag.appendChild(tr);
           });
           usersTbody.appendChild(frag);
           Array.from(selectedUsers).forEach((id) => {
@@ -10626,7 +11213,16 @@ function renderDirectExpenseForm(paneElement, options = {}) {
           }
 
           const suffix = username && username !== display ? ` (${username})` : "";
-          userLabel.textContent = `User: ${display}${suffix}`;
+          userLabel.innerHTML = "";
+          const iconSpan = document.createElement("span");
+          iconSpan.className = "icon-wrapper";
+          iconSpan.appendChild(createIconElement("userProps", { size: 18 }));
+          userLabel.appendChild(iconSpan);
+          const textSpan = document.createElement("span");
+          textSpan.className = "navbar-user__text";
+          textSpan.textContent = `User: ${display}${suffix}`;
+          userLabel.appendChild(textSpan);
+          userLabel.setAttribute("title", `${display}${suffix}`.trim());
           const welcome = document.getElementById("portal-welcome-message");
           if (welcome) welcome.textContent = `Welcome, ${display}${suffix}`;
         }
