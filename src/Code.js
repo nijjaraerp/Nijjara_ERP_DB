@@ -1043,6 +1043,26 @@ function buildBootstrapPayload_(rawUser, permissionsOverride) {
   };
 
   const timestamp = new Date().toISOString();
+  const navConfig = buildNavigationConfig_(role, permissions);
+  const projectsNavActive = Array.isArray(navConfig)
+    ? navConfig.some((entry) => {
+        const key = String(entry?.key || "").toUpperCase();
+        const target = String(entry?.target || "").toLowerCase();
+        return key.includes("PRJ") || target.includes("projects-workspace");
+      })
+    : false;
+  if (projectsNavActive) {
+    const actorId =
+      sanitizedUser?.User_Id ||
+      sanitizedUser?.Username ||
+      sanitizedUser?.Email ||
+      getActorEmail_();
+    Logger.log(
+      `SET ACTIVE MODULE = Projects (المشاريع). Applying blue theme for user ${
+        actorId || "UNKNOWN"
+      }/${timestamp}`
+    );
+  }
 
   return {
     appName: CONFIG.APP_NAME,
@@ -1055,7 +1075,7 @@ function buildBootstrapPayload_(rawUser, permissionsOverride) {
       paymentStatus: getDropdownOptions("DD_Payment_Status"),
       paymentMethod: getDropdownOptions("DD_Payment_Method"),
     },
-    nav: buildNavigationConfig_(role, permissions),
+    nav: navConfig,
     tabRegister: getTabRegister(),
     forms: loadDynamicFormsRegisterSafe_(),
     meta: {
@@ -5215,6 +5235,16 @@ function listSessions() {
 
 function getFormWithOptions(formId = "FORM_SYS_AddUser") {
   debugLog("getFormWithOptions", "start", { formId });
+  const normalizedId = String(formId || "").toUpperCase();
+  if (normalizedId === "FORM_PRJ_ADDPROJECT") {
+    const actor = getActorEmail_();
+    const nowIso = new Date().toISOString();
+    Logger.log(
+      `PROJECTS ACTION :: open Add Project List tab :: user=${
+        actor || "UNKNOWN"
+      } :: timestamp=${nowIso}`
+    );
+  }
   const fields = getDynamicFormStructure(formId);
   const enriched = fields.map((f) => {
     if (

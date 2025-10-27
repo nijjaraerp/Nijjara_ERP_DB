@@ -314,11 +314,11 @@
         --icon-color: currentColor;
       }
       .nav-btn[data-theme="projects"] {
-        --nav-card-primary: rgba(62, 36, 82, 0.92);
-        --nav-card-secondary: rgba(32, 18, 42, 0.88);
-        --nav-card-border: rgba(200, 110, 210, 0.32);
-        --nav-card-glow: rgba(200, 110, 210, 0.48);
-        --nav-theme-accent: #c86ed2;
+        --nav-card-primary: rgba(40, 52, 82, 0.92);
+        --nav-card-secondary: rgba(22, 30, 50, 0.88);
+        --nav-card-border: rgba(90, 140, 255, 0.32);
+        --nav-card-glow: rgba(90, 140, 255, 0.48);
+        --nav-theme-accent: #5a8cff;
       }
       .nav-btn[data-theme="finance"] {
         --nav-card-primary: rgba(55, 45, 26, 0.92);
@@ -3504,7 +3504,13 @@
 
         function resolveThemeFromIdentifier(identifier) {
           const normalized = (identifier || "").toString().toUpperCase();
-          if (normalized.includes("PRJ")) return "projects";
+          if (
+            normalized.includes("PRJ") ||
+            normalized.includes("PROJ") ||
+            normalized.includes("PROJECT")
+          ) {
+            return "projects";
+          }
           if (normalized.includes("FIN")) return "finance";
           if (normalized.includes("HR")) return "hr";
           return "users";
@@ -4270,6 +4276,19 @@
                 (id === "portal-view" && target === "portal-view")
             );
           });
+          if (id === "projects-workspace") {
+            const moduleName = "المشاريع";
+            const activeButton = document.querySelector(
+              '.app-navbar .nav-btn.active[data-target="projects-workspace"]'
+            );
+            const appliedClass = activeButton
+              ? Array.from(activeButton.classList)
+              : [];
+            console.log(
+              "Active module set to: مشاريع (Projects), applying blue theme",
+              { moduleName, appliedClass }
+            );
+          }
           if (id === "system-management-view") {
             lastWorkspaceNavRendered = null;
             loadTab(currentSysPane || "overview");
@@ -4836,6 +4855,11 @@
             if (!addButton.dataset.bound) {
               addButton.dataset.bound = "true";
               addButton.addEventListener("click", () => {
+                if (paneId === "Sub_PRJ_Main") {
+                  console.log(
+                    "Button 'إضافة قائمة المشاريع' clicked, attempting to open dynamic Projects tab..."
+                  );
+                }
                 if (!paneState.formAvailable) {
                   showToast("لا يوجد نموذج إدخال متاح لهذا التبويب.", "info");
                   return;
@@ -5541,6 +5565,18 @@
                 '<p class="error-text">تعذر تحميل النموذج الديناميكي.</p>';
             })
             .withSuccessHandler((fields) => {
+              if (String(options?.paneId || "") === "Sub_PRJ_Main") {
+                const status =
+                  Array.isArray(fields) && fields.length ? "SUCCESS" : "EMPTY";
+                console.log(
+                  "Projects dynamic form response received",
+                  {
+                    formId,
+                    status,
+                    fieldCount: Array.isArray(fields) ? fields.length : 0,
+                  }
+                );
+              }
               if (!Array.isArray(fields) || !fields.length) {
                 container.innerHTML =
                   '<p class="muted">لم يتم العثور على حقول لهذا النموذج.</p>';
