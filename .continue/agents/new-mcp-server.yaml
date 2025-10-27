@@ -15,7 +15,7 @@ models:
   - name: GPT-4o
     provider: openai
     model: gpt-4o
-    api_key: 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
+    api_key: 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
     roles:
       - chat
       - edit
@@ -26,7 +26,7 @@ models:
   - name: GPT-5
     provider: openai
     model: gpt-5
-    api_key: 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
+    api_key: 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
     roles:
       - chat
       - edit

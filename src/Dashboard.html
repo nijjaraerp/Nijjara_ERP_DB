@@ -18,6 +18,7 @@
         --color-text-primary: #f0f0f0;
         --color-text-secondary: #a0a0a0;
         --color-accent: #d4af37;
+        --color-surface-light: #2a2a2a;
         --theme-accent: var(--color-accent);
         --theme-accent-16: rgba(212, 175, 55, 0.16);
         --theme-accent-24: rgba(212, 175, 55, 0.24);
@@ -54,6 +55,21 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+      }
+      button,
+      [role="button"],
+      .nav-btn,
+      .nav-item,
+      .nav-icon-button,
+      .icon-btn,
+      .module-card,
+      a[href] {
+        cursor: pointer;
+      }
+      button:disabled,
+      .icon-btn:disabled,
+      .nav-btn:disabled {
+        cursor: not-allowed;
       }
       html,
       body {
@@ -189,14 +205,14 @@
         top: 0;
         left: 0;
         right: 0;
-        min-height: 96px;
+        min-height: 72px;
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         justify-content: space-between;
-        gap: 1.5rem;
+        gap: 1rem;
         background: rgba(18, 18, 18, 0.98);
         border-bottom: 1px solid var(--color-border);
-        padding: 1rem 2rem 1.35rem;
+        padding: 0.75rem 1.75rem;
         z-index: 50;
       }
       .app-navbar.hidden {
@@ -205,7 +221,7 @@
       .app-navbar__left,
       .app-navbar__right {
         display: flex;
-        align-items: flex-end;
+        align-items: center;
         gap: 0.75rem;
       }
       .app-navbar__right {
@@ -214,9 +230,9 @@
       .navbar-buttons {
         display: flex;
         flex-wrap: wrap;
-        gap: 1.25rem;
-        margin-inline-start: 1rem;
-        align-items: stretch;
+        gap: 0.75rem;
+        margin-inline-start: 0.75rem;
+        align-items: center;
       }
       .app-brand {
         font-weight: 700;
@@ -230,13 +246,13 @@
         --nav-theme-accent: var(--color-accent);
         position: relative;
         display: flex;
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
         justify-content: flex-start;
-        gap: 0.85rem;
-        min-width: 190px;
-        padding: 1.3rem 1.4rem;
-        border-radius: 16px;
+        gap: 0.75rem;
+        min-width: 150px;
+        padding: 0.65rem 1rem;
+        border-radius: 14px;
         background: linear-gradient(
           160deg,
           var(--nav-card-primary),
@@ -245,31 +261,32 @@
         border: 1px solid var(--nav-card-border);
         color: var(--color-text-primary);
         cursor: pointer;
-        box-shadow: 0 18px 32px rgba(0, 0, 0, 0.55),
-          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45),
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
         transition: transform 0.25s ease, box-shadow 0.25s ease,
           border-color 0.25s ease, filter 0.25s ease;
         text-align: right;
       }
       .nav-btn:not(.active):hover {
-        transform: translateY(-6px);
+        transform: translateY(-2px);
         border-color: var(--nav-card-glow);
-        box-shadow: 0 22px 44px rgba(0, 0, 0, 0.6),
-          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.5),
+          inset 0 1px 0 rgba(255, 255, 255, 0.06);
       }
       .nav-btn:focus-visible {
         outline: 2px solid var(--nav-theme-accent);
         outline-offset: 3px;
       }
       .nav-btn.active {
-        transform: translateY(6px);
+        transform: translateY(2px);
         border-color: var(--nav-card-glow);
-        box-shadow: inset 0 10px 18px rgba(0, 0, 0, 0.45);
+        box-shadow: inset 0 8px 14px rgba(0, 0, 0, 0.45);
       }
       .nav-btn__icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
+        flex: 0 0 auto;
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -283,11 +300,12 @@
         background: var(--nav-theme-accent);
         color: #111111;
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35) inset;
-        transform: translateY(1px);
+        transform: translateY(0.5px);
       }
       .nav-btn__label {
-        font-size: 1.05rem;
-        font-weight: 700;
+        flex: 1 1 auto;
+        font-size: 0.95rem;
+        font-weight: 600;
       }
       .nav-btn.active .nav-btn__label {
         color: var(--nav-theme-accent);
@@ -296,10 +314,10 @@
         --icon-color: currentColor;
       }
       .nav-btn[data-theme="projects"] {
-        --nav-card-primary: rgba(40, 52, 82, 0.92);
+        --nav-card-primary: #5a8cff;
         --nav-card-secondary: rgba(22, 30, 50, 0.88);
         --nav-card-border: rgba(90, 140, 255, 0.28);
-        --nav-card-glow: rgba(90, 140, 255, 0.48);
+        --nav-card-glow: rgba(90, 140, 255, 0.4);
         --nav-theme-accent: #5a8cff;
       }
       .nav-btn[data-theme="finance"] {
@@ -334,16 +352,14 @@
         .app-navbar {
           flex-wrap: wrap;
           justify-content: center;
-          align-items: center;
-          padding: 1rem 1.5rem;
+          padding: 0.75rem 1.25rem;
         }
         .navbar-buttons {
           justify-content: center;
           margin-inline-start: 0;
         }
         .nav-btn {
-          min-width: 160px;
-          padding: 1.1rem 1.2rem;
+          min-width: 140px;
         }
       }
       @media (max-width: 640px) {
@@ -568,6 +584,7 @@
         cursor: pointer;
         transition: background 0.2s, color 0.2s, border-color 0.2s;
         font-weight: 600;
+        font-size: 0.9rem;
       }
       .nav-item.active,
       .nav-item:hover {
@@ -631,6 +648,11 @@
         width: 100%;
         background: rgba(18, 18, 18, 0.85);
         position: relative;
+      }
+      .workspace-content .table-wrapper,
+      .workspace-content .pane-table-container,
+      .workspace-content table {
+        width: 100%;
       }
       .pane-table-container {
         border: 1px solid var(--theme-accent-24);
@@ -713,7 +735,7 @@
       .generic-pane__controls {
         display: flex;
         flex-direction: column;
-        align-items: flex-end;
+        align-items: center;
         justify-content: flex-start;
         gap: 0.85rem;
         padding: 0 0 1rem;
@@ -723,7 +745,7 @@
         display: inline-flex;
         gap: 0.75rem;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: center;
         flex-wrap: wrap;
         width: 100%;
       }
@@ -802,8 +824,8 @@
         cursor: pointer;
       }
       .pane-search-bar select option {
-        background: #c4c4c4;
-        color: #1a1a1a;
+        background: var(--color-surface-light);
+        color: var(--color-text-primary);
       }
       .pane-search-summary {
         color: var(--color-text-secondary);
@@ -2466,8 +2488,8 @@
       /* --- Readable selects (fix white-on-white) --- */
       select,
       select option {
-        background-color: #ffffff !important;
-        color: #000000 !important;
+        background-color: var(--color-surface-light) !important;
+        color: var(--color-text-primary) !important;
       }
       select:focus {
         outline: 2px solid var(--theme-accent-24);
@@ -2620,11 +2642,11 @@
       <div class="module-grid"></div>
     </div>
 
-    <!-- Projects (no demo data) -->
+    <!-- Projects -->
     <div id="projects-workspace" class="view">
       <div class="workspace" data-theme="projects">
         <header class="workspace-header">
-          <h2 class="workspace-title">المشاريع</h2>
+          <h2 class="workspace-title">إدارة المشاريع</h2>
           <div>
             <button
               class="nav-icon-button"
@@ -2634,10 +2656,189 @@
             ></button>
           </div>
         </header>
+
         <section class="workspace-content">
-          <p class="muted">لا توجد بيانات معروضة هنا بعد.</p>
+          <section id="prj-main-pane" class="sys-pane active" data-pane="main">
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">قائمة المشاريع</h3>
+              <p class="muted">عرض وإدارة جميع المشاريع المسجلة في النظام.</p>
+            </div>
+            <div class="toolbar toolbar--filters">
+              <input
+                type="search"
+                id="projects-search"
+                placeholder="ابحث في المشاريع..."
+              />
+              <select id="project-status-filter">
+                <option value="">كل الحالات</option>
+                <option value="New">جديد</option>
+                <option value="In_Progress">قيد التنفيذ</option>
+                <option value="Completed">مكتمل</option>
+                <option value="On_Hold">معلق</option>
+                <option value="Cancelled">ملغى</option>
+              </select>
+              <input
+                type="date"
+                id="project-start-from"
+                aria-label="تاريخ البدء من"
+              />
+              <input
+                type="date"
+                id="project-start-to"
+                aria-label="تاريخ البدء إلى"
+              />
+              <button id="btn-add-project" class="accent-button">
+                إضافة مشروع جديد
+              </button>
+            </div>
+            <div class="table-wrapper">
+              <table id="projects-table">
+                <thead>
+                  <tr>
+                    <th>معرّف المشروع</th>
+                    <th>اسم المشروع</th>
+                    <th>العميل</th>
+                    <th>تاريخ البدء</th>
+                    <th>تاريخ الانتهاء المخطط</th>
+                    <th>الحالة</th>
+                    <th>المدير</th>
+                    <th>الميزانية</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="projects-tbody">
+                  <tr>
+                    <td colspan="9" class="muted">جاري التحميل…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="prj-tasks-pane" class="sys-pane" data-pane="tasks">
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">مهام المشاريع</h3>
+              <p class="muted">إدارة المهام المرتبطة بكل مشروع.</p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>معرّف المهمة</th>
+                    <th>المشروع</th>
+                    <th>اسم المهمة</th>
+                    <th>المسؤول</th>
+                    <th>تاريخ البدء المخطط</th>
+                    <th>تاريخ الانتهاء المخطط</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="tasks-tbody">
+                  <tr>
+                    <td colspan="8" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="prj-costs-pane" class="sys-pane" data-pane="costs">
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">تكاليف المشاريع</h3>
+              <p class="muted">تتبع التكاليف المرتبطة بكل مشروع.</p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>معرّف التكلفة</th>
+                    <th>المشروع</th>
+                    <th>التاريخ</th>
+                    <th>التصنيف</th>
+                    <th>الوصف</th>
+                    <th>المبلغ</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="costs-tbody">
+                  <tr>
+                    <td colspan="7" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            id="prj-materials-pane"
+            class="sys-pane"
+            data-pane="materials"
+          >
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">كتالوج المواد</h3>
+              <p class="muted">إدارة المواد والخامات المستخدمة في المشاريع.</p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>معرّف المادة</th>
+                    <th>الاسم</th>
+                    <th>الفئة</th>
+                    <th>السعر</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="materials-tbody">
+                  <tr>
+                    <td colspan="6" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="prj-revenue-pane" class="sys-pane" data-pane="revenue">
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">إيرادات المشاريع</h3>
+              <p class="muted">تتبع الإيرادات المرتبطة بكل مشروع.</p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>معرّف الإيراد</th>
+                    <th>المشروع</th>
+                    <th>التاريخ</th>
+                    <th>المبلغ</th>
+                    <th>النوع</th>
+                    <th>الحالة</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="revenue-tbody">
+                  <tr>
+                    <td colspan="7" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
         </section>
-        <aside id="prj-side-nav" class="workspace-nav"></aside>
+
+        <aside class="workspace-nav" id="prj-side-nav">
+          <!-- Tabs will be rendered dynamically -->
+        </aside>
       </div>
     </div>
 
@@ -3267,6 +3468,18 @@
         const permissionsTbody = document.getElementById("permissions-tbody");
         const rolePermsTbody = document.getElementById("role-perms-tbody");
         const propertiesTbody = document.getElementById("properties-tbody");
+        const projectsTbody = document.getElementById("projects-tbody");
+        const tasksTbody = document.getElementById("tasks-tbody");
+        const costsTbody = document.getElementById("costs-tbody");
+        const materialsTbody = document.getElementById("materials-tbody");
+        const revenueTbody = document.getElementById("revenue-tbody");
+        const btnAddProject = document.getElementById("btn-add-project");
+        const projectsSearch = document.getElementById("projects-search");
+        const projectStatusFilter = document.getElementById(
+          "project-status-filter"
+        );
+        const projectStartFrom = document.getElementById("project-start-from");
+        const projectStartTo = document.getElementById("project-start-to");
         const ICON_PATHS = Object.freeze({
           home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/><path d="M10 21v-5h4v5"/>',
           projects:
@@ -3479,7 +3692,8 @@
 
         function resolveThemeFromIdentifier(identifier) {
           const normalized = (identifier || "").toString().toUpperCase();
-          if (normalized.includes("PRJ")) return "projects";
+          if (normalized.includes("PRJ") || normalized.includes("PROJECTS"))
+            return "projects";
           if (normalized.includes("FIN")) return "finance";
           if (normalized.includes("HR")) return "hr";
           return "users";
@@ -4305,13 +4519,13 @@
             NAV_ICON_MAP.users;
           const iconHolder = document.createElement("span");
           iconHolder.className = "nav-btn__icon";
-          iconHolder.appendChild(createIconElement(iconName, { size: 22 }));
+          iconHolder.appendChild(createIconElement(iconName, { size: 20 }));
           const labelSpan = document.createElement("span");
           labelSpan.className = "nav-btn__label";
           labelSpan.textContent = label;
           btn.title = label;
-          btn.appendChild(iconHolder);
           btn.appendChild(labelSpan);
+          btn.appendChild(iconHolder);
           return btn;
         }
         function renderNav(navConfig = []) {
@@ -4402,6 +4616,72 @@
           }
         }
 
+        function resolveFormMetaForPane(paneKey, sourceSheet, labelText) {
+          const register =
+            (bootstrapData && bootstrapData.forms) || Object.create(null);
+          if (!register || typeof register !== "object") {
+            return null;
+          }
+
+          const entries = Object.entries(register).map(([key, meta]) => ({
+            key,
+            meta,
+            normalized: String(key || "")
+              .trim()
+              .replace(/[\s_\-]+/g, "")
+              .toLowerCase(),
+          }));
+
+          const candidates = new Set();
+          const pushCandidate = (value) => {
+            if (value == null) return;
+            const trimmed = String(value).trim();
+            if (!trimmed) return;
+            candidates.add(trimmed);
+            candidates.add(trimmed.toLowerCase());
+            candidates.add(trimmed.toUpperCase());
+          };
+
+          pushCandidate(paneKey);
+          if (paneKey) {
+            const withoutSub = paneKey.replace(/^Sub_/i, "");
+            pushCandidate(withoutSub);
+            pushCandidate(withoutSub.replace(/^(PRJ|FIN|HR)_/i, ""));
+          }
+
+          if (sourceSheet) {
+            pushCandidate(sourceSheet);
+            pushCandidate(sourceSheet.replace(/^PV_/i, ""));
+            pushCandidate(sourceSheet.replace(/^(PRJ|FIN|HR)_/i, ""));
+          }
+
+          if (labelText) {
+            pushCandidate(labelText);
+            pushCandidate(String(labelText).replace(/\s+/g, ""));
+          }
+
+          for (const candidate of candidates) {
+            if (register[candidate]) return register[candidate];
+          }
+
+          const normalizedCandidates = Array.from(candidates)
+            .map((candidate) =>
+              String(candidate)
+                .replace(/[\s_\-]+/g, "")
+                .toLowerCase()
+            )
+            .filter(Boolean);
+
+          for (const normalized of normalizedCandidates) {
+            const match = entries.find(
+              (entry) => entry.normalized === normalized
+            );
+            if (match) return match.meta;
+          }
+
+          return null;
+        }
+
         function renderWorkspaceNav(tabId, navElementId, contentElement) {
           const navEl = navElementId
             ? document.getElementById(navElementId)
@@ -4436,6 +4716,7 @@
             : [];
           const seenSubIds = new Set();
           const seenLabels = new Set();
+          const seenBaseLabels = new Map();
 
           subTabs.forEach((sub) => {
             if (!sub?.subId) return;
@@ -4443,6 +4724,20 @@
             const labelText =
               sub.subLabelAr || sub.subLabelEn || sub.subId || "";
             const normalizedLabel = labelText.trim().toLowerCase();
+            const baseLabelKey = labelText
+              .replace(/\(.*?\)/g, "")
+              .replace(/\s+/g, "")
+              .toLowerCase();
+            const subSource = (sub.sourceSheet || "").trim();
+            const sourceKey = subSource.toLowerCase();
+
+            if (baseLabelKey) {
+              const seenSources = seenBaseLabels.get(baseLabelKey);
+              if (seenSources && seenSources.has(sourceKey)) {
+                return;
+              }
+            }
+
             if (
               (normalizedSubId &&
                 seenSubIds.has(normalizedSubId.toLowerCase())) ||
@@ -4456,6 +4751,11 @@
             if (normalizedLabel) {
               seenLabels.add(normalizedLabel);
             }
+            if (baseLabelKey) {
+              const bucket = seenBaseLabels.get(baseLabelKey) || new Set();
+              bucket.add(sourceKey);
+              seenBaseLabels.set(baseLabelKey, bucket);
+            }
             const button = document.createElement("button");
             button.type = "button";
             button.className = "nav-item";
@@ -4464,7 +4764,6 @@
             button.title = labelText;
             button.dataset.subId = sub.subId;
             if (sub.route) button.dataset.route = sub.route;
-            const subSource = (sub.sourceSheet || "").trim();
             button.dataset.sourceSheet = subSource;
             button.addEventListener("click", () => {
               navEl
@@ -4545,7 +4844,11 @@
 
           const formsRegister =
             (bootstrapData && bootstrapData.forms) || Object.create(null);
-          const formMeta = formsRegister[paneName];
+          const formMeta = resolveFormMetaForPane(
+            paneId,
+            trimmedSource,
+            paneLabel
+          );
 
           if (window.console && typeof console.groupCollapsed === "function") {
             console.groupCollapsed(
@@ -4820,9 +5123,11 @@
 
           renderPaneHeader(paneElement, paneName, {
             formMeta,
+            paneLabel: normalizedLabel,
+            sourceSheet: trimmedSource,
             onAdd: () => setPaneMode(paneElement, paneState, "form"),
             onRefresh: fetchData,
-            hideAddButton: true,
+            hideAddButton: false,
           });
 
           renderGenericFormPane(formContainer, {
@@ -6167,7 +6472,10 @@
             "Sub_PRJ_Materials";
           const formsRegister =
             (bootstrapData && bootstrapData.forms) || Object.create(null);
-          const formMeta = formsRegister[paneName] || null;
+          const formMeta =
+            resolveFormMetaForPane(paneName, null, null) ||
+            formsRegister[paneName] ||
+            null;
           const formId = formMeta?.formId || "FORM_PRJ_AddMaterial";
 
           paneElement.dataset.materialsFormId = formId;
@@ -6195,6 +6503,7 @@
           try {
             renderPaneHeader(paneElement, paneName, {
               formMeta,
+              paneLabel: paneName,
               onAdd: () => activateTab("add"),
               onRefresh: () =>
                 loadMaterialsViewData(viewContainer, {
@@ -7331,7 +7640,13 @@
           const formsRegister =
             (bootstrapData && bootstrapData.forms) || Object.create(null);
           const formEntry =
-            options.formMeta || formsRegister?.[paneName] || null;
+            options.formMeta ||
+            resolveFormMetaForPane(
+              paneName,
+              options?.sourceSheet,
+              options?.paneLabel
+            ) ||
+            null;
 
           if (window.console) {
             console.log(`[renderPaneHeader] lookup`, {
@@ -11578,6 +11893,498 @@
           userLabel.setAttribute("title", `${display}${suffix}`.trim());
           const welcome = document.getElementById("portal-welcome-message");
           if (welcome) welcome.textContent = `Welcome, ${display}${suffix}`;
+        }
+
+        // Set up Projects workspace event handlers
+        if (prjSideNav) {
+          prjSideNav.addEventListener("click", (evt) => {
+            const btn = evt.target.closest("button[data-pane]");
+            if (!btn) return;
+            evt.preventDefault();
+            const pane = btn.dataset.subId || btn.dataset.pane || "main";
+            setActivePrjPane(pane);
+          });
+        }
+
+        function setActivePrjPane(paneName, options = {}) {
+          if (!paneName) return;
+          const prjPanes = Array.from(
+            document.querySelectorAll("#projects-workspace .sys-pane")
+          );
+          prjPanes.forEach((pane) => {
+            pane.classList.toggle("active", pane.dataset.pane === paneName);
+          });
+          Array.from(prjSideNav.querySelectorAll("[data-pane]")).forEach(
+            (btn) => {
+              btn.classList.toggle("active", btn.dataset.pane === paneName);
+            }
+          );
+          if (options.force) {
+            loadPrjPaneData(paneName);
+          }
+        }
+
+        function loadPrjPaneData(paneName) {
+          if (paneName === "main") {
+            loadProjects();
+          } else if (paneName === "tasks") {
+            loadTasks();
+          } else if (paneName === "costs") {
+            loadCosts();
+          } else if (paneName === "materials") {
+            loadMaterials();
+          } else if (paneName === "revenue") {
+            loadRevenue();
+          }
+        }
+
+        function loadProjects() {
+          if (!(window.google && google.script && google.script.run)) {
+            projectsTbody.innerHTML =
+              '<tr><td colspan="9" class="muted">غير متصل بالخادم.</td></tr>';
+            return;
+          }
+          projectsTbody.innerHTML =
+            '<tr><td colspan="9" class="muted">جاري التحميل…</td></tr>';
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("loadProjects failed", err);
+              projectsTbody.innerHTML =
+                '<tr><td colspan="9" class="error-text">تعذر تحميل المشاريع.</td></tr>';
+            })
+            .withSuccessHandler((result) => {
+              renderProjects(result);
+            })
+            .getSheetData("PRJ_Main");
+        }
+
+        function renderProjects(data) {
+          projectsTbody.innerHTML = "";
+          const headers = Array.isArray(data?.headers) ? data.headers : [];
+          const rows = Array.isArray(data?.rows) ? data.rows : [];
+          if (!rows.length) {
+            projectsTbody.innerHTML =
+              '<tr><td colspan="9" class="muted">لا توجد مشاريع مسجلة.</td></tr>';
+            return;
+          }
+          const frag = document.createDocumentFragment();
+          rows.forEach((row) => {
+            const tr = document.createElement("tr");
+            const cells = [
+              row[0] || "", // Project_ID
+              row[1] || "", // Project_Name
+              row[3] || "", // Client_Name
+              formatDateTime(row[5]), // Start_Date
+              formatDateTime(row[7]), // Planned_End_Date
+              row[9] || "", // Status
+              row[21] || "", // Manager
+              formatCurrencyValue(row[14] || 0), // Budget
+            ];
+            cells.forEach((cell) => {
+              const td = document.createElement("td");
+              td.textContent = cell;
+              tr.appendChild(td);
+            });
+            const actionsTd = document.createElement("td");
+            const viewBtn = createIconButton("view", {
+              className: "icon-btn",
+              title: "عرض التفاصيل",
+            });
+            viewBtn.addEventListener("click", () => {
+              const projectId = row[0];
+              if (projectId) {
+                openProjectDetails(projectId);
+              }
+            });
+            actionsTd.appendChild(viewBtn);
+            tr.appendChild(actionsTd);
+            frag.appendChild(tr);
+          });
+          projectsTbody.appendChild(frag);
+        }
+
+        function openProjectDetails(projectId) {
+          if (!projectId) return;
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("getRecordDetail failed", err);
+              showToast("تعذر تحميل تفاصيل المشروع.", "error");
+            })
+            .withSuccessHandler((detail) => {
+              showProjectDetailsModal(detail);
+            })
+            .getRecordDetail("Sub_PRJ_Main", projectId, "Projects", {});
+        }
+
+        function showProjectDetailsModal(detail) {
+          const overlay = document.createElement("div");
+          overlay.className = "generic-modal-overlay";
+          const dialog = document.createElement("div");
+          dialog.className = "generic-modal generic-modal--wide";
+          overlay.appendChild(dialog);
+
+          const header = document.createElement("div");
+          header.className = "generic-modal__header";
+          const title = document.createElement("h3");
+          title.className = "generic-modal__title";
+          title.textContent = detail?.title || "تفاصيل المشروع";
+          header.appendChild(title);
+          const closeBtn = document.createElement("button");
+          closeBtn.type = "button";
+          closeBtn.className = "ghost-button";
+          closeBtn.textContent = "إغلاق";
+          header.appendChild(closeBtn);
+          dialog.appendChild(header);
+
+          const body = document.createElement("div");
+          body.className = "generic-modal__body";
+          dialog.appendChild(body);
+
+          const footer = document.createElement("div");
+          footer.className = "generic-modal__footer";
+          const dismissBtn = document.createElement("button");
+          dismissBtn.type = "button";
+          dismissBtn.className = "ghost-button";
+          dismissBtn.textContent = "إغلاق";
+          footer.appendChild(dismissBtn);
+          dialog.appendChild(footer);
+
+          const closeOverlay = () => {
+            document.removeEventListener("keydown", handleKeydown);
+            overlay.remove();
+          };
+          const handleKeydown = (event) => {
+            if (event.key === "Escape") {
+              event.preventDefault();
+              closeOverlay();
+            }
+          };
+
+          closeBtn.addEventListener("click", closeOverlay);
+          dismissBtn.addEventListener("click", closeOverlay);
+          overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) closeOverlay();
+          });
+          document.addEventListener("keydown", handleKeydown);
+          document.body.appendChild(overlay);
+
+          if (detail?.sections?.length) {
+            const tabsContainer = document.createElement("div");
+            tabsContainer.className = "detail-tabs";
+            const nav = document.createElement("div");
+            nav.className = "detail-tabs__nav";
+            const contentWrapper = document.createElement("div");
+            contentWrapper.className = "detail-tabs__content";
+
+            detail.sections.forEach((section, idx) => {
+              const sectionId = section.id || "section-" + idx;
+              const button = document.createElement("button");
+              button.type = "button";
+              button.className = "detail-tabs__button";
+              button.dataset.tabTarget = sectionId;
+              button.textContent = section.label || "القسم " + (idx + 1);
+              nav.appendChild(button);
+
+              const pane = document.createElement("div");
+              pane.className = "detail-tab-pane";
+              pane.dataset.tabPane = sectionId;
+
+              if (section.layout === "table" && section.headers) {
+                const table = document.createElement("table");
+                table.className = "detail-table";
+                const theadEl = document.createElement("thead");
+                const headRow = document.createElement("tr");
+                section.headers.forEach((header) => {
+                  const th = document.createElement("th");
+                  th.textContent = header;
+                  headRow.appendChild(th);
+                });
+                theadEl.appendChild(headRow);
+                table.appendChild(theadEl);
+                const tbodyEl = document.createElement("tbody");
+                if (section.rows?.length) {
+                  section.rows.forEach((row) => {
+                    const trRow = document.createElement("tr");
+                    section.headers.forEach((_, colIdx) => {
+                      const td = document.createElement("td");
+                      td.textContent = row[colIdx] || "-";
+                      trRow.appendChild(td);
+                    });
+                    tbodyEl.appendChild(trRow);
+                  });
+                }
+                table.appendChild(tbodyEl);
+                pane.appendChild(table);
+              } else {
+                pane.innerHTML = '<p class="detail-empty">لا توجد بيانات.</p>';
+              }
+
+              contentWrapper.appendChild(pane);
+            });
+
+            tabsContainer.appendChild(nav);
+            tabsContainer.appendChild(contentWrapper);
+            body.appendChild(tabsContainer);
+
+            const activateSection = (targetId) => {
+              nav.querySelectorAll(".detail-tabs__button").forEach((btn) => {
+                btn.classList.toggle(
+                  "is-active",
+                  btn.dataset.tabTarget === targetId
+                );
+              });
+              contentWrapper
+                .querySelectorAll(".detail-tab-pane")
+                .forEach((pane) => {
+                  pane.classList.toggle(
+                    "active",
+                    pane.dataset.tabPane === targetId
+                  );
+                });
+            };
+
+            nav.addEventListener("click", (event) => {
+              const btn = event.target.closest(".detail-tabs__button");
+              if (!btn) return;
+              activateSection(btn.dataset.tabTarget);
+            });
+
+            const initialButton = nav.querySelector(".detail-tabs__button");
+            if (initialButton) {
+              activateSection(initialButton.dataset.tabTarget);
+            }
+          } else {
+            body.innerHTML =
+              '<p class="detail-empty">لا توجد تفاصيل متاحة.</p>';
+          }
+        }
+
+        function loadTasks() {
+          tasksTbody.innerHTML =
+            '<tr><td colspan="8" class="muted">جاري التحميل…</td></tr>';
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("loadTasks failed", err);
+              tasksTbody.innerHTML =
+                '<tr><td colspan="8" class="error-text">تعذر تحميل المهام.</td></tr>';
+            })
+            .withSuccessHandler((result) => {
+              renderTasks(result);
+            })
+            .getSheetData("PRJ_Tasks");
+        }
+
+        function renderTasks(data) {
+          tasksTbody.innerHTML = "";
+          const rows = Array.isArray(data?.rows) ? data.rows : [];
+          if (!rows.length) {
+            tasksTbody.innerHTML =
+              '<tr><td colspan="8" class="muted">لا توجد مهام مسجلة.</td></tr>';
+            return;
+          }
+          const frag = document.createDocumentFragment();
+          rows.forEach((row) => {
+            const tr = document.createElement("tr");
+            const cells = [
+              row[0] || "", // Task_ID
+              row[1] || "", // Project_ID
+              row[2] || "", // Task_Name
+              row[3] || "", // Assignee_ID
+              formatDateTime(row[4]), // Planned_Start
+              formatDateTime(row[5]), // Planned_End
+              row[8] || "", // Status
+            ];
+            cells.forEach((cell) => {
+              const td = document.createElement("td");
+              td.textContent = cell;
+              tr.appendChild(td);
+            });
+            const actionsTd = document.createElement("td");
+            const viewBtn = createIconButton("view", {
+              className: "icon-btn",
+              title: "عرض التفاصيل",
+            });
+            actionsTd.appendChild(viewBtn);
+            tr.appendChild(actionsTd);
+            frag.appendChild(tr);
+          });
+          tasksTbody.appendChild(frag);
+        }
+
+        function loadCosts() {
+          costsTbody.innerHTML =
+            '<tr><td colspan="7" class="muted">جاري التحميل…</td></tr>';
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("loadCosts failed", err);
+              costsTbody.innerHTML =
+                '<tr><td colspan="7" class="error-text">تعذر تحميل التكاليف.</td></tr>';
+            })
+            .withSuccessHandler((result) => {
+              renderCosts(result);
+            })
+            .getSheetData("PRJ_Costs");
+        }
+
+        function renderCosts(data) {
+          costsTbody.innerHTML = "";
+          const rows = Array.isArray(data?.rows) ? data.rows : [];
+          if (!rows.length) {
+            costsTbody.innerHTML =
+              '<tr><td colspan="7" class="muted">لا توجد تكاليف مسجلة.</td></tr>';
+            return;
+          }
+          const frag = document.createDocumentFragment();
+          rows.forEach((row) => {
+            const tr = document.createElement("tr");
+            const cells = [
+              row[0] || "", // Cost_ID
+              row[1] || "", // Project_ID
+              formatDateTime(row[2]), // Date
+              row[3] || "", // Category
+              row[4] || "", // Description
+              formatCurrencyValue(row[5] || 0), // Amount
+            ];
+            cells.forEach((cell) => {
+              const td = document.createElement("td");
+              td.textContent = cell;
+              tr.appendChild(td);
+            });
+            const actionsTd = document.createElement("td");
+            const viewBtn = createIconButton("view", {
+              className: "icon-btn",
+              title: "عرض التفاصيل",
+            });
+            actionsTd.appendChild(viewBtn);
+            tr.appendChild(actionsTd);
+            frag.appendChild(tr);
+          });
+          costsTbody.appendChild(frag);
+        }
+
+        function loadMaterials() {
+          materialsTbody.innerHTML =
+            '<tr><td colspan="6" class="muted">جاري التحميل…</td></tr>';
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("loadMaterials failed", err);
+              materialsTbody.innerHTML =
+                '<tr><td colspan="6" class="error-text">تعذر تحميل المواد.</td></tr>';
+            })
+            .withSuccessHandler((result) => {
+              renderMaterials(result);
+            })
+            .getMaterialsCatalog();
+        }
+
+        function renderMaterials(data) {
+          materialsTbody.innerHTML = "";
+          const rows = Array.isArray(data) ? data : [];
+          if (!rows.length) {
+            materialsTbody.innerHTML =
+              '<tr><td colspan="6" class="muted">لا توجد مواد مسجلة.</td></tr>';
+            return;
+          }
+          const frag = document.createDocumentFragment();
+          rows.forEach((row) => {
+            const tr = document.createElement("tr");
+            const cells = [
+              row.Material_ID || "",
+              row.Name_AR || row.Name_EN || "",
+              row.Category || "",
+              formatCurrencyValue(row.Default_Price || 0),
+              row.Active ? "نشط" : "غير نشط",
+            ];
+            cells.forEach((cell) => {
+              const td = document.createElement("td");
+              td.textContent = cell;
+              tr.appendChild(td);
+            });
+            const actionsTd = document.createElement("td");
+            const viewBtn = createIconButton("view", {
+              className: "icon-btn",
+              title: "عرض التفاصيل",
+            });
+            actionsTd.appendChild(viewBtn);
+            tr.appendChild(actionsTd);
+            frag.appendChild(tr);
+          });
+          materialsTbody.appendChild(frag);
+        }
+
+        function loadRevenue() {
+          revenueTbody.innerHTML =
+            '<tr><td colspan="7" class="muted">جاري التحميل…</td></tr>';
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error("loadRevenue failed", err);
+              revenueTbody.innerHTML =
+                '<tr><td colspan="7" class="error-text">تعذر تحميل الإيرادات.</td></tr>';
+            })
+            .withSuccessHandler((result) => {
+              renderRevenue(result);
+            })
+            .getSheetData("FIN_Project_Revenue");
+        }
+
+        function renderRevenue(data) {
+          revenueTbody.innerHTML = "";
+          const rows = Array.isArray(data?.rows) ? data.rows : [];
+          if (!rows.length) {
+            revenueTbody.innerHTML =
+              '<tr><td colspan="7" class="muted">لا توجد إيرادات مسجلة.</td></tr>';
+            return;
+          }
+          const frag = document.createDocumentFragment();
+          rows.forEach((row) => {
+            const tr = document.createElement("tr");
+            const cells = [
+              row[0] || "", // Revenue_ID
+              row[1] || "", // Project_ID
+              formatDateTime(row[2]), // Revenue_Date
+              formatCurrencyValue(row[3] || 0), // Amount
+              row[4] || "", // Revenue_Type
+              row[9] || "", // Pay_Status
+            ];
+            cells.forEach((cell) => {
+              const td = document.createElement("td");
+              td.textContent = cell;
+              tr.appendChild(td);
+            });
+            const actionsTd = document.createElement("td");
+            const viewBtn = createIconButton("view", {
+              className: "icon-btn",
+              title: "عرض التفاصيل",
+            });
+            actionsTd.appendChild(viewBtn);
+            tr.appendChild(actionsTd);
+            frag.appendChild(tr);
+          });
+          revenueTbody.appendChild(frag);
+        }
+
+        // Add Project button handler
+        if (btnAddProject) {
+          btnAddProject.addEventListener("click", () => {
+            console.log("CLIENT: Add Project button clicked");
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("خدمة Google Apps Script غير متاحة.", "error");
+              return;
+            }
+            google.script.run
+              .withFailureHandler((err) => {
+                console.error("SERVER ERROR:", err);
+                showToast("تعذر الاتصال بالخادم.", "error");
+              })
+              .withSuccessHandler((result) => {
+                console.log(
+                  "CLIENT: Server function called successfully",
+                  result
+                );
+                showToast("تم إرسال الطلب للخادم بنجاح.", "success");
+              })
+              .getFormWithOptions("FORM_PRJ_AddProject");
+          });
         }
 
         // Set up sys nav event handlers
