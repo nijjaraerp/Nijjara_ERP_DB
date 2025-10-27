@@ -285,6 +285,11 @@ const DYNAMIC_FORMS_FALLBACK = Object.freeze({
     titleEn: "Log Project Revenue",
     titleAr: "تسجيل إيراد مشروع",
   },
+  Sub_PRJ_Clients: {
+    formId: "FORM_PRJ_AddClient",
+    titleEn: "Add Client",
+    titleAr: "إضافة عميل",
+  },
   Sub_HR_Employees: {
     formId: "FORM_HR_AddEmployee",
     titleEn: "Add Employee",
