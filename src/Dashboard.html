@@ -26,6 +26,36 @@
         --color-danger: #e74c3c;
         --font-family-arabic: "Cairo", sans-serif;
       }
+      body[class*="module-theme-"] {
+        --theme-accent: var(--color-accent);
+        --theme-accent-16: rgba(212, 175, 55, 0.16);
+        --theme-accent-24: rgba(212, 175, 55, 0.24);
+      }
+      body.module-theme-portal {
+        --theme-accent: var(--color-accent);
+        --theme-accent-16: rgba(212, 175, 55, 0.16);
+        --theme-accent-24: rgba(212, 175, 55, 0.24);
+      }
+      body.module-theme-projects {
+        --theme-accent: #5a8cff;
+        --theme-accent-16: rgba(90, 140, 255, 0.16);
+        --theme-accent-24: rgba(90, 140, 255, 0.24);
+      }
+      body.module-theme-finance {
+        --theme-accent: #d2aa50;
+        --theme-accent-16: rgba(210, 170, 80, 0.16);
+        --theme-accent-24: rgba(210, 170, 80, 0.24);
+      }
+      body.module-theme-hr {
+        --theme-accent: #66d6a8;
+        --theme-accent-16: rgba(102, 214, 168, 0.16);
+        --theme-accent-24: rgba(102, 214, 168, 0.24);
+      }
+      body.module-theme-system {
+        --theme-accent: #c86ed2;
+        --theme-accent-16: rgba(200, 110, 210, 0.16);
+        --theme-accent-24: rgba(200, 110, 210, 0.24);
+      }
       .module-card h2,
       .nav-btn,
       .nav-item,
@@ -586,7 +616,9 @@
         font-weight: 600;
       }
       .nav-item.active,
-      .nav-item:hover {
+      .nav-item:hover,
+      .sidebar-item.active,
+      .sidebar-item:hover {
         background: var(--theme-accent);
         border-color: var(--theme-accent);
         color: #111;
@@ -704,6 +736,14 @@
       .pane-table-scroll thead th {
         color: var(--theme-accent, var(--color-text-primary));
       }
+      body[class*="module-theme-"] table thead th {
+        color: var(--theme-accent, var(--color-text-primary));
+      }
+      body[class*="module-theme-"] .sidebar-item.active {
+        background: var(--theme-accent);
+        border-color: var(--theme-accent);
+        color: #111;
+      }
       td,
       th {
         padding: 0.8rem 1rem;
@@ -731,14 +771,44 @@
       .generic-table thead th {
         color: inherit;
       }
+      .module-controls {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        padding: 0.25rem 0 0.45rem;
+        margin-bottom: 0.2rem;
+        width: 100%;
+      }
+      .module-controls__row {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        justify-content: center;
+      }
+      .module-controls__primary {
+        align-items: center;
+      }
+      .module-controls__secondary {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .module-controls__secondary > * {
+        width: 100%;
+      }
       .generic-pane__controls {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
         gap: 0.85rem;
-        padding: 0 0 1rem;
+        padding: 0;
         width: 100%;
+      }
+      .generic-pane__controls.module-controls {
+        gap: 0.6rem;
       }
       .pane-mode-switch {
         display: inline-flex;
@@ -749,8 +819,9 @@
         width: 100%;
       }
       .pane-mode-button {
-        min-width: 150px;
-        padding: 0.55rem 1.4rem;
+        min-width: 160px;
+        min-height: 46px;
+        padding: 0.6rem 1.5rem;
         border-radius: 12px;
         border: 1px solid var(--theme-accent-24);
         background: linear-gradient(
@@ -843,7 +914,7 @@
       .pane-bulk-actions .ghost-button,
       .pane-bulk-actions .accent-button {
         padding: 0.45rem 1rem;
-        min-height: 42px;
+        min-height: 44px;
       }
       .icon-label {
         display: inline-flex;
@@ -1262,13 +1333,15 @@
         align-items: center;
         flex-wrap: wrap;
       }
-      .materials-catalog__controls,
-      .materials-module__controls {
+      .materials-catalog__controls {
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
         align-items: center;
         gap: 0.75rem 1rem;
+      }
+      .materials-module__controls {
+        gap: 0.5rem;
       }
       .materials-catalog__search,
       .materials-module__search {
@@ -1405,11 +1478,32 @@
         font-size: 0.85rem;
         color: var(--color-text-secondary);
       }
-      .materials-module__bulk {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-      }
+        .materials-module__filters {
+          display: flex;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0.6rem;
+          width: 100%;
+        }
+        .materials-module__filters .materials-module__search {
+          flex: 1 1 auto;
+        }
+        .materials-module__selects {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 0.6rem;
+        }
+        .materials-module__selects select {
+          min-width: 200px;
+        }
+        .materials-module__bulk {
+          display: flex;
+          gap: 0.6rem;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
       .materials-module__select-column {
         width: 48px;
         text-align: center;
@@ -1418,10 +1512,11 @@
         white-space: nowrap;
         text-align: center;
       }
-      .materials-module__count {
-        font-size: 0.85rem;
-        color: var(--color-text-secondary);
-      }
+        .materials-module__count {
+          font-size: 0.85rem;
+          color: var(--color-text-secondary);
+          text-align: center;
+        }
       .materials-status-toggle {
         padding: 0.35rem 0.75rem;
         border-radius: 999px;
@@ -1803,13 +1898,18 @@
         text-align: center;
         padding: 1rem 0;
       }
-      .direct-expense__view-controls {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        align-items: center;
-        margin-bottom: 1rem;
-      }
+        .direct-expense__controls {
+          gap: 0.5rem;
+        }
+        .direct-expense__view-controls {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 0.5rem;
+          width: 100%;
+        }
       .direct-expense__view-controls input[type="search"] {
         flex: 1 1 260px;
         min-width: 220px;
@@ -2146,38 +2246,47 @@
       .kpi-value {
         font-size: 1.6rem;
       }
-      .toolbar {
-        display: flex;
-        gap: 0.5rem;
+      .sys-users__controls {
         align-items: center;
-        margin: 0 0 1rem 0;
-        flex-wrap: wrap;
       }
-      .toolbar input,
-      .toolbar select {
-        padding: 0.5rem 0.7rem;
+      .sys-users__filters,
+      .sys-users__bulk-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        justify-content: center;
+        width: 100%;
+      }
+      .sys-users__filters {
+        align-items: stretch;
+      }
+      .sys-users__filters input,
+      .sys-users__filters select {
+        padding: 0.6rem 0.8rem;
         border: 1px solid var(--color-border);
-        border-radius: 8px;
+        border-radius: 10px;
         background: rgba(0, 0, 0, 0.25);
         color: var(--color-text-primary);
+        min-width: 140px;
       }
-      .toolbar-group {
-        display: flex;
-        gap: 0.5rem;
+      .sys-users__filters input[type="search"] {
+        flex: 1 1 240px;
+        min-width: 220px;
+      }
+      .sys-users__filters input[type="date"] {
+        min-width: 180px;
+      }
+      .sys-users__bulk-actions {
         align-items: center;
-        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.2rem;
       }
-      .toolbar--bulk {
-        justify-content: flex-start;
-        margin-top: -0.5rem;
-        margin-bottom: 1rem;
+      .sys-users__bulk-actions .ghost-button,
+      .sys-users__bulk-actions select {
+        min-width: 120px;
       }
-      .toolbar--bulk .ghost-button,
-      .toolbar--bulk select {
-        min-width: 110px;
-      }
-      .toolbar--bulk select:disabled,
-      .toolbar--bulk button:disabled {
+      .sys-users__bulk-actions select:disabled,
+      .sys-users__bulk-actions button:disabled {
         opacity: 0.5;
         cursor: not-allowed;
       }
@@ -2771,54 +2880,73 @@
                 أدوات بحث وإجراءات مجمّعة لإدارة المستخدمين بجميع حالاتهم.
               </p>
             </div>
-            <div class="toolbar toolbar--filters">
-              <input
-                type="search"
-                id="users-search"
-                placeholder="بحث سريع..."
-              />
-              <select id="department-filter">
-                <option value="">كل الأقسام</option>
-              </select>
-              <select id="role-filter">
-                <option value="">كل الأدوار</option>
-              </select>
-              <select id="status-filter">
-                <option value="">كل الحالات</option>
-                <option value="true">نشط</option>
-                <option value="false">غير نشط</option>
-              </select>
-              <input
-                type="date"
-                id="updated-from"
-                aria-label="تاريخ التحديث من"
-              />
-              <input
-                type="date"
-                id="updated-to"
-                aria-label="تاريخ التحديث إلى"
-              />
-              <button id="btn-new-user" class="accent-button">
-                إنشاء مستخدم جديد
-              </button>
-            </div>
-            <div class="toolbar toolbar--bulk">
-              <div class="toolbar-group">
-                <button id="bulk-export" class="ghost-button" disabled>
-                  تصدير
-                </button>
-                <button id="bulk-activate" class="ghost-button" disabled>
-                  تفعيل
-                </button>
-                <button id="bulk-deactivate" class="ghost-button" disabled>
-                  تعطيل
-                </button>
-                <select id="bulk-role-select" disabled>
-                  <option value="">اختر دورًا</option>
-                </select>
-                <button id="bulk-assign-role" class="ghost-button" disabled>
-                  تعيين الدور
-                </button>
+            <div class="module-controls sys-users__controls">
+              <div class="module-controls__row module-controls__primary">
+                <div class="pane-mode-switch">
+                  <button
+                    type="button"
+                    id="sys-users-view-btn"
+                    class="pane-mode-button is-active"
+                    data-mode="list"
+                  >
+                    عرض المستخدمين
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-new-user"
+                    class="pane-mode-button"
+                    data-mode="form"
+                  >
+                    إضافة مستخدم
+                  </button>
+                </div>
+              </div>
+              <div class="module-controls__row module-controls__secondary">
+                <div class="sys-users__filters">
+                  <input
+                    type="search"
+                    id="users-search"
+                    placeholder="بحث سريع..."
+                  />
+                  <select id="department-filter">
+                    <option value="">كل الأقسام</option>
+                  </select>
+                  <select id="role-filter">
+                    <option value="">كل الأدوار</option>
+                  </select>
+                  <select id="status-filter">
+                    <option value="">كل الحالات</option>
+                    <option value="true">نشط</option>
+                    <option value="false">غير نشط</option>
+                  </select>
+                  <input
+                    type="date"
+                    id="updated-from"
+                    aria-label="تاريخ التحديث من"
+                  />
+                  <input
+                    type="date"
+                    id="updated-to"
+                    aria-label="تاريخ التحديث إلى"
+                  />
+                </div>
+                <div class="sys-users__bulk-actions">
+                  <button id="bulk-export" class="ghost-button" disabled>
+                    تصدير
+                  </button>
+                  <button id="bulk-activate" class="ghost-button" disabled>
+                    تفعيل
+                  </button>
+                  <button id="bulk-deactivate" class="ghost-button" disabled>
+                    تعطيل
+                  </button>
+                  <select id="bulk-role-select" disabled>
+                    <option value="">اختر دورًا</option>
+                  </select>
+                  <button id="bulk-assign-role" class="ghost-button" disabled>
+                    تعيين الدور
+                  </button>
+                </div>
               </div>
             </div>
             <div class="table-wrapper">
@@ -3237,6 +3365,8 @@
         const bulkDeactivateBtn = document.getElementById("bulk-deactivate");
         const bulkAssignRoleBtn = document.getElementById("bulk-assign-role");
         const bulkRoleSelect = document.getElementById("bulk-role-select");
+        const sysUsersViewButton = document.getElementById("sys-users-view-btn");
+        const addUserButton = document.getElementById("btn-new-user");
         const dlgReset = document.getElementById("dlg-reset-pass");
         const formReset = document.getElementById("form-reset-pass");
         const dlgProfile = document.getElementById("dlg-user-profile");
@@ -3424,6 +3554,78 @@
             contentSelector: "#hr-workspace .workspace-content",
           },
         };
+        const WORKSPACE_THEME_MAP = {
+          "portal-view": {
+            className: "module-theme-portal",
+            label: "Portal",
+            color: "gold",
+          },
+          "projects-workspace": {
+            className: "module-theme-projects",
+            label: "Projects",
+            color: "blue",
+          },
+          "finance-workspace": {
+            className: "module-theme-finance",
+            label: "Finance",
+            color: "amber",
+          },
+          "hr-workspace": {
+            className: "module-theme-hr",
+            label: "HR",
+            color: "green",
+          },
+          "system-management-view": {
+            className: "module-theme-system",
+            label: "System Management",
+            color: "violet",
+          },
+        };
+        function applyModuleTheme(targetId) {
+          const bodyEl = document.body;
+          if (!bodyEl) return;
+          const theme = WORKSPACE_THEME_MAP[targetId] || null;
+          Array.from(bodyEl.classList)
+            .filter((cls) => cls.startsWith("module-theme-"))
+            .forEach((cls) => bodyEl.classList.remove(cls));
+          if (theme?.className) {
+            bodyEl.classList.add(theme.className);
+            if (window.console) {
+              console.log(
+                `THEME: Applying ${theme.label} (${theme.color}) theme.`,
+                {
+                  themeClass: theme.className,
+                  targetId,
+                }
+              );
+            }
+          } else if (window.console) {
+            console.log("THEME: Applying default theme.", { targetId });
+          }
+        }
+        if (sysUsersViewButton) {
+          setButtonIconLabel(sysUsersViewButton, "view", "عرض المستخدمين");
+          sysUsersViewButton.addEventListener("click", () => {
+            sysUsersViewButton.classList.add("is-active");
+            if (addUserButton) {
+              addUserButton.classList.remove("is-active");
+            }
+            if (usersTable && typeof usersTable.scrollIntoView === "function") {
+              try {
+                usersTable.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              } catch (err) {
+                usersTable.scrollIntoView();
+              }
+            }
+          });
+        }
+        if (addUserButton) {
+          addUserButton.setAttribute("type", "button");
+          setButtonIconLabel(addUserButton, "add", "إضافة مستخدم");
+        }
         const HR_API_HANDLERS = Object.freeze({
           Sub_HR_Employees: {
             fetch: "getEmployees",
@@ -4251,7 +4453,7 @@
 
             const button = document.createElement("button");
             button.type = "button";
-            button.className = "nav-item";
+            button.className = "nav-item sidebar-item";
             button.dataset.pane = pane;
             if (entry.subId) button.dataset.subId = entry.subId;
             if (entry.route) button.dataset.route = entry.route;
@@ -4333,6 +4535,7 @@
         }
 
         function switchView(id) {
+          applyModuleTheme(id);
           Object.keys(workspaceConfigs).forEach((key) => {
             if (key === id) return;
             const config = workspaceConfigs[key];
@@ -4364,19 +4567,6 @@
                 (id === "portal-view" && target === "portal-view")
             );
           });
-          if (id === "projects-workspace") {
-            const moduleName = "المشاريع";
-            const activeButton = document.querySelector(
-              '.app-navbar .nav-btn.active[data-target="projects-workspace"]'
-            );
-            const appliedClass = activeButton
-              ? Array.from(activeButton.classList)
-              : [];
-            console.log(
-              "Active module set to: مشاريع (Projects), applying blue theme",
-              { moduleName, appliedClass }
-            );
-          }
           if (id === "system-management-view") {
             lastWorkspaceNavRendered = null;
             loadTab(currentSysPane || "overview");
@@ -4721,7 +4911,7 @@
             }
             const button = document.createElement("button");
             button.type = "button";
-            button.className = "nav-item";
+            button.className = "nav-item sidebar-item";
             button.textContent = labelText;
             button.dataset.label = labelText;
             button.title = labelText;
@@ -5354,7 +5544,7 @@
             paneElement.querySelector(".generic-pane__controls");
           if (!controls) {
             controls = document.createElement("div");
-            controls.className = "generic-pane__controls";
+            controls.className = "generic-pane__controls module-controls";
             if (header && header.nextSibling) {
               paneElement.insertBefore(controls, header.nextSibling);
             } else if (header) {
@@ -5362,15 +5552,39 @@
             } else {
               paneElement.prepend(controls);
             }
+          } else {
+            controls.classList.add("module-controls");
           }
           scaffold.controls = controls;
 
+          let primaryRow =
+            scaffold.primaryRow ||
+            controls.querySelector(".module-controls__primary");
+          if (!primaryRow) {
+            primaryRow = document.createElement("div");
+            primaryRow.className =
+              "module-controls__row module-controls__primary";
+            controls.appendChild(primaryRow);
+          }
+          scaffold.primaryRow = primaryRow;
+
+          let secondaryRow =
+            scaffold.secondaryRow ||
+            controls.querySelector(".module-controls__secondary");
+          if (!secondaryRow) {
+            secondaryRow = document.createElement("div");
+            secondaryRow.className =
+              "module-controls__row module-controls__secondary";
+            controls.appendChild(secondaryRow);
+          }
+          scaffold.secondaryRow = secondaryRow;
+
           let modeSwitch =
-            scaffold.modeSwitch || controls.querySelector(".pane-mode-switch");
+            scaffold.modeSwitch || primaryRow.querySelector(".pane-mode-switch");
           if (!modeSwitch) {
             modeSwitch = document.createElement("div");
             modeSwitch.className = "pane-mode-switch";
-            controls.appendChild(modeSwitch);
+            primaryRow.appendChild(modeSwitch);
           }
           scaffold.modeSwitch = modeSwitch;
 
@@ -5429,11 +5643,11 @@
           }
 
           let searchBar =
-            scaffold.searchBar || controls.querySelector(".pane-search-bar");
+            scaffold.searchBar || secondaryRow.querySelector(".pane-search-bar");
           if (!searchBar) {
             searchBar = document.createElement("div");
             searchBar.className = "pane-search-bar";
-            controls.appendChild(searchBar);
+            secondaryRow.appendChild(searchBar);
           }
           scaffold.searchBar = searchBar;
 
@@ -5478,11 +5692,11 @@
 
           let bulkActions =
             scaffold.bulkActions ||
-            controls.querySelector(".pane-bulk-actions");
+            secondaryRow.querySelector(".pane-bulk-actions");
           if (!bulkActions) {
             bulkActions = document.createElement("div");
             bulkActions.className = "pane-bulk-actions";
-            controls.appendChild(bulkActions);
+            secondaryRow.appendChild(bulkActions);
           }
           scaffold.bulkActions = bulkActions;
 
@@ -6460,6 +6674,9 @@
           paneElement.innerHTML = "";
 
           let viewContainer;
+          let secondaryRow;
+          let viewButton;
+          let addButton;
 
           const handleUpload = () => {
             const targetId = window.prompt(
@@ -6473,7 +6690,12 @@
               recordId: targetId.trim(),
               record: null,
               onUpdated: () =>
-                loadMaterialsViewData(viewContainer, { formId, reload: true }),
+                loadMaterialsViewData(viewContainer, {
+                  formId,
+                  reload: true,
+                  controlsRow: secondaryRow,
+                  onSwitchMode: activateTab,
+                }),
             });
           };
 
@@ -6486,6 +6708,8 @@
                 loadMaterialsViewData(viewContainer, {
                   formId,
                   reload: true,
+                  controlsRow: secondaryRow,
+                  onSwitchMode: activateTab,
                 }),
               onUpload: handleUpload,
             });
@@ -6499,22 +6723,36 @@
           const moduleWrapper = document.createElement("div");
           moduleWrapper.className = "materials-module";
 
-          const tabs = document.createElement("div");
-          tabs.className = "dyn-tabs materials-module__tabs";
+          const moduleControls = document.createElement("div");
+          moduleControls.className = "module-controls materials-module__controls";
 
-          const viewTab = document.createElement("button");
-          viewTab.type = "button";
-          viewTab.id = "mat-view-tab-btn";
-          viewTab.className = "nav-item active";
-          viewTab.textContent = "عرض المواد";
-          tabs.appendChild(viewTab);
+          const primaryRow = document.createElement("div");
+          primaryRow.className = "module-controls__row module-controls__primary";
+          moduleControls.appendChild(primaryRow);
 
-          const addTab = document.createElement("button");
-          addTab.type = "button";
-          addTab.id = "mat-add-tab-btn";
-          addTab.className = "nav-item";
-          addTab.textContent = "إضافة مادة";
-          tabs.appendChild(addTab);
+          secondaryRow = document.createElement("div");
+          secondaryRow.className = "module-controls__row module-controls__secondary";
+          moduleControls.appendChild(secondaryRow);
+
+          const modeSwitch = document.createElement("div");
+          modeSwitch.className = "pane-mode-switch";
+          primaryRow.appendChild(modeSwitch);
+
+          viewButton = document.createElement("button");
+          viewButton.type = "button";
+          viewButton.id = "mat-view-tab-btn";
+          viewButton.className = "pane-mode-button is-active";
+          viewButton.dataset.mode = "view";
+          setButtonIconLabel(viewButton, "view", "عرض المواد");
+          modeSwitch.appendChild(viewButton);
+
+          addButton = document.createElement("button");
+          addButton.type = "button";
+          addButton.id = "mat-add-tab-btn";
+          addButton.className = "pane-mode-button";
+          addButton.dataset.mode = "form";
+          setButtonIconLabel(addButton, "add", "إضافة مادة");
+          modeSwitch.appendChild(addButton);
 
           viewContainer = document.createElement("div");
           viewContainer.id = "mat-view-content";
@@ -6526,7 +6764,7 @@
           addContainer.className = "materials-module__section";
           addContainer.hidden = true;
 
-          moduleWrapper.appendChild(tabs);
+          moduleWrapper.appendChild(moduleControls);
           moduleWrapper.appendChild(viewContainer);
           moduleWrapper.appendChild(addContainer);
           paneElement.appendChild(moduleWrapper);
@@ -6799,10 +7037,12 @@
                     activeInput.checked = true;
                     vatRateInput.value = String(defaultVatPercent);
                     materialIdInput.focus();
-                    loadMaterialsViewData(viewContainer, {
-                      reload: true,
-                      formId,
-                    });
+                  loadMaterialsViewData(viewContainer, {
+                    reload: true,
+                    formId,
+                    controlsRow: secondaryRow,
+                    onSwitchMode: activateTab,
+                  });
                   } else {
                     if (typeof showToast === "function") {
                       showToast(
@@ -6820,62 +7060,69 @@
           };
 
           const activateTab = (target) => {
-            if (target === "view") {
-              viewTab.classList.add("active");
-              addTab.classList.remove("active");
-              viewContainer.hidden = false;
-              addContainer.hidden = true;
+            const isView = target === "view";
+            viewButton.classList.toggle("is-active", isView);
+            addButton.classList.toggle("is-active", !isView);
+            viewContainer.hidden = !isView;
+            addContainer.hidden = isView;
+            secondaryRow.hidden = !isView;
+
+            if (isView) {
               loadMaterialsViewData(viewContainer, {
                 formId,
+                controlsRow: secondaryRow,
+                onSwitchMode: activateTab,
               });
-            } else {
-              viewTab.classList.remove("active");
-              addTab.classList.add("active");
-              viewContainer.hidden = true;
-              addContainer.hidden = false;
+              return;
+            }
 
-              if (addInitialized) return;
+            if (addInitialized) return;
 
-              addContainer.innerHTML =
-                '<p class="muted">جارٍ تحميل نموذج إضافة المادة...</p>';
+            addContainer.innerHTML =
+              '<p class="muted">جارٍ تحميل نموذج إضافة المادة...</p>';
 
-              const resolved = resolveFormHandler();
-              if (!resolved || !resolved.handler) {
-                renderFallbackMaterialsForm();
-                return;
+            const resolved = resolveFormHandler();
+            if (!resolved || !resolved.handler) {
+              renderFallbackMaterialsForm();
+              return;
+            }
+
+            try {
+              const maybePromise = resolved.handler.call(
+                resolved.context,
+                formId,
+                null,
+                addContainer
+              );
+              addInitialized = true;
+              if (maybePromise && typeof maybePromise.then === "function") {
+                maybePromise.catch((err) => {
+                  console.error("renderForm promise rejected", err);
+                  renderFallbackMaterialsForm();
+                });
               }
-
-              try {
-                const maybePromise = resolved.handler.call(
-                  resolved.context,
-                  formId,
-                  null,
-                  addContainer
-                );
-                addInitialized = true;
-                if (maybePromise && typeof maybePromise.then === "function") {
-                  maybePromise.catch((err) => {
-                    console.error("renderForm promise rejected", err);
-                    renderFallbackMaterialsForm();
-                  });
-                }
-              } catch (err) {
-                console.error("renderForm invocation failed", err);
-                renderFallbackMaterialsForm();
-                return;
-              }
+            } catch (err) {
+              console.error("renderForm invocation failed", err);
+              renderFallbackMaterialsForm();
+              return;
             }
           };
 
-          viewTab.addEventListener("click", () => activateTab("view"));
-          addTab.addEventListener("click", () => activateTab("add"));
+          viewButton.addEventListener("click", () => activateTab("view"));
+          addButton.addEventListener("click", () => activateTab("add"));
 
           activateTab("view");
         }
 
         function loadMaterialsViewData(container, options = {}) {
           if (!container) return;
-          const { reload = false, onComplete, formId } = options;
+          const {
+            reload = false,
+            onComplete,
+            formId,
+            controlsRow,
+            onSwitchMode,
+          } = options;
           const alreadyLoaded = container.dataset.viewLoaded === "true";
           if (alreadyLoaded && !reload) {
             if (typeof onComplete === "function") onComplete();
@@ -6885,6 +7132,9 @@
           container.dataset.viewLoaded = "false";
           container.innerHTML =
             '<p class="muted">جارٍ تحميل كتالوج المواد، يرجى الانتظار...</p>';
+          if (controlsRow) {
+            controlsRow.innerHTML = "";
+          }
 
           if (!(window.google && google.script && google.script.run)) {
             container.innerHTML =
@@ -6907,10 +7157,14 @@
               container.dataset.viewLoaded = "true";
               renderMaterialsTable(container, result, {
                 formId,
+                controlsRow,
+                onSwitchMode,
                 onRefresh: () =>
                   loadMaterialsViewData(container, {
                     reload: true,
                     formId,
+                    controlsRow,
+                    onSwitchMode,
                   }),
               });
               if (typeof onComplete === "function") onComplete(result);
@@ -7062,8 +7316,49 @@
             new Set(records.map((entry) => entry.category).filter(Boolean))
           ).sort((a, b) => a.localeCompare(b, "ar", { sensitivity: "base" }));
 
-          const controls = document.createElement("div");
-          controls.className = "materials-module__controls";
+          const providedControlsRow = options?.controlsRow || null;
+          const controlsHost = providedControlsRow
+            ? providedControlsRow
+            : (() => {
+                const fallback = document.createElement("div");
+                fallback.className =
+                  "module-controls materials-module__controls";
+                const primary = document.createElement("div");
+                primary.className =
+                  "module-controls__row module-controls__primary";
+                fallback.appendChild(primary);
+                const secondary = document.createElement("div");
+                secondary.className =
+                  "module-controls__row module-controls__secondary";
+                fallback.appendChild(secondary);
+                container.appendChild(fallback);
+                if (typeof options.onSwitchMode === "function") {
+                  const switcher = document.createElement("div");
+                  switcher.className = "pane-mode-switch";
+                  primary.appendChild(switcher);
+                  const viewBtn = document.createElement("button");
+                  viewBtn.type = "button";
+                  viewBtn.className = "pane-mode-button is-active";
+                  setButtonIconLabel(viewBtn, "view", "عرض المواد");
+                  viewBtn.addEventListener("click", () =>
+                    options.onSwitchMode("view")
+                  );
+                  switcher.appendChild(viewBtn);
+                  const addBtn = document.createElement("button");
+                  addBtn.type = "button";
+                  addBtn.className = "pane-mode-button";
+                  setButtonIconLabel(addBtn, "add", "إضافة مادة");
+                  addBtn.addEventListener("click", () =>
+                    options.onSwitchMode("add")
+                  );
+                  switcher.appendChild(addBtn);
+                }
+                return secondary;
+              })();
+
+          const filtersContainer = document.createElement("div");
+          filtersContainer.className = "materials-module__filters";
+          controlsHost.appendChild(filtersContainer);
 
           const searchWrapper = document.createElement("div");
           searchWrapper.className = "materials-module__search";
@@ -7072,7 +7367,11 @@
           searchInput.id = "material-view-search";
           searchInput.placeholder = "ابحث عن مادة...";
           searchWrapper.appendChild(searchInput);
-          controls.appendChild(searchWrapper);
+          filtersContainer.appendChild(searchWrapper);
+
+          const selectsGroup = document.createElement("div");
+          selectsGroup.className = "materials-module__selects";
+          filtersContainer.appendChild(selectsGroup);
 
           const categorySelect = document.createElement("select");
           categorySelect.id = "material-view-category";
@@ -7086,7 +7385,7 @@
             option.textContent = category;
             categorySelect.appendChild(option);
           });
-          controls.appendChild(categorySelect);
+          selectsGroup.appendChild(categorySelect);
 
           const subcategorySelect = document.createElement("select");
           subcategorySelect.id = "material-view-subcategory";
@@ -7095,7 +7394,7 @@
           subcategoryDefault.textContent = "كل الأصناف الفرعية";
           subcategorySelect.appendChild(subcategoryDefault);
           subcategorySelect.disabled = true;
-          controls.appendChild(subcategorySelect);
+          selectsGroup.appendChild(subcategorySelect);
 
           const bulkActions = document.createElement("div");
           bulkActions.className = "materials-module__bulk";
@@ -7113,8 +7412,7 @@
           deactivateSelected.textContent = "تعطيل المحدد";
           bulkActions.appendChild(deactivateSelected);
 
-          controls.appendChild(bulkActions);
-          container.appendChild(controls);
+          controlsHost.appendChild(bulkActions);
           const table = document.createElement("table");
           table.className = "sys-table materials-catalog__table";
           const thead = document.createElement("thead");
@@ -7158,7 +7456,7 @@
 
           const countBadge = document.createElement("div");
           countBadge.className = "materials-module__count";
-          container.appendChild(countBadge);
+          controlsHost.appendChild(countBadge);
 
           const selectedIds = new Set();
           const state = {
@@ -7749,23 +8047,40 @@
           paneElement.classList.add("direct-expense-pane");
           paneElement.innerHTML = "";
 
-          const tabs = document.createElement("div");
-          tabs.className = "dyn-tabs direct-expense__tabs";
+          let secondaryRow;
+          let viewButton;
+          let addButton;
 
-          const viewTab = document.createElement("button");
-          viewTab.type = "button";
-          viewTab.id = "de-view-tab-btn";
-          viewTab.className = "nav-item active";
-          viewTab.textContent = "عرض المصروفات";
+          const moduleControls = document.createElement("div");
+          moduleControls.className = "module-controls direct-expense__controls";
 
-          const addTab = document.createElement("button");
-          addTab.type = "button";
-          addTab.id = "de-add-tab-btn";
-          addTab.className = "nav-item";
-          addTab.textContent = "إضافة مصروف";
+          const primaryRow = document.createElement("div");
+          primaryRow.className = "module-controls__row module-controls__primary";
+          moduleControls.appendChild(primaryRow);
 
-          tabs.appendChild(viewTab);
-          tabs.appendChild(addTab);
+          secondaryRow = document.createElement("div");
+          secondaryRow.className = "module-controls__row module-controls__secondary";
+          moduleControls.appendChild(secondaryRow);
+
+          const modeSwitch = document.createElement("div");
+          modeSwitch.className = "pane-mode-switch";
+          primaryRow.appendChild(modeSwitch);
+
+          viewButton = document.createElement("button");
+          viewButton.type = "button";
+          viewButton.id = "de-view-tab-btn";
+          viewButton.className = "pane-mode-button is-active";
+          viewButton.dataset.mode = "view";
+          setButtonIconLabel(viewButton, "view", "عرض المصروفات");
+          modeSwitch.appendChild(viewButton);
+
+          addButton = document.createElement("button");
+          addButton.type = "button";
+          addButton.id = "de-add-tab-btn";
+          addButton.className = "pane-mode-button";
+          addButton.dataset.mode = "form";
+          setButtonIconLabel(addButton, "add", "إضافة مصروف");
+          modeSwitch.appendChild(addButton);
 
           const viewContainer = document.createElement("div");
           viewContainer.id = "de-view-content";
@@ -7777,48 +8092,59 @@
           addContainer.className = "direct-expense__section";
           addContainer.hidden = true;
 
-          paneElement.appendChild(tabs);
+          paneElement.appendChild(moduleControls);
           paneElement.appendChild(viewContainer);
           paneElement.appendChild(addContainer);
 
           let addInitialized = false;
 
           const activateTab = (target) => {
-            if (target === "view") {
-              viewTab.classList.add("active");
-              addTab.classList.remove("active");
-              viewContainer.hidden = false;
-              addContainer.hidden = true;
-              loadDirectExpenseViewData(viewContainer);
-            } else {
-              viewTab.classList.remove("active");
-              addTab.classList.add("active");
-              viewContainer.hidden = true;
-              addContainer.hidden = false;
-              if (!addInitialized) {
-                renderDirectExpenseForm(addContainer, {
-                  onSaved: () => {
-                    viewContainer.dataset.viewLoaded = "false";
-                    loadDirectExpenseViewData(viewContainer, {
-                      reload: true,
-                      silent: true,
-                    });
-                  },
-                });
-                addInitialized = true;
-              }
+            const isView = target === "view";
+            viewButton.classList.toggle("is-active", isView);
+            addButton.classList.toggle("is-active", !isView);
+            viewContainer.hidden = !isView;
+            addContainer.hidden = isView;
+            secondaryRow.hidden = !isView;
+
+            if (isView) {
+              loadDirectExpenseViewData(viewContainer, {
+                controlsRow: secondaryRow,
+                onSwitchMode: activateTab,
+              });
+              return;
+            }
+
+            if (!addInitialized) {
+              renderDirectExpenseForm(addContainer, {
+                onSaved: () => {
+                  viewContainer.dataset.viewLoaded = "false";
+                  loadDirectExpenseViewData(viewContainer, {
+                    reload: true,
+                    silent: true,
+                    controlsRow: secondaryRow,
+                    onSwitchMode: activateTab,
+                  });
+                },
+              });
+              addInitialized = true;
             }
           };
 
-          viewTab.addEventListener("click", () => activateTab("view"));
-          addTab.addEventListener("click", () => activateTab("add"));
+          viewButton.addEventListener("click", () => activateTab("view"));
+          addButton.addEventListener("click", () => activateTab("add"));
 
           activateTab("view");
         }
 
         function loadDirectExpenseViewData(container, options = {}) {
           if (!container) return;
-          const { reload = false, onComplete, silent = false } = options;
+          const {
+            reload = false,
+            onComplete,
+            silent = false,
+            controlsRow,
+            onSwitchMode,
+          } = options;
           const alreadyLoaded = container.dataset.viewLoaded === "true";
           if (alreadyLoaded && !reload) {
             if (typeof onComplete === "function") onComplete();
@@ -7829,6 +8155,9 @@
           if (!silent) {
             container.innerHTML =
               '<p class="muted">جارٍ تحميل المصروفات، يرجى الانتظار...</p>';
+          }
+          if (controlsRow) {
+            controlsRow.innerHTML = "";
           }
 
           if (!(window.google && google.script && google.script.run)) {
@@ -7851,10 +8180,14 @@
             .withSuccessHandler((result) => {
               container.dataset.viewLoaded = "true";
               renderDirectExpenseTable(container, result, {
+                controlsRow,
+                onSwitchMode,
                 onRefresh: () =>
                   loadDirectExpenseViewData(container, {
                     reload: true,
                     silent: false,
+                    controlsRow,
+                    onSwitchMode,
                   }),
               });
               if (typeof onComplete === "function") onComplete(result);
@@ -7967,32 +8300,76 @@
           const totalRecords = records.length;
           const state = { search: "", sortIndex: -1, sortDir: "asc" };
 
-          const controls = document.createElement("div");
-          controls.className = "direct-expense__view-controls";
+            const providedControlsRow = options?.controlsRow || null;
+            const controlsHost = providedControlsRow
+              ? providedControlsRow
+              : (() => {
+                  const fallback = document.createElement("div");
+                  fallback.className =
+                    "module-controls direct-expense__controls";
+                  const primary = document.createElement("div");
+                  primary.className =
+                    "module-controls__row module-controls__primary";
+                  fallback.appendChild(primary);
+                  const secondary = document.createElement("div");
+                  secondary.className =
+                    "module-controls__row module-controls__secondary";
+                  fallback.appendChild(secondary);
+                  container.appendChild(fallback);
+                  if (typeof options.onSwitchMode === "function") {
+                    const switcher = document.createElement("div");
+                    switcher.className = "pane-mode-switch";
+                    primary.appendChild(switcher);
+                    const viewBtn = document.createElement("button");
+                    viewBtn.type = "button";
+                    viewBtn.className = "pane-mode-button is-active";
+                    setButtonIconLabel(viewBtn, "view", "عرض المصروفات");
+                    viewBtn.addEventListener("click", () =>
+                      options.onSwitchMode("view")
+                    );
+                    switcher.appendChild(viewBtn);
+                    const addBtn = document.createElement("button");
+                    addBtn.type = "button";
+                    addBtn.className = "pane-mode-button";
+                    setButtonIconLabel(addBtn, "add", "إضافة مصروف");
+                    addBtn.addEventListener("click", () =>
+                      options.onSwitchMode("add")
+                    );
+                    switcher.appendChild(addBtn);
+                  }
+                  return secondary;
+                })();
 
-          const searchInput = document.createElement("input");
-          searchInput.type = "search";
-          searchInput.placeholder = "ابحث في المصروفات...";
-          controls.appendChild(searchInput);
+            const controlsRowEl = controlsHost;
+            const controls = document.createElement("div");
+            controls.className = "direct-expense__view-controls";
+            controlsRowEl.appendChild(controls);
 
-          const refreshButton = document.createElement("button");
-          refreshButton.type = "button";
-          refreshButton.className = "ghost-button ghost-button--sm";
-          refreshButton.textContent = "تحديث";
-          refreshButton.addEventListener("click", () => {
-            if (typeof options.onRefresh === "function") {
-              options.onRefresh();
-            } else {
-              loadDirectExpenseViewData(container, { reload: true });
-            }
-          });
-          controls.appendChild(refreshButton);
+            const searchInput = document.createElement("input");
+            searchInput.type = "search";
+            searchInput.placeholder = "ابحث في المصروفات...";
+            controls.appendChild(searchInput);
 
-          const countBadge = document.createElement("span");
-          countBadge.className = "muted";
-          controls.appendChild(countBadge);
+            const refreshButton = document.createElement("button");
+            refreshButton.type = "button";
+            refreshButton.className = "ghost-button ghost-button--sm";
+            refreshButton.textContent = "تحديث";
+            refreshButton.addEventListener("click", () => {
+              if (typeof options.onRefresh === "function") {
+                options.onRefresh();
+              } else {
+                loadDirectExpenseViewData(container, {
+                  reload: true,
+                  controlsRow: controlsRowEl,
+                  onSwitchMode: options.onSwitchMode,
+                });
+              }
+            });
+            controls.appendChild(refreshButton);
 
-          container.appendChild(controls);
+            const countBadge = document.createElement("span");
+            countBadge.className = "muted";
+            controls.appendChild(countBadge);
 
           const table = document.createElement("table");
           table.className = "sys-table direct-expense__table";
@@ -11076,15 +11453,28 @@
         const dlgNew = document.getElementById("dlg-new-user");
         const fieldsHost = document.getElementById("new-user-fields");
         let currentEditId = null; // null=create, value=edit mode
+        if (dlgNew) {
+          dlgNew.addEventListener("close", () => {
+            if (sysUsersViewButton) {
+              sysUsersViewButton.classList.add("is-active");
+            }
+            if (addUserButton) {
+              addUserButton.classList.remove("is-active");
+            }
+          });
+        }
 
-        document
-          .getElementById("btn-new-user")
-          .addEventListener("click", () => {
+        if (addUserButton) {
+          addUserButton.addEventListener("click", () => {
             if (!(window.google && google.script && google.script.run)) {
               showToast("غير متصل بالخادم.", "error");
               return;
             }
             currentEditId = null; // creation mode
+            addUserButton.classList.add("is-active");
+            if (sysUsersViewButton) {
+              sysUsersViewButton.classList.remove("is-active");
+            }
             // Try dynamic form; if empty fallback to minimal static form
             google.script.run
               .withFailureHandler((err) => {
@@ -11103,6 +11493,7 @@
               })
               .getFormWithOptions("FORM_SYS_AddUser");
           });
+        }
 
         document
           .getElementById("btn-cancel-new")
