@@ -1047,6 +1047,26 @@ function buildBootstrapPayload_(rawUser, permissionsOverride) {
   };
 
   const timestamp = new Date().toISOString();
+  const navConfig = buildNavigationConfig_(role, permissions);
+  const projectsNavActive = Array.isArray(navConfig)
+    ? navConfig.some((entry) => {
+        const key = String(entry?.key || "").toUpperCase();
+        const target = String(entry?.target || "").toLowerCase();
+        return key.includes("PRJ") || target.includes("projects-workspace");
+      })
+    : false;
+  if (projectsNavActive) {
+    const actorId =
+      sanitizedUser?.User_Id ||
+      sanitizedUser?.Username ||
+      sanitizedUser?.Email ||
+      getActorEmail_();
+    Logger.log(
+      `SET ACTIVE MODULE = Projects (المشاريع). Applying blue theme for user ${
+        actorId || "UNKNOWN"
+      }/${timestamp}`
+    );
+  }
 
   return {
     appName: CONFIG.APP_NAME,
@@ -1059,7 +1079,7 @@ function buildBootstrapPayload_(rawUser, permissionsOverride) {
       paymentStatus: getDropdownOptions("DD_Payment_Status"),
       paymentMethod: getDropdownOptions("DD_Payment_Method"),
     },
-    nav: buildNavigationConfig_(role, permissions),
+    nav: navConfig,
     tabRegister: getTabRegister(),
     forms: loadDynamicFormsRegisterSafe_(),
     meta: {
@@ -2165,17 +2185,16 @@ function updateMaterialPrice(materialId, newPrice) {
 
 function saveMaterialCatalogEntry(payload) {
   const FNAME = "saveMaterialCatalogEntry";
-  Logger.log("SERVER: saveMaterialCatalogEntry function STARTED.");
   debugLog(FNAME, "start", {
     hasPayload: !!payload,
     keys: payload ? Object.keys(payload) : [],
   });
 
-  try {
-    if (!payload || typeof payload !== "object") {
-      throw new Error("بيانات المادة غير صالحة.");
-    }
+  if (!payload || typeof payload !== "object") {
+    throw new Error("بيانات المادة غير صالحة.");
+  }
 
+  try {
     const { sheet, headers, rows, indexes } = getMaterialSheetContext_();
     const actor = getActorEmail_();
     const timestamp = new Date();
@@ -2447,12 +2466,10 @@ function saveMaterialCatalogEntry(payload) {
       message,
     });
   } catch (err) {
-    Logger.log("SERVER ERROR: " + err.message);
-    Logger.log("SERVER STACK: " + err.stack);
     debugError(FNAME, err, {
       keys: payload ? Object.keys(payload) : [],
     });
-    throw new Error("Server-side operation failed: " + err.message);
+    throw err;
   }
 }
 
@@ -5308,6 +5325,16 @@ function listSessions() {
 
 function getFormWithOptions(formId = "FORM_SYS_AddUser") {
   debugLog("getFormWithOptions", "start", { formId });
+  const normalizedId = String(formId || "").toUpperCase();
+  if (normalizedId === "FORM_PRJ_ADDPROJECT") {
+    const actor = getActorEmail_();
+    const nowIso = new Date().toISOString();
+    Logger.log(
+      `PROJECTS ACTION :: open Add Project List tab :: user=${
+        actor || "UNKNOWN"
+      } :: timestamp=${nowIso}`
+    );
+  }
   const fields = getDynamicFormStructure(formId);
   const enriched = fields.map((f) => {
     if (
