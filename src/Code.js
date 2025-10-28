@@ -658,9 +658,7 @@ function getSheetByName_(name) {
   try {
     return getSheet_(name);
   } catch (error) {
-    console.error(
-      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
-    );
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
     debugError(FNAME, error, { name });
     throw error;
   }
@@ -701,9 +699,7 @@ function appendRow_(sheet, rowObject, headers) {
   } catch (error) {
     const sheetName =
       sheet && typeof sheet.getName === "function" ? sheet.getName() : null;
-    console.error(
-      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
-    );
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
     debugError(FNAME, error, { sheet: sheetName });
     throw error;
   }
@@ -1302,16 +1298,14 @@ function buildNavigationConfig_(role, permissions) {
   if (Array.isArray(permissions)) {
     permissions.forEach((p) => {
       const key =
-        (p && (p.Permission_Key || p.permissionKey || p.key || p.Permission)) ||
+        (p &&
+          (p.Permission_Key || p.permissionKey || p.key || p.Permission)) ||
         null;
       if (key) permissionSet.add(String(key).toUpperCase());
     });
   }
   const hasPermission = (requiredKeys) => {
-    if (
-      !requiredKeys ||
-      (Array.isArray(requiredKeys) && !requiredKeys.length)
-    ) {
+    if (!requiredKeys || (Array.isArray(requiredKeys) && !requiredKeys.length)) {
       return true;
     }
     if (!permissionSet.size) return false;
@@ -1381,13 +1375,10 @@ function buildNavigationConfig_(role, permissions) {
   if (!eligible.length) {
     const systemNav =
       NAV_ITEMS.find((item) =>
-        String(item.key || "")
-          .toUpperCase()
-          .includes("SYS")
+        String(item.key || "").toUpperCase().includes("SYS")
       ) ||
-      NAV_ITEMS.find(
-        (item) =>
-          String(item.target || "").toLowerCase() === "system-management-view"
+      NAV_ITEMS.find((item) =>
+        String(item.target || "").toLowerCase() === "system-management-view"
       );
     if (systemNav) {
       return [systemNav];
@@ -1570,7 +1561,8 @@ function getRecordDetail(paneId, recordId, entityKey, clientRecord) {
     }
 
     if (generalFields.length) {
-      const generalLabel = configuration?.labels?.general || "البيانات العامة";
+      const generalLabel =
+        configuration?.labels?.general || "البيانات العامة";
       detail.sections.push({
         id: "general",
         label: generalLabel,
@@ -1623,11 +1615,7 @@ function getRecordDetail(paneId, recordId, entityKey, clientRecord) {
       }
     }
 
-    if (
-      !detail.sections.length &&
-      clientRecord &&
-      typeof clientRecord === "object"
-    ) {
+    if (!detail.sections.length && clientRecord && typeof clientRecord === "object") {
       detail.sections.push({
         id: "general",
         label: "البيانات العامة",
@@ -1753,14 +1741,11 @@ function resolveDetailTitle_(config, headers, row, clientRecord, fallbackId) {
       "";
   }
   if (!candidate) {
-    return (
-      fallback ||
-      (config?.type === "project"
-        ? "مشروع"
-        : config?.type === "hr"
-        ? "موظف"
-        : "السجل")
-    );
+    return fallback || (config?.type === "project"
+      ? "مشروع"
+      : config?.type === "hr"
+      ? "موظف"
+      : "السجل");
   }
   if (config?.type === "project") {
     return "مشروع: " + candidate;
@@ -1777,12 +1762,7 @@ function getAttachmentsForDetail_(recordId, entityKey, fallbackEntity) {
   if (!headers.length || !rows.length) {
     return { headers: [], rows: [] };
   }
-  const idxEntityId = findHeaderIndex_(
-    headers,
-    "Entity_ID",
-    "EntityId",
-    "Record_ID"
-  );
+  const idxEntityId = findHeaderIndex_(headers, "Entity_ID", "EntityId", "Record_ID");
   if (idxEntityId < 0) {
     return { headers: [], rows: [] };
   }
@@ -1877,11 +1857,7 @@ function getMaterialsViewData() {
   debugLog(FNAME, "start");
 
   try {
-    const {
-      headers = [],
-      rows = [],
-      sourceName,
-    } = loadSheetData_(
+    const { headers = [], rows = [], sourceName } = loadSheetData_(
       CONFIG.SHEETS.PRJ_MATERIALS_VIEW,
       CONFIG.SHEETS.PRJ_MATERIALS
     );
@@ -1948,18 +1924,8 @@ function getMaterialSheetContext_() {
       "السعر",
       "سعر_افتراضي"
     ),
-    updatedAt: findHeaderIndex_(
-      headers,
-      "Updated_At",
-      "UpdatedAt",
-      "Last_Updated"
-    ),
-    updatedBy: findHeaderIndex_(
-      headers,
-      "Updated_By",
-      "UpdatedBy",
-      "Updated_By_User"
-    ),
+    updatedAt: findHeaderIndex_(headers, "Updated_At", "UpdatedAt", "Last_Updated"),
+    updatedBy: findHeaderIndex_(headers, "Updated_By", "UpdatedBy", "Updated_By_User"),
   };
 
   if (indexes.id < 0) {
@@ -2040,9 +2006,7 @@ function toggleMaterialActiveStatus(materialId) {
 
   try {
     const mutation = mutateMaterialActiveState_([normalizedId]);
-    const result = mutation.results.find(
-      (entry) => entry.materialId === normalizedId
-    );
+    const result = mutation.results.find((entry) => entry.materialId === normalizedId);
     if (!result || !result.updated) {
       return sanitizeForClientResponse_({
         success: false,
@@ -2051,10 +2015,7 @@ function toggleMaterialActiveStatus(materialId) {
       });
     }
 
-    debugLog(FNAME, "updated", {
-      materialId: normalizedId,
-      isActive: result.isActive,
-    });
+    debugLog(FNAME, "updated", { materialId: normalizedId, isActive: result.isActive });
     return sanitizeForClientResponse_({
       success: true,
       materialId: normalizedId,
@@ -2077,9 +2038,7 @@ function archiveMaterial(materialId) {
 
   try {
     const mutation = mutateMaterialActiveState_([normalizedId], false);
-    const result = mutation.results.find(
-      (entry) => entry.materialId === normalizedId
-    );
+    const result = mutation.results.find((entry) => entry.materialId === normalizedId);
     const success = Boolean(result && result.updated);
     debugLog(FNAME, "complete", { materialId: normalizedId, success });
     return sanitizeForClientResponse_({
@@ -2116,9 +2075,7 @@ function bulkUpdateMaterialStatus(materialIds = [], status = true) {
       desiredState,
     });
   } catch (err) {
-    debugError(FNAME, err, {
-      count: Array.isArray(materialIds) ? materialIds.length : 0,
-    });
+    debugError(FNAME, err, { count: Array.isArray(materialIds) ? materialIds.length : 0 });
     throw err;
   }
 }
@@ -2163,15 +2120,10 @@ function updateMaterialPrice(materialId, newPrice) {
       sheet.getRange(rowNumber, indexes.updatedAt + 1).setValue(timestamp);
     }
     if (indexes.updatedBy >= 0) {
-      sheet
-        .getRange(rowNumber, indexes.updatedBy + 1)
-        .setValue(getActorEmail_());
+      sheet.getRange(rowNumber, indexes.updatedBy + 1).setValue(getActorEmail_());
     }
 
-    debugLog(FNAME, "complete", {
-      materialId: normalizedId,
-      price: numericPrice,
-    });
+    debugLog(FNAME, "complete", { materialId: normalizedId, price: numericPrice });
     return sanitizeForClientResponse_({
       success: true,
       materialId: normalizedId,
@@ -2392,7 +2344,14 @@ function saveMaterialCatalogEntry(payload) {
       "Subcategory2",
       "Sub_Category_2"
     );
-    setRowValue_(headers, targetRow, unit, "Default_Unit", "Unit", "Unit_Name");
+    setRowValue_(
+      headers,
+      targetRow,
+      unit,
+      "Default_Unit",
+      "Unit",
+      "Unit_Name"
+    );
     if (priceValue !== null) {
       setRowValue_(
         headers,
@@ -2404,7 +2363,14 @@ function saveMaterialCatalogEntry(payload) {
       );
     }
     if (vatValue !== null) {
-      setRowValue_(headers, targetRow, vatValue, "VAT_Rate", "Vat_Rate", "VAT");
+      setRowValue_(
+        headers,
+        targetRow,
+        vatValue,
+        "VAT_Rate",
+        "Vat_Rate",
+        "VAT"
+      );
     }
     setRowValue_(
       headers,
@@ -2426,9 +2392,7 @@ function saveMaterialCatalogEntry(payload) {
 
     const targetRowNumber =
       existingIndex >= 0 ? existingIndex + 2 : sheet.getLastRow() + 1;
-    sheet
-      .getRange(targetRowNumber, 1, 1, headers.length)
-      .setValues([targetRow]);
+    sheet.getRange(targetRowNumber, 1, 1, headers.length).setValues([targetRow]);
     if (existingIndex >= 0) {
       rows[existingIndex] = targetRow;
     } else {
@@ -2446,10 +2410,9 @@ function saveMaterialCatalogEntry(payload) {
       return acc;
     }, {});
 
-    const message =
-      existingIndex >= 0
-        ? "تم تحديث بيانات المادة بنجاح."
-        : "تمت إضافة المادة بنجاح.";
+    const message = existingIndex >= 0
+      ? "تم تحديث بيانات المادة بنجاح."
+      : "تمت إضافة المادة بنجاح.";
 
     debugLog(FNAME, "complete", {
       materialId: normalizedId,
@@ -2478,7 +2441,9 @@ function getProjectsForDropdown() {
   debugLog(FNAME, "start");
 
   try {
-    const { headers = [], rows = [] } = loadSheetData_(CONFIG.SHEETS.PRJ_MAIN);
+    const { headers = [], rows = [] } = loadSheetData_(
+      CONFIG.SHEETS.PRJ_MAIN
+    );
     if (!headers.length || !rows.length) {
       debugLog(FNAME, "noData", { headers: headers.length, rows: rows.length });
       return sanitizeForClientResponse_([]);
@@ -2527,9 +2492,7 @@ function getDirectExpenseViewData() {
     const projectHeaders = Array.isArray(projectSource.headers)
       ? projectSource.headers
       : [];
-    const projectRows = Array.isArray(projectSource.rows)
-      ? projectSource.rows
-      : [];
+    const projectRows = Array.isArray(projectSource.rows) ? projectSource.rows : [];
     const projectIdIndex = findHeaderIndex_(
       projectHeaders,
       "Project_ID",
@@ -2739,12 +2702,8 @@ function getAttachmentsForEntity(entityId, entityKey) {
     const attachments = rows
       .map((row) => {
         const rowEntity = idxEntity >= 0 ? getValueAt_(row, idxEntity) : "";
-        const rowEntityId =
-          idxEntityId >= 0 ? getValueAt_(row, idxEntityId) : "";
-        if (
-          normalizedEntity &&
-          normalizeKeyValue_(rowEntity) !== normalizedEntity
-        ) {
+        const rowEntityId = idxEntityId >= 0 ? getValueAt_(row, idxEntityId) : "";
+        if (normalizedEntity && normalizeKeyValue_(rowEntity) !== normalizedEntity) {
           return null;
         }
         if (normalizedId && normalizeKeyValue_(rowEntityId) !== normalizedId) {
@@ -2762,8 +2721,7 @@ function getAttachmentsForEntity(entityId, entityKey) {
           File_Name: idxFileName >= 0 ? getValueAt_(row, idxFileName) : "",
           Drive_URL: idxUrl >= 0 ? getValueAt_(row, idxUrl) : "",
           Drive_File_ID: idxDriveId >= 0 ? getValueAt_(row, idxDriveId) : "",
-          Uploaded_By:
-            idxUploadedBy >= 0 ? getValueAt_(row, idxUploadedBy) : "",
+          Uploaded_By: idxUploadedBy >= 0 ? getValueAt_(row, idxUploadedBy) : "",
           Created_At: idxUploadedAt >= 0 ? getValueAt_(row, idxUploadedAt) : "",
         };
       })
@@ -2790,10 +2748,7 @@ function saveAttachmentRecord(payload) {
     }
 
     const entityRaw =
-      payload.entity ||
-      payload.Entity ||
-      payload.entityKey ||
-      payload.Entity_Key;
+      payload.entity || payload.Entity || payload.entityKey || payload.Entity_Key;
     const entityIdRaw =
       payload.entityId ||
       payload.Entity_ID ||
@@ -2801,8 +2756,7 @@ function saveAttachmentRecord(payload) {
       payload.Record_ID;
     const labelRaw = payload.label || payload.Label || "";
     const fileNameRaw = payload.fileName || payload.File_Name || labelRaw;
-    const driveIdRaw =
-      payload.driveId || payload.Drive_File_ID || payload.File_Id;
+    const driveIdRaw = payload.driveId || payload.Drive_File_ID || payload.File_Id;
     const urlRaw = payload.url || payload.Drive_URL || payload.File_URL;
 
     const entity = String(entityRaw || "").trim();
@@ -2879,10 +2833,7 @@ function deleteAttachmentRecord(docId) {
 
     const data = sheet.getDataRange().getValues();
     if (!data || data.length <= 1) {
-      return sanitizeForClientResponse_({
-        success: false,
-        message: "لا توجد بيانات",
-      });
+      return sanitizeForClientResponse_({ success: false, message: "لا توجد بيانات" });
     }
 
     const headers = data[0] || [];
@@ -2891,10 +2842,7 @@ function deleteAttachmentRecord(docId) {
 
     const rowIndex = data
       .slice(1)
-      .findIndex(
-        (row) =>
-          normalizeKeyValue_(row[idxDoc]) === normalizeKeyValue_(normalizedId)
-      );
+      .findIndex((row) => normalizeKeyValue_(row[idxDoc]) === normalizeKeyValue_(normalizedId));
 
     if (rowIndex < 0) {
       return sanitizeForClientResponse_({
@@ -2947,9 +2895,7 @@ function submitDynamicForm(formId, formData, options = {}) {
       if (!grouped.has(targetSheet)) grouped.set(targetSheet, []);
       grouped.get(targetSheet).push({
         fieldId: field.fieldId || field.Field_ID || targetColumn,
-        type: (field.type || field.Field_Type || "text")
-          .toString()
-          .toLowerCase(),
+        type: (field.type || field.Field_Type || "text").toString().toLowerCase(),
         targetColumn,
         required: !!field.required,
         defaultValue: field.defaultValue,
@@ -2966,8 +2912,7 @@ function submitDynamicForm(formId, formData, options = {}) {
       if (!sheet) throw new Error(`لم يتم العثور على ورقة ${sheetName}.`);
 
       const lastCol = sheet.getLastColumn();
-      if (!lastCol)
-        throw new Error(`ورقة ${sheetName} تفتقر إلى رؤوس الأعمدة.`);
+      if (!lastCol) throw new Error(`ورقة ${sheetName} تفتقر إلى رؤوس الأعمدة.`);
       const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0] || [];
       if (!headers.length)
         throw new Error(`تعذر قراءة رؤوس الأعمدة للورقة ${sheetName}.`);
@@ -3154,7 +3099,9 @@ function saveDirectExpenses(payload) {
     const vatRateRaw =
       item.vatRate ?? item.VAT_Rate ?? item.vat ?? item.taxRate ?? 0;
     const vatRateNum =
-      vatRateRaw === "" || vatRateRaw === null ? 0 : Number(vatRateRaw) || 0;
+      vatRateRaw === "" || vatRateRaw === null
+        ? 0
+        : Number(vatRateRaw) || 0;
     const vatFactor = vatRateNum > 1 ? vatRateNum / 100 : vatRateNum;
     const vatAmount =
       item.vatAmount != null && item.vatAmount !== ""
@@ -3177,7 +3124,8 @@ function saveDirectExpenses(payload) {
       item.Payment_Status ||
       headerPayStatus ||
       "";
-    const notes = item.notes || item.Notes || item.note || headerNotes || "";
+    const notes =
+      item.notes || item.Notes || item.note || headerNotes || "";
 
     const newRow = {
       Project_ID: projectId,
@@ -3490,12 +3438,8 @@ function authenticateUser(credentials) {
     const matchEntry = rows.find((row) => {
       const rowUsername = idx.username >= 0 ? row[idx.username] : "";
       const rowEmail = idx.email >= 0 ? row[idx.email] : "";
-      const normalizedUsername = String(rowUsername || "")
-        .trim()
-        .toLowerCase();
-      const normalizedEmail = String(rowEmail || "")
-        .trim()
-        .toLowerCase();
+      const normalizedUsername = String(rowUsername || "").trim().toLowerCase();
+      const normalizedEmail = String(rowEmail || "").trim().toLowerCase();
       return username === normalizedUsername || username === normalizedEmail;
     });
 
@@ -3529,23 +3473,17 @@ function authenticateUser(credentials) {
     }, {});
     const userRowIndex = entryIndex + 2;
 
-    console.log(
-      `[${FNAME}] Password verified. Attempting to update last login...`
-    );
+    console.log(`[${FNAME}] Password verified. Attempting to update last login...`);
     updateLastLogin_(userObject?.User_Id, userRowIndex, {
       sheet: sh,
       columnIndex: idx.lastLogin,
       username,
     });
-    console.log(
-      `[${FNAME}] updateLastLogin complete. Attempting to get permissions...`
-    );
+    console.log(`[${FNAME}] updateLastLogin complete. Attempting to get permissions...`);
 
     const permissions = getRolePermissions(userObject?.Role_Id);
     console.log(
-      `[${FNAME}] Permissions received (${
-        permissions?.length || 0
-      }). Attempting to create session...`
+      `[${FNAME}] Permissions received (${permissions?.length || 0}). Attempting to create session...`
     );
 
     const session = createSession_(userObject, "LOGIN");
@@ -3571,9 +3509,7 @@ function authenticateUser(credentials) {
     const bootstrap =
       getBootstrapData(userObject, permissions) ||
       sanitizeForClientResponse_(buildGuestBootstrapPayload_());
-    console.log(
-      `[${FNAME}] Bootstrap data generated. Preparing success response...`
-    );
+    console.log(`[${FNAME}] Bootstrap data generated. Preparing success response...`);
 
     const sanitizedUser =
       sanitizeForClientResponse_(bootstrap?.user) ||
@@ -3643,9 +3579,7 @@ function updateLastLogin_(userId, rowIndex, options = {}) {
     });
     return true;
   } catch (error) {
-    console.error(
-      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
-    );
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
     debugError(FNAME, error, {
       userId,
       rowIndex,
@@ -3718,9 +3652,7 @@ function createSession_(user, eventType) {
       type,
     };
   } catch (error) {
-    console.error(
-      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
-    );
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
     debugError(FNAME, error, {
       userId: user?.User_Id || null,
       username: user?.Username || user?.Email || null,
@@ -3746,9 +3678,7 @@ function logAuditEvent_(action, message, payload = {}, userId) {
     debugLog(FNAME, "logged", { action, userId });
     return true;
   } catch (error) {
-    console.error(
-      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
-    );
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
     debugError(FNAME, error, { action, userId });
     return false;
   }
@@ -3942,7 +3872,8 @@ function searchUsers(filters = {}) {
         Role_Id: readString(row, idx.role),
         IsActive: idx.isActive >= 0 ? isTruthyFlag_(row[idx.isActive]) : false,
         Job_Title: readString(row, idx.jobTitle),
-        Last_Login: lastLoginValue || readString(row, idx.lastLogin) || "",
+        Last_Login:
+          lastLoginValue || readString(row, idx.lastLogin) || "",
         Updated_At: updatedValue || readString(row, idx.updatedAt) || "",
       };
 
@@ -3988,9 +3919,7 @@ function searchUsers(filters = {}) {
 
       if (fromDate || toDate) {
         const updated =
-          updatedDate ||
-          coerceDate_(record.Updated_At) ||
-          coerceDate_(updatedRaw);
+          updatedDate || coerceDate_(record.Updated_At) || coerceDate_(updatedRaw);
         if (!updated) return;
         if (fromDate && updated < fromDate) return;
         if (toDate && updated > toDate) return;
@@ -4281,10 +4210,9 @@ function getTabRegister() {
           subLabelEn: sub.subLabelEn || "",
           subLabelAr: sub.subLabelAr || "",
           route: sub.route || "",
-          sortOrder:
-            sub.sortOrder != null && Number.isFinite(sub.sortOrder)
-              ? sub.sortOrder
-              : null,
+          sortOrder: sub.sortOrder != null && Number.isFinite(sub.sortOrder)
+            ? sub.sortOrder
+            : null,
           sourceSheet: sub.sourceSheet || "",
         }))
         .sort((a, b) => {
@@ -4300,7 +4228,9 @@ function getTabRegister() {
           return String(a.subId || "").localeCompare(String(b.subId || ""));
         });
       delete tab._subMap;
-      if (tab.sortOrder == null || !Number.isFinite(Number(tab.sortOrder))) {
+      if (
+        tab.sortOrder == null || !Number.isFinite(Number(tab.sortOrder))
+      ) {
         tab.sortOrder = null;
       }
       return {
@@ -4332,8 +4262,7 @@ function getTabRegister() {
   debugLog(FNAME, "resolved", {
     tabs: merged.length,
     subTabs: merged.reduce(
-      (count, tab) =>
-        count + (Array.isArray(tab.subTabs) ? tab.subTabs.length : 0),
+      (count, tab) => count + (Array.isArray(tab.subTabs) ? tab.subTabs.length : 0),
       0
     ),
     source: sheet ? sheet.getName() : sourceName || "<unknown>",
@@ -4425,10 +4354,7 @@ function mergeTabRegisterFallbacks_(tabs) {
       existing.permissions = normalizedFallback.permissions;
     }
 
-    if (
-      Array.isArray(normalizedFallback.subTabs) &&
-      normalizedFallback.subTabs.length
-    ) {
+    if (Array.isArray(normalizedFallback.subTabs) && normalizedFallback.subTabs.length) {
       const seenSubIds = new Set(
         Array.isArray(existing.subTabs)
           ? existing.subTabs
@@ -4441,9 +4367,7 @@ function mergeTabRegisterFallbacks_(tabs) {
         const subKey = String(sub?.subId || "").toLowerCase();
         if (!subKey || seenSubIds.has(subKey)) return;
         seenSubIds.add(subKey);
-        existing.subTabs = Array.isArray(existing.subTabs)
-          ? existing.subTabs
-          : [];
+        existing.subTabs = Array.isArray(existing.subTabs) ? existing.subTabs : [];
         existing.subTabs.push({
           subId: sub.subId,
           subLabelEn: sub.subLabelEn || "",
@@ -4577,7 +4501,9 @@ function getHrSheetContext_(config) {
   }
   const idIndex = headers.indexOf(config.idColumn);
   if (idIndex < 0) {
-    throw new Error(`${config.idColumn} column missing in ${config.sheetName}`);
+    throw new Error(
+      `${config.idColumn} column missing in ${config.sheetName}`
+    );
   }
   return { sheet, headers, idIndex };
 }
@@ -4598,9 +4524,7 @@ function buildFlexibleLookup_(data) {
 }
 
 function generateHrRecordId_(config) {
-  const prefix = String(
-    config.idPrefix || config.idColumn || "HR"
-  ).toUpperCase();
+  const prefix = String(config.idPrefix || config.idColumn || "HR").toUpperCase();
   const token = Utilities.getUuid().split("-")[0].toUpperCase();
   return `${prefix}-${token}`;
 }
@@ -4753,16 +4677,10 @@ function updateHrRecord_(key, recordId, updates = {}) {
 
     sheet.getRange(rowNumber, 1, 1, headers.length).setValues([updatedRow]);
 
-    logAction(
-      currentUser?.User_Id || "",
-      "UPDATE",
-      config.entity,
-      normalizedId,
-      {
-        sheet: config.sheetName,
-        updates: applied,
-      }
-    );
+    logAction(currentUser?.User_Id || "", "UPDATE", config.entity, normalizedId, {
+      sheet: config.sheetName,
+      updates: applied,
+    });
 
     return sanitizeForClientResponse_({
       success: true,
@@ -4809,15 +4727,9 @@ function deleteHrRecord_(key, recordId) {
     sheet.deleteRow(rowNumber);
 
     const currentUser = getCurrentUser();
-    logAction(
-      currentUser?.User_Id || "",
-      "DELETE",
-      config.entity,
-      normalizedId,
-      {
-        sheet: config.sheetName,
-      }
-    );
+    logAction(currentUser?.User_Id || "", "DELETE", config.entity, normalizedId, {
+      sheet: config.sheetName,
+    });
 
     return sanitizeForClientResponse_({
       success: true,
@@ -5017,9 +4929,7 @@ function doGetTabRegister() {
   debugLog(FNAME, "start");
   try {
     const data = getTabRegister();
-    debugLog(FNAME, "success", {
-      count: Array.isArray(data) ? data.length : 0,
-    });
+    debugLog(FNAME, "success", { count: Array.isArray(data) ? data.length : 0 });
     return sanitizeForClientResponse_(data);
   } catch (err) {
     debugError(FNAME, err);
@@ -5843,9 +5753,7 @@ function getRolePermissions(roleOrId) {
     debugLog(FNAME, "resolved", { count: rows.length });
     return rows;
   } catch (error) {
-    console.error(
-      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
-    );
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
     debugError(FNAME, error, { roleOrId });
     return [];
   }
@@ -5886,9 +5794,9 @@ function updateUser(userData) {
   const data = sh.getDataRange().getValues();
   const h = data[0];
   const iId = h.indexOf("User_Id");
-  const rIdx = data
-    .slice(1)
-    .findIndex((r) => keysEqual_(r[iId], userData.User_Id));
+  const rIdx = data.slice(1).findIndex((r) =>
+    keysEqual_(r[iId], userData.User_Id)
+  );
   if (rIdx < 0) throw new Error("User not found");
   const row = rIdx + 2;
 
@@ -5973,18 +5881,11 @@ function logAuditEvent(action, details) {
     const headers =
       lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
     if (!headers || !headers.length) {
-      sheet.appendRow([
-        new Date(),
-        actor,
-        action,
-        JSON.stringify(details || {}),
-      ]);
+      sheet.appendRow([new Date(), actor, action, JSON.stringify(details || {})]);
       return true;
     }
     const payloadObject =
-      details && typeof details === "object"
-        ? Object.assign({}, details)
-        : null;
+      details && typeof details === "object" ? Object.assign({}, details) : null;
     const row = new Array(headers.length).fill("");
     const now = new Date(); // Use a Date object for consistent timestamping
     setRowValue_(
@@ -6043,19 +5944,11 @@ function logAuditEvent(action, details) {
     setRowValue_(headers, row, entitySource.scope || "", "Scope");
     setRowValue_(headers, row, entitySource.sheet || "", "Sheet");
     setRowValue_(headers, row, entitySource.userId || "", "User_Id", "UserID");
-    setRowValue_(
-      headers,
-      row,
-      entitySource.actorId || "",
-      "Actor_Id",
-      "ActorID"
-    );
+    setRowValue_(headers, row, entitySource.actorId || "", "Actor_Id", "ActorID");
     sheet.appendRow(row);
     return true;
   } catch (error) {
-    console.error(
-      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
-    );
+    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
     debugError(FNAME, error, { action });
     return false;
   }
@@ -6461,7 +6354,8 @@ function getUserDocuments_(userId) {
     .slice(1)
     .filter((row) => {
       const entityMatch = idx.entity < 0 || row[idx.entity] === "Users";
-      const idMatch = idx.entityId < 0 || keysEqual_(row[idx.entityId], userId);
+      const idMatch =
+        idx.entityId < 0 || keysEqual_(row[idx.entityId], userId);
       return entityMatch && idMatch;
     })
     .map((row) => ({

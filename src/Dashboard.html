@@ -3621,6 +3621,98 @@
             sortOrder: 8,
           },
         ];
+        const CLIENT_FORM_FALLBACKS = Object.freeze({
+          Sub_SYS_Users: {
+            formId: "FORM_SYS_AddUser",
+            titleEn: "Add User",
+            titleAr: "إضافة مستخدم جديد",
+          },
+          Sub_SYS_Roles: {
+            formId: "FORM_SYS_AddRole",
+            titleEn: "Add Role",
+            titleAr: "إضافة دور",
+          },
+          Sub_SYS_Permissions: {
+            formId: "FORM_SYS_AddPermission",
+            titleEn: "Add Permission",
+            titleAr: "إضافة إذن",
+          },
+          Sub_SYS_RolePerms: {
+            formId: "FORM_SYS_MapRolePermission",
+            titleEn: "Map Role Permission",
+            titleAr: "ربط إذن بدور",
+          },
+          Sub_SYS_Properties: {
+            formId: "FORM_SYS_AddUserProperty",
+            titleEn: "Add User Property",
+            titleAr: "إضافة خاصية مستخدم",
+          },
+          Sub_PRJ_Main: {
+            formId: "FORM_PRJ_AddProject",
+            titleEn: "Add Project",
+            titleAr: "إضافة مشروع جديد",
+          },
+          Sub_PRJ_Tasks: {
+            formId: "FORM_PRJ_AddTask",
+            titleEn: "Add Project Task",
+            titleAr: "إضافة مهمة مشروع",
+          },
+          Sub_PRJ_Costs: {
+            formId: "FORM_PRJ_AddCost",
+            titleEn: "Log Project Cost",
+            titleAr: "تسجيل تكلفة مشروع",
+          },
+          Sub_PRJ_Materials: {
+            formId: "FORM_PRJ_AddMaterial",
+            titleEn: "Add Material",
+            titleAr: "إضافة مادة جديدة",
+          },
+          Sub_PRJ_Revenue: {
+            formId: "FORM_PRJ_AddRevenue",
+            titleEn: "Log Project Revenue",
+            titleAr: "تسجيل إيراد مشروع",
+          },
+          Sub_PRJ_Clients: {
+            formId: "FORM_PRJ_AddClient",
+            titleEn: "Add Client",
+            titleAr: "إضافة عميل",
+          },
+          Sub_HR_Employees: {
+            formId: "FORM_HR_AddEmployee",
+            titleEn: "Add Employee",
+            titleAr: "إضافة موظف",
+          },
+          Sub_HR_Attendance: {
+            formId: "FORM_HR_AddAttendance",
+            titleEn: "Log Attendance",
+            titleAr: "تسجيل الحضور",
+          },
+          Sub_HR_Leave_Requests: {
+            formId: "FORM_HR_AddLeaveRequest",
+            titleEn: "Submit Leave Request",
+            titleAr: "تقديم طلب إجازة",
+          },
+          Sub_HR_Leave: {
+            formId: "FORM_HR_AddLeave",
+            titleEn: "Record Leave",
+            titleAr: "تسجيل إجازة",
+          },
+          Sub_HR_Advances: {
+            formId: "FORM_HR_AddAdvance",
+            titleEn: "Log Advance",
+            titleAr: "تسجيل سلفة",
+          },
+          Sub_HR_Deductions: {
+            formId: "FORM_HR_AddDeduction",
+            titleEn: "Log Deduction",
+            titleAr: "تسجيل خصم",
+          },
+          Sub_HR_Payroll: {
+            formId: "FORM_HR_AddPayroll",
+            titleEn: "Create Payroll Entry",
+            titleAr: "إنشاء بيان راتب",
+          },
+        });
         let bootstrapData = {};
 
         const TRUTHY_FLAG_SET = new Set([
@@ -4445,8 +4537,49 @@
         function resolveFormMetaForPane(paneKey, sourceSheet, labelText) {
           const register =
             (bootstrapData && bootstrapData.forms) || Object.create(null);
+          const resolveFallback = (key) => {
+            if (!key) return null;
+            const variations = new Set();
+            variations.add(String(key));
+            const trimmed = String(key).trim();
+            if (!/^Sub_/i.test(trimmed)) {
+              variations.add(`Sub_${trimmed}`);
+            }
+            const withoutPrefix = trimmed.replace(/^(Sub_|PRJ_|FIN_|HR_)/i, "");
+            if (withoutPrefix && withoutPrefix !== trimmed) {
+              variations.add(withoutPrefix);
+              variations.add(`Sub_${withoutPrefix}`);
+            }
+            const normalizedKey = trimmed
+              .replace(/[\s_\-]+/g, "")
+              .toLowerCase();
+            variations.add(normalizedKey);
+            variations.add(`sub${normalizedKey}`);
+
+            for (const variant of variations) {
+              const direct = CLIENT_FORM_FALLBACKS[variant];
+              if (direct) return direct;
+            }
+
+            const normalizedVariants = Array.from(variations).map((variant) =>
+              String(variant || "")
+                .trim()
+                .replace(/[\s_\-]+/g, "")
+                .toLowerCase()
+            );
+
+            return (
+              Object.entries(CLIENT_FORM_FALLBACKS).find(([candidate]) => {
+                const normalizedCandidate = String(candidate || "")
+                  .trim()
+                  .replace(/[\s_\-]+/g, "")
+                  .toLowerCase();
+                return normalizedVariants.includes(normalizedCandidate);
+              })?.[1] || null
+            );
+          };
           if (!register || typeof register !== "object") {
-            return null;
+            return resolveFallback(paneKey);
           }
 
           const entries = Object.entries(register).map(([key, meta]) => ({
@@ -4488,6 +4621,8 @@
 
           for (const candidate of candidates) {
             if (register[candidate]) return register[candidate];
+            const fallback = resolveFallback(candidate);
+            if (fallback) return fallback;
           }
 
           const normalizedCandidates = Array.from(candidates)
@@ -4503,6 +4638,8 @@
               (entry) => entry.normalized === normalized
             );
             if (match) return match.meta;
+            const fallback = resolveFallback(normalized);
+            if (fallback) return fallback;
           }
 
           return null;
