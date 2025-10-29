@@ -1697,11 +1697,27 @@ function getMaterialsCatalog() {
   debugLog(FNAME, "start");
 
   try {
-    const { headers = [], rows = [] } = loadSheetData_(
-      CONFIG.SHEETS.PRJ_MATERIALS
-    );
+    let dataset = loadSheetData_(CONFIG.SHEETS.PRJ_MATERIALS);
+
+    if (!dataset.headers.length || !dataset.rows.length) {
+      debugLog(FNAME, "fallbackPrimaryEmpty", {
+        headers: dataset.headers.length,
+        rows: dataset.rows.length,
+        source: dataset.sourceName,
+      });
+      const fallback = loadSheetData_(CONFIG.SHEETS.PRJ_MATERIALS_VIEW);
+      if (fallback.headers.length && fallback.rows.length) {
+        dataset = fallback;
+      }
+    }
+
+    const { headers = [], rows = [], sourceName } = dataset;
     if (!headers.length || !rows.length) {
-      debugLog(FNAME, "noData", { headers: headers.length, rows: rows.length });
+      debugLog(FNAME, "noData", {
+        headers: headers.length,
+        rows: rows.length,
+        source: sourceName,
+      });
       return sanitizeForClientResponse_([]);
     }
 
@@ -1716,10 +1732,22 @@ function getMaterialsCatalog() {
       "نشط",
       "نشط؟"
     );
+
     const catalog = rows
-      .filter((row) =>
-        idxActive < 0 ? true : isTruthyFlag_(getValueAt_(row, idxActive))
-      )
+      .filter((row) => {
+        if (idxActive < 0) {
+          return true;
+        }
+        const value = getValueAt_(row, idxActive);
+        if (value === undefined || value === null) {
+          return true;
+        }
+        const text = String(value).trim();
+        if (!text) {
+          return true;
+        }
+        return isTruthyFlag_(text);
+      })
       .map((row) =>
         headers.reduce((acc, header, index) => {
           acc[header] = row[index];
@@ -1733,7 +1761,10 @@ function getMaterialsCatalog() {
         }, {})
       );
 
-    debugLog(FNAME, "resolved", { count: catalog.length });
+    debugLog(FNAME, "resolved", {
+      count: catalog.length,
+      source: sourceName,
+    });
     return sanitizeForClientResponse_(catalog);
   } catch (err) {
     debugError(FNAME, err);
