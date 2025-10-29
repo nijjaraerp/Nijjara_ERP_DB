@@ -2875,6 +2875,48 @@
     </style>
 
     <style>
+      /* --- View/Add Tab Styles --- */
+      .view-add-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .view-add-tabs {
+        display: flex;
+        flex-shrink: 0;
+        border-bottom: 2px solid #dee2e6;
+        padding: 0 1.5rem;
+        /* --parent-color is set inline by buildViewAddUI */
+      }
+
+      .view-add-tab-btn {
+        padding: 0.5rem 1rem;
+        margin-bottom: -2px;
+        border: none;
+        border-bottom: 3px solid transparent;
+        background: none;
+        color: #6c757d;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+      }
+
+      .view-add-tab-btn:hover {
+        color: #343a40;
+        border-bottom-color: #adb5bd;
+      }
+
+      .view-add-tab-btn.active {
+        color: var(--parent-color, #0d6efd);
+        border-bottom-color: var(--parent-color, #0d6efd);
+      }
+
+      .view-add-content {
+        flex-grow: 1;
+        overflow-y: auto;
+        background-color: #f8f9fa;
+      }
+
       /* --- Compact pills for tabs (Direct Expense + Materials) --- */
       .dyn-tabs.direct-expense__tabs .nav-item,
       .dyn-tabs.materials-module__tabs .nav-item {
@@ -3716,6 +3758,21 @@
         const permissionsTbody = document.getElementById("permissions-tbody");
         const rolePermsTbody = document.getElementById("role-perms-tbody");
         const propertiesTbody = document.getElementById("properties-tbody");
+        const g = (window.g = window.g || {});
+        g.bootstrap = g.bootstrap || {};
+        const log = window.appLog || window.appLogger || console;
+        const showSpinner =
+          typeof window.showSpinner === "function"
+            ? window.showSpinner.bind(window)
+            : (message) => {
+                if (message) {
+                  console.log(`[Spinner] ${message}`);
+                }
+              };
+        const hideSpinner =
+          typeof window.hideSpinner === "function"
+            ? window.hideSpinner.bind(window)
+            : () => {};
         const ICON_PATHS = Object.freeze({
           home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/><path d="M10 21v-5h4v5"/>',
           projects:
@@ -4593,6 +4650,42 @@
                 rawEntry.sortOrder ?? rawEntry.Sort_Order ?? rawEntry.order
               ),
               pane: normalizedPane,
+              sourceSheet:
+                rawEntry.sourceSheet ||
+                rawEntry.Source_Sheet ||
+                rawEntry.source_sheet ||
+                "",
+              renderMode:
+                rawEntry.renderMode ||
+                rawEntry.Render_Mode ||
+                rawEntry.render_mode ||
+                "",
+              viewLabel:
+                rawEntry.viewLabel ||
+                rawEntry.View_Label ||
+                rawEntry.view_label ||
+                "",
+              addLabel:
+                rawEntry.addLabel ||
+                rawEntry.Add_Label ||
+                rawEntry.add_label ||
+                "",
+              addFormId:
+                rawEntry.addFormId ||
+                rawEntry.Add_Form_ID ||
+                rawEntry.add_form_id ||
+                "",
+              addFormType:
+                rawEntry.addFormType ||
+                rawEntry.Add_Form_Type ||
+                rawEntry.add_form_type ||
+                "",
+              tabColor:
+                rawEntry.tabColor ||
+                rawEntry.Tab_Color ||
+                rawEntry.tab_colour ||
+                rawEntry.Tab_Colour ||
+                "",
             };
 
             if (!normalized.pane) return;
@@ -4618,6 +4711,27 @@
               }
               if (!existing.pane && normalized.pane) {
                 existing.pane = normalized.pane;
+              }
+              if (!existing.sourceSheet && normalized.sourceSheet) {
+                existing.sourceSheet = normalized.sourceSheet;
+              }
+              if (!existing.renderMode && normalized.renderMode) {
+                existing.renderMode = normalized.renderMode;
+              }
+              if (!existing.viewLabel && normalized.viewLabel) {
+                existing.viewLabel = normalized.viewLabel;
+              }
+              if (!existing.addLabel && normalized.addLabel) {
+                existing.addLabel = normalized.addLabel;
+              }
+              if (!existing.addFormId && normalized.addFormId) {
+                existing.addFormId = normalized.addFormId;
+              }
+              if (!existing.addFormType && normalized.addFormType) {
+                existing.addFormType = normalized.addFormType;
+              }
+              if (!existing.tabColor && normalized.tabColor) {
+                existing.tabColor = normalized.tabColor;
               }
             }
           };
@@ -4669,6 +4783,55 @@
                     sub.sortOrder ?? sub.Sort_Order ?? sub.order
                   ),
                   pane: sub.pane,
+                  sourceSheet:
+                    sub.sourceSheet ||
+                    sub.Source_Sheet ||
+                    sub.source_sheet ||
+                    tab.sourceSheet ||
+                    tab.Source_Sheet ||
+                    "",
+                  renderMode:
+                    sub.renderMode ||
+                    sub.Render_Mode ||
+                    sub.render_mode ||
+                    tab.renderMode ||
+                    tab.Render_Mode ||
+                    "",
+                  viewLabel:
+                    sub.viewLabel ||
+                    sub.View_Label ||
+                    sub.view_label ||
+                    tab.viewLabel ||
+                    tab.View_Label ||
+                    "",
+                  addLabel:
+                    sub.addLabel ||
+                    sub.Add_Label ||
+                    sub.add_label ||
+                    tab.addLabel ||
+                    tab.Add_Label ||
+                    "",
+                  addFormId:
+                    sub.addFormId ||
+                    sub.Add_Form_ID ||
+                    sub.add_form_id ||
+                    tab.addFormId ||
+                    tab.Add_Form_ID ||
+                    "",
+                  addFormType:
+                    sub.addFormType ||
+                    sub.Add_Form_Type ||
+                    sub.add_form_type ||
+                    tab.addFormType ||
+                    tab.Add_Form_Type ||
+                    "",
+                  tabColor:
+                    sub.tabColor ||
+                    sub.Tab_Color ||
+                    sub.tab_colour ||
+                    tab.tabColor ||
+                    tab.Tab_Color ||
+                    "",
                 });
               });
             });
@@ -4698,6 +4861,42 @@
                   row.sortOrder ?? row.Sort_Order ?? row.order
                 ),
                 pane: row.pane,
+                sourceSheet:
+                  row.sourceSheet ||
+                  row.Source_Sheet ||
+                  row.source_sheet ||
+                  "",
+                renderMode:
+                  row.renderMode ||
+                  row.Render_Mode ||
+                  row.render_mode ||
+                  "",
+                viewLabel:
+                  row.viewLabel ||
+                  row.View_Label ||
+                  row.view_label ||
+                  "",
+                addLabel:
+                  row.addLabel ||
+                  row.Add_Label ||
+                  row.add_label ||
+                  "",
+                addFormId:
+                  row.addFormId ||
+                  row.Add_Form_ID ||
+                  row.add_form_id ||
+                  "",
+                addFormType:
+                  row.addFormType ||
+                  row.Add_Form_Type ||
+                  row.add_form_type ||
+                  "",
+                tabColor:
+                  row.tabColor ||
+                  row.Tab_Color ||
+                  row.tab_colour ||
+                  row.Tab_Colour ||
+                  "",
               });
             });
           }
@@ -4737,6 +4936,8 @@
           sysSubTabLookup = Object.create(null);
           sysNav.innerHTML = "";
 
+          const groupedTabs = new Map();
+
           let firstPane = "";
           const seen = new Set();
 
@@ -4751,12 +4952,70 @@
 
             const button = document.createElement("button");
             button.type = "button";
-            button.className = "nav-item sidebar-item";
+            button.className = "nav-item sidebar-item sub-tab-item";
             button.dataset.pane = pane;
-            if (entry.subId) button.dataset.subId = entry.subId;
+            if (entry.subId) {
+              button.dataset.subId = entry.subId;
+              button.dataset.subTabId = entry.subId;
+            } else {
+              button.dataset.subTabId = pane;
+            }
+            if (entry.tabId) button.dataset.tabId = entry.tabId;
             if (entry.route) button.dataset.route = entry.route;
+            if (entry.renderMode) button.dataset.renderMode = entry.renderMode;
+            if (entry.sourceSheet) button.dataset.sourceSheet = entry.sourceSheet;
+            if (entry.tabColor) button.dataset.color = entry.tabColor;
+            if (entry.viewLabel) button.dataset.viewLabel = entry.viewLabel;
+            if (entry.addLabel) button.dataset.addLabel = entry.addLabel;
+            if (entry.addFormId) button.dataset.addFormId = entry.addFormId;
             button.textContent = entry.labelAr || entry.labelEn || pane;
             sysNav.appendChild(button);
+
+            const tabKey = entry.tabId || "Tab_SYS_Management";
+            let grouped = groupedTabs.get(tabKey);
+            if (!grouped) {
+              grouped = {
+                Tab_ID: tabKey,
+                Tab_Label_EN: entry.labelEn || "",
+                Tab_Label_AR: entry.labelAr || "",
+                Tab_Color: entry.tabColor || "",
+                subTabs: [],
+              };
+              groupedTabs.set(tabKey, grouped);
+            } else {
+              if (!grouped.Tab_Label_EN && entry.labelEn) {
+                grouped.Tab_Label_EN = entry.labelEn;
+              }
+              if (!grouped.Tab_Label_AR && entry.labelAr) {
+                grouped.Tab_Label_AR = entry.labelAr;
+              }
+              if (!grouped.Tab_Color && entry.tabColor) {
+                grouped.Tab_Color = entry.tabColor;
+              }
+            }
+
+            const subRecord = {
+              Tab_ID: tabKey,
+              Sub_ID: entry.subId || entry.pane || "",
+              Sub_Label_AR: entry.labelAr || "",
+              Sub_Label_EN: entry.labelEn || "",
+              Render_Mode: entry.renderMode || "",
+              View_Label: entry.viewLabel || "",
+              Add_Label: entry.addLabel || "",
+              Add_Form_ID: entry.addFormId || "",
+              Add_Form_Type: entry.addFormType || "",
+              Source_Sheet: entry.sourceSheet || "",
+              Route: entry.route || "",
+              Tab_Color: entry.tabColor || grouped.Tab_Color || "",
+              Pane: entry.pane || "",
+            };
+
+            const alreadyPresent = grouped.subTabs.some(
+              (sub) => sub.Sub_ID === subRecord.Sub_ID
+            );
+            if (!alreadyPresent) {
+              grouped.subTabs.push(subRecord);
+            }
 
             const lookupKeys = new Set([
               pane,
@@ -4766,6 +5025,11 @@
               entry.route,
               entry.route ? entry.route.toLowerCase() : "",
             ]);
+
+            if (entry.sourceSheet) {
+              lookupKeys.add(entry.sourceSheet);
+              lookupKeys.add(entry.sourceSheet.toLowerCase());
+            }
 
             if (entry.route) {
               const routeParts = String(entry.route).split("/").filter(Boolean);
@@ -4784,6 +5048,8 @@
             });
           });
 
+          g.bootstrap.tabs = Array.from(groupedTabs.values());
+
           if (!firstPane) {
             updateSysNavActive(currentSysPane);
             return;
@@ -4794,6 +5060,608 @@
           }
 
           updateSysNavActive(currentSysPane);
+        }
+
+        function findParentTabRecord(tabId, subId) {
+          const tabs = Array.isArray(g.bootstrap?.tabs)
+            ? g.bootstrap.tabs
+            : [];
+          const normalizedTabId = (tabId || "").toString().toLowerCase();
+          const normalizedSubId = (subId || "").toString().toLowerCase();
+          let fallback = null;
+
+          for (const tab of tabs) {
+            if (!tab) continue;
+            const candidateTabId = (tab.Tab_ID || tab.tabId || tab.id || "")
+              .toString()
+              .toLowerCase();
+            const subTabs = Array.isArray(tab.subTabs) ? tab.subTabs : [];
+
+            for (const sub of subTabs) {
+              if (!sub) continue;
+              const candidateSubId = (
+                sub.Sub_ID || sub.subId || sub.id || ""
+              )
+                .toString()
+                .toLowerCase();
+              if (normalizedSubId && candidateSubId === normalizedSubId) {
+                return { tab, sub };
+              }
+            }
+
+            if (
+              !fallback &&
+              (candidateTabId && candidateTabId === normalizedTabId)
+            ) {
+              fallback = { tab, sub: null };
+            } else if (!fallback && !normalizedTabId) {
+              fallback = { tab, sub: null };
+            }
+          }
+
+          return fallback;
+        }
+
+        function resolveSubTabEntry(subTabId) {
+          if (!subTabId) return null;
+          const candidates = new Set();
+          const raw = String(subTabId).trim();
+          if (raw) {
+            candidates.add(raw);
+            candidates.add(raw.toLowerCase());
+            candidates.add(raw.toUpperCase());
+            const withoutPrefix = raw.replace(/^Sub_/i, "");
+            if (withoutPrefix && withoutPrefix !== raw) {
+              candidates.add(withoutPrefix);
+              candidates.add(withoutPrefix.toLowerCase());
+              candidates.add(withoutPrefix.toUpperCase());
+            }
+          }
+
+          for (const candidate of candidates) {
+            if (candidate && sysSubTabLookup[candidate]) {
+              return sysSubTabLookup[candidate];
+            }
+          }
+          return null;
+        }
+
+        function mapSubTabEntryForRouter(entry, parentLookup) {
+          if (!entry) return null;
+          const tabId = entry.tabId || entry.Tab_ID || "Tab_SYS_Management";
+          const subId = entry.subId || entry.Sub_ID || entry.pane || "";
+          const mapped = {
+            Tab_ID: tabId,
+            Sub_ID: subId,
+            Sub_Label_AR: entry.labelAr || entry.Sub_Label_AR || "",
+            Sub_Label_EN: entry.labelEn || entry.Sub_Label_EN || "",
+            Render_Mode: entry.renderMode || entry.Render_Mode || "",
+            View_Label: entry.viewLabel || entry.View_Label || "",
+            Add_Label: entry.addLabel || entry.Add_Label || "",
+            Add_Form_ID: entry.addFormId || entry.Add_Form_ID || "",
+            Add_Form_Type: entry.addFormType || entry.Add_Form_Type || "",
+            Source_Sheet: entry.sourceSheet || entry.Source_Sheet || "",
+            Route: entry.route || entry.Route || "",
+            Tab_Color: entry.tabColor || entry.Tab_Color || "",
+            Pane: entry.pane || entry.Pane || "",
+          };
+
+          const parentRecord =
+            parentLookup || findParentTabRecord(tabId, subId) || null;
+          if (parentRecord && parentRecord.tab) {
+            const parentTab = parentRecord.tab;
+            if (!mapped.Tab_Color) {
+              mapped.Tab_Color = parentTab.Tab_Color || parentTab.tabColor || "";
+            }
+            if (!mapped.Sub_Label_AR) {
+              mapped.Sub_Label_AR = parentTab.Tab_Label_AR || "";
+            }
+            if (!mapped.Sub_Label_EN) {
+              mapped.Sub_Label_EN = parentTab.Tab_Label_EN || "";
+            }
+            if (!mapped.Render_Mode && parentRecord.sub) {
+              mapped.Render_Mode =
+                parentRecord.sub.Render_Mode || parentRecord.sub.renderMode || "";
+            }
+            if (!mapped.View_Label && parentRecord.sub) {
+              mapped.View_Label =
+                parentRecord.sub.View_Label || parentRecord.sub.viewLabel || "";
+            }
+            if (!mapped.Add_Label && parentRecord.sub) {
+              mapped.Add_Label =
+                parentRecord.sub.Add_Label || parentRecord.sub.addLabel || "";
+            }
+            if (!mapped.Add_Form_ID && parentRecord.sub) {
+              mapped.Add_Form_ID =
+                parentRecord.sub.Add_Form_ID || parentRecord.sub.addFormId || "";
+            }
+            if (!mapped.Add_Form_Type && parentRecord.sub) {
+              mapped.Add_Form_Type =
+                parentRecord.sub.Add_Form_Type ||
+                parentRecord.sub.addFormType ||
+                "";
+            }
+            if (!mapped.Source_Sheet && parentRecord.sub) {
+              mapped.Source_Sheet =
+                parentRecord.sub.Source_Sheet ||
+                parentRecord.sub.sourceSheet ||
+                "";
+            }
+            if (!mapped.Route && parentRecord.sub) {
+              mapped.Route = parentRecord.sub.Route || parentRecord.sub.route || "";
+            }
+          }
+
+          return mapped;
+        }
+
+        /**
+         * @function handleSubTabClick
+         * @description Handles the click event for a sidebar sub-tab.
+         * @param {Event} e The click event.
+         * @returns {boolean} True if the event was handled by the router.
+         */
+        function handleSubTabClick(e) {
+          const FNAME = "handleSubTabClick";
+          if (!e) return false;
+          let target = e.target && e.target.closest
+            ? e.target.closest(".sub-tab-item")
+            : null;
+          if (!target) return false;
+
+          if (target.classList.contains("active")) {
+            if (typeof log.debug === "function") {
+              log.debug(
+                FNAME,
+                "Sub-tab is already active, ignoring click.",
+                {
+                  id: target.dataset.subTabId || target.dataset.subId,
+                }
+              );
+            }
+            return true;
+          }
+
+          if (typeof e.preventDefault === "function") {
+            e.preventDefault();
+          }
+
+          const subTabId =
+            target.dataset.subTabId || target.dataset.subId || target.dataset.pane;
+          if (typeof log.debug === "function") {
+            log.debug(FNAME, `Click detected on sub-tab: ${subTabId}`);
+          }
+
+          const entry = resolveSubTabEntry(subTabId);
+          const parentRecord = entry
+            ? findParentTabRecord(entry.tabId || entry.Tab_ID, subTabId)
+            : null;
+          const subTabData = mapSubTabEntryForRouter(entry, parentRecord);
+
+          if (!subTabData) {
+            if (typeof log.error === "function") {
+              log.error(FNAME, `No bootstrap data found for Sub_ID: ${subTabId}`);
+            }
+            return false;
+          }
+
+          document.querySelectorAll(".sub-tab-item.active").forEach((el) => {
+            if (el !== target) {
+              el.classList.remove("active");
+            }
+          });
+          target.classList.add("active");
+
+          const parentTabId =
+            subTabData.Tab_ID || target.dataset.tabId || "Tab_SYS_Management";
+          const parentTabEl = document.getElementById(parentTabId);
+          if (parentTabEl && !parentTabEl.classList.contains("active")) {
+            document
+              .querySelectorAll(".nav-link.top-nav-link.active")
+              .forEach((el) => {
+                el.classList.remove("active");
+                el.style.backgroundColor = "";
+                el.style.color = "";
+              });
+            parentTabEl.classList.add("active");
+            const parentColor = parentTabEl.dataset.color || "#4285f4";
+            parentTabEl.style.backgroundColor = parentColor;
+            parentTabEl.style.color = "white";
+          }
+
+          if (subTabData.Route) {
+            window.location.hash = subTabData.Route;
+          }
+
+          renderSubTabContent(target, subTabData);
+          return true;
+        }
+
+        /**
+         * @function renderSubTabContent
+         * @description Central router for rendering the main content of a sub-tab.
+         * It reads the sub-tab's 'Render_Mode' to decide what UI to build.
+         * @param {HTMLElement} subTabEl The sub-tab element that was clicked.
+         * @param {object} subTabData The data object for the clicked sub-tab.
+         */
+        function renderSubTabContent(subTabEl, subTabData) {
+          const FNAME = "renderSubTabContent";
+          if (!subTabData) return;
+          if (typeof log.debug === "function") {
+            log.debug(
+              FNAME,
+              `Rendering content for: ${subTabData.Sub_ID}`,
+              { data: subTabData }
+            );
+          }
+
+          const contentWrapper = document.getElementById("main-content-wrapper");
+          if (!contentWrapper) {
+            if (typeof log.warn === "function") {
+              log.warn(
+                FNAME,
+                "Skipping render: 'main-content-wrapper' not found."
+              );
+            }
+            return;
+          }
+
+          contentWrapper.innerHTML = "";
+
+          const parentRecord = findParentTabRecord(
+            subTabData.Tab_ID,
+            subTabData.Sub_ID
+          );
+          const parentTab = parentRecord ? parentRecord.tab : null;
+          const parentColor = parentTab
+            ? parentTab.Tab_Color || parentTab.tabColor || "#4285f4"
+            : "#4285f4";
+          if (typeof log.debug === "function") {
+            log.debug(
+              FNAME,
+              `Inheriting color: ${parentColor} from ${
+                parentTab?.Tab_ID || parentTab?.tabId || "<unknown>"
+              }`
+            );
+          }
+
+          const modeRaw = subTabData.Render_Mode || "";
+          const mode = typeof modeRaw === "string" ? modeRaw.trim() : modeRaw;
+
+          switch (mode) {
+            case "ViewAdd":
+            case "viewadd": {
+              if (typeof log.debug === "function") {
+                log.debug(FNAME, "Mode: 'ViewAdd'. Calling buildViewAddUI...");
+              }
+              contentWrapper.innerHTML = buildViewAddUI(subTabData, parentColor);
+              attachViewAddTabListeners(subTabData);
+              const viewTrigger = document.getElementById(
+                `va-tab-view-${subTabData.Sub_ID}`
+              );
+              if (viewTrigger) {
+                viewTrigger.click();
+              }
+              break;
+            }
+
+            case "Dashboard":
+            case "dashboard": {
+              if (typeof log.debug === "function") {
+                log.debug(FNAME, "Mode: 'Dashboard'. Calling renderDashboardView...");
+              }
+              if (typeof renderDashboardView === "function") {
+                renderDashboardView(
+                  subTabData.Sub_ID,
+                  subTabData.Source_Sheet
+                );
+              } else {
+                if (typeof log.warn === "function") {
+                  log.warn(
+                    FNAME,
+                    "renderDashboardView is not available in this context."
+                  );
+                }
+                contentWrapper.innerHTML = `
+                  <div class="p-4">
+                    <h2>Dashboard View</h2>
+                    <p>No dashboard renderer is registered for <strong>${
+                      subTabData.Sub_ID || "?"
+                    }</strong>.</p>
+                  </div>`;
+              }
+              break;
+            }
+
+            case "Custom":
+            case "custom": {
+              if (typeof log.debug === "function") {
+                log.debug(
+                  FNAME,
+                  "Mode: 'Custom'. (Not fully implemented, placeholder)."
+                );
+              }
+              contentWrapper.innerHTML = `
+                <div class='p-4'>
+                  <h2>Custom View</h2>
+                  <p>Custom renderer for ${subTabData.Sub_ID}</p>
+                </div>`;
+              break;
+            }
+
+            default: {
+              if (typeof log.warn === "function") {
+                log.warn(
+                  FNAME,
+                  `Unknown Render_Mode: '${mode}' for ${subTabData.Sub_ID}.`
+                );
+              }
+              contentWrapper.innerHTML = `
+                <div class='p-4'>
+                  <h2>Configuration Error</h2>
+                  <p>Unknown Render_Mode: '${mode}'</p>
+                </div>`;
+            }
+          }
+        }
+
+        /**
+         * @function buildViewAddUI
+         * @description Generates the HTML string for the "View/Add" tabbed interface shell.
+         * @param {object} subTabData The data object for the sub-tab.
+         * @param {string} parentColor The hex color inherited from the parent module.
+         * @returns {string} The HTML string for the UI shell.
+         */
+        function buildViewAddUI(subTabData, parentColor) {
+          const FNAME = "buildViewAddUI";
+          if (typeof log.debug === "function") {
+            log.debug(FNAME, `Building 'ViewAdd' UI for ${subTabData.Sub_ID}`);
+          }
+
+          const viewLabel =
+            subTabData.View_Label ||
+            `View ${subTabData.Sub_Label_EN || "Items"}`;
+          const addLabel =
+            subTabData.Add_Label ||
+            `Add ${subTabData.Sub_Label_EN || "Item"}`;
+          const canAdd =
+            subTabData.Add_Form_ID && subTabData.Add_Form_ID.trim() !== "";
+          if (!canAdd && typeof log.warn === "function") {
+            log.warn(
+              FNAME,
+              `No 'Add_Form_ID' found for ${subTabData.Sub_ID}. 'Add' tab will be hidden.`
+            );
+          }
+
+          return `
+            <div class="view-add-container">
+              <div class="view-add-tabs" style="--parent-color: ${parentColor};">
+                <button class="view-add-tab-btn active"
+                        id="va-tab-view-${subTabData.Sub_ID}"
+                        data-sub-id="${subTabData.Sub_ID}"
+                        data-mode="view">
+                  ${viewLabel}
+                </button>
+                ${
+                  canAdd
+                    ? `
+                <button class="view-add-tab-btn"
+                        id="va-tab-add-${subTabData.Sub_ID}"
+                        data-sub-id="${subTabData.Sub_ID}"
+                        data-mode="add">
+                  ${addLabel}
+                </button>
+                `
+                    : ""
+                }
+              </div>
+              <div class="view-add-content" id="view-add-content-${subTabData.Sub_ID}">
+                <div class="p-5 text-center">
+                  <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        /**
+         * @function attachViewAddTabListeners
+         * @description Attaches click listeners to the dynamically created View/Add tabs.
+         * @param {object} subTabData The data object for the sub-tab.
+         */
+        function attachViewAddTabListeners(subTabData) {
+          const FNAME = "attachViewAddTabListeners";
+          if (typeof log.debug === "function") {
+            log.debug(FNAME, `Attaching listeners for ${subTabData.Sub_ID}`);
+          }
+
+          const contentContainer = document.getElementById(
+            `view-add-content-${subTabData.Sub_ID}`
+          );
+          if (!contentContainer) {
+            if (typeof log.error === "function") {
+              log.error(
+                FNAME,
+                `Content container not found: #view-add-content-${subTabData.Sub_ID}`
+              );
+            }
+            return;
+          }
+
+          document
+            .querySelectorAll(
+              `.view-add-tab-btn[data-sub-id="${subTabData.Sub_ID}"]`
+            )
+            .forEach((btn) => {
+              btn.addEventListener("click", (event) => {
+                const FNAME_CLICK = "ViewAddTab.click";
+                const clickedBtn = event.currentTarget;
+                const mode = clickedBtn.dataset.mode;
+
+                if (typeof log.debug === "function") {
+                  log.debug(
+                    FNAME_CLICK,
+                    `Clicked '${mode}' for ${subTabData.Sub_ID}`
+                  );
+                }
+
+                document
+                  .querySelectorAll(
+                    `.view-add-tab-btn[data-sub-id="${subTabData.Sub_ID}"]`
+                  )
+                  .forEach((b) => b.classList.remove("active"));
+                clickedBtn.classList.add("active");
+
+                contentContainer.innerHTML = `
+                  <div class="p-5 text-center">
+                    <div class="spinner-border" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </div>`;
+
+                if (mode === "view") {
+                  loadViewTabContent(subTabData, contentContainer);
+                } else if (mode === "add") {
+                  loadAddTabContent(subTabData, contentContainer);
+                }
+              });
+            });
+        }
+
+        /**
+         * @function loadViewTabContent
+         * @description Loads and renders the content for the "View" tab (dynamic table).
+         * @param {object} subTabData The data object for the sub-tab.
+         * @param {HTMLElement} contentContainer The container element to render into.
+         */
+        function loadViewTabContent(subTabData, contentContainer) {
+          const FNAME = "loadViewTabContent";
+          if (typeof log.debug === "function") {
+            log.debug(
+              FNAME,
+              `Loading 'View' content for ${subTabData.Sub_ID} from sheet ${subTabData.Source_Sheet}`
+            );
+          }
+
+          if (!(window.google && google.script && google.script.run)) {
+            hideSpinner();
+            contentContainer.innerHTML = `
+              <div class="p-4 alert alert-info">
+                Apps Script runtime is unavailable. Unable to load data for <strong>${
+                  subTabData.Source_Sheet || "?"
+                }</strong>.
+              </div>`;
+            return;
+          }
+
+          showSpinner("Loading view data...");
+          google.script.run
+            .withSuccessHandler((response) => {
+              hideSpinner();
+              const safeResponse = response || {};
+              const rows = Array.isArray(safeResponse.data)
+                ? safeResponse.data
+                : [];
+              if (typeof log.debug === "function") {
+                log.debug(
+                  FNAME,
+                  `Successfully fetched data for ${subTabData.Source_Sheet}`,
+                  safeResponse
+                );
+              }
+
+              contentContainer.innerHTML = `
+                <div class="p-4">
+                  <h2>${subTabData.View_Label || "View"}</h2>
+                  <p>Data will be rendered here from <strong>${
+                    subTabData.Source_Sheet || "?"
+                  }</strong>.</p>
+                  <p>Found ${rows.length} rows.</p>
+                  <pre style="max-height: 400px; overflow-y: auto; background: #f4f4f4; border: 1px solid #ccc; padding: 10px;">${
+                    JSON.stringify(rows, null, 2)
+                  }</pre>
+                </div>`;
+            })
+            .withFailureHandler((err) => {
+              hideSpinner();
+              if (typeof log.error === "function") {
+                log.error(
+                  FNAME,
+                  `Failed to get data for ${subTabData.Source_Sheet}`,
+                  err
+                );
+              }
+              const message = err && err.message ? err.message : "Unknown error";
+              contentContainer.innerHTML = `
+                <div class="p-4 alert alert-danger">
+                  Error loading view data: ${message}
+                </div>`;
+            })
+            .getViewData(subTabData.Source_Sheet, subTabData.Sub_ID);
+        }
+
+        /**
+         * @function loadAddTabContent
+         * @description Loads and renders the content for the "Add" tab (dynamic form).
+         * @param {object} subTabData The data object for the sub-tab.
+         * @param {HTMLElement} contentContainer The container element to render into.
+         */
+        function loadAddTabContent(subTabData, contentContainer) {
+          const FNAME = "loadAddTabContent";
+          const formId = subTabData.Add_Form_ID;
+          if (typeof log.debug === "function") {
+            log.debug(
+              FNAME,
+              `Loading 'Add' content for ${subTabData.Sub_ID} using Form_ID: ${formId}`
+            );
+          }
+
+          if (!formId) {
+            if (typeof log.error === "function") {
+              log.error(FNAME, "Cannot load 'Add' tab: 'Add_Form_ID' is missing.");
+            }
+            contentContainer.innerHTML = `
+              <div class="p-4 alert alert-warning">
+                Form ID is not defined for this tab.
+              </div>`;
+            return;
+          }
+
+          try {
+            const renderFormHandler =
+              (typeof window !== "undefined" &&
+                typeof window.renderForm === "function" &&
+                window.renderForm) ||
+              (window.app &&
+                typeof window.app.renderForm === "function" &&
+                window.app.renderForm) ||
+              (window.forms &&
+                typeof window.forms.renderForm === "function" &&
+                window.forms.renderForm) ||
+              null;
+
+            if (typeof renderFormHandler === "function") {
+              renderFormHandler.call(window.app || window, formId, contentContainer.id);
+              if (typeof log.debug === "function") {
+                log.debug(
+                  FNAME,
+                  `Successfully called renderForm('${formId}', '${contentContainer.id}')`
+                );
+              }
+            } else {
+              throw new Error("renderForm handler is not available.");
+            }
+          } catch (err) {
+            if (typeof log.error === "function") {
+              log.error(FNAME, `Error calling renderForm: ${err.message}`, err);
+            }
+            contentContainer.innerHTML = `
+              <div class="p-4 alert alert-danger">
+                Error rendering form: ${err.message}
+              </div>`;
+          }
         }
 
         function loadTab(identifier, options = {}) {
@@ -10436,6 +11304,18 @@
         function applyBootstrap(data) {
           console.log("Bootstrap data received:", data);
           bootstrapData = Object.assign({}, data || {});
+          const serverTabs = Array.isArray(data?.tabRegister)
+            ? data.tabRegister
+            : Array.isArray(data?.tabs)
+            ? data.tabs
+            : Array.isArray(data?.tabRegistry)
+            ? data.tabRegistry
+            : Array.isArray(data?.tabConfig)
+            ? data.tabConfig
+            : [];
+          g.bootstrap = Object.assign({}, g.bootstrap, data || {});
+          g.bootstrap.tabs = serverTabs || g.bootstrap.tabs || [];
+          g.bootstrap.tabsRaw = serverTabs;
           overviewLoaded = false;
           resetTableLoadState();
           selectedUsers.clear();
@@ -11558,7 +12438,7 @@
           sysNav.addEventListener("click", (evt) => {
             const btn = evt.target.closest("button[data-pane]");
             if (!btn) return;
-            evt.preventDefault();
+            handleSubTabClick(evt);
             const pane = btn.dataset.subId || btn.dataset.pane || "users";
             loadTab(pane);
           });
