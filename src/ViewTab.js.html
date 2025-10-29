@@ -1,0 +1,255 @@
+<script>
+/**
+ * ============================================================================
+ * NIJJARA ERP - ViewTab.js
+ * Contains all client-side logic for building, filtering, and interacting
+ * with the dynamic "View" tab tables.
+ * ============================================================================
+ */
+
+/**
+ * @function buildDynamicTableView
+ * @description Main entry point for building the 'View' tab UI.
+ * @param {object} subTabData - The data object for the sub-tab.
+ * @param {object} response - The {success, data, headers} object from getViewData.
+ * @param {HTMLElement} contentContainer - The container to render into.
+ */
+function buildDynamicTableView(subTabData, response, contentContainer) {
+  const FNAME = "buildDynamicTableView";
+  log.debug(FNAME, `Building view for ${subTabData.Sub_ID}`, { data: response });
+
+  // Get parent tab color for theming
+  const parentTab = g.bootstrap.tabs.find(t => t.Tab_ID === subTabData.Tab_ID);
+  const parentColor = parentTab ? parentTab.Tab_Color || '#4285f4' : '#4285f4';
+  const parentColorLight = hexToRgba(parentColor, 0.15); // For header bg
+
+  // Unique ID for the table for event binding
+  const tableId = `dynamic-table-${subTabData.Sub_ID}`;
+
+  // --- 1. Build the outer shell (Header + Table Container) ---
+  let html = `
+    <div class="view-tab-content-wrapper" 
+         style="--parent-color: ${parentColor}; --parent-color-light: ${parentColorLight};">
+      
+      <div class="view-tab-header">
+        <div class="view-search-bar">
+          <input type="text" 
+                 class="form-control" 
+                 id="view-search-${subTabData.Sub_ID}" 
+                 placeholder="Type to search table...">
+        </div>
+        <div class="view-filter-dropdown-group d-flex gap-3">
+          </div>
+        <div class="view-action-btn-group">
+          <button class="btn btn-danger" id="bulk-delete-${subTabData.Sub_ID}" disabled>
+            <i class="bi bi-trash-fill me-1"></i>
+            Delete Selected
+          </button>
+        </div>
+      </div>
+
+      <div class="view-table-container">
+        ${buildTableHTML(tableId, response.headers, response.data, subTabData)}
+      </div>
+    </div>
+  `;
+
+  contentContainer.innerHTML = html;
+
+  // --- 3. Attach Event Listeners ---
+  attachTableListeners(subTabData, tableId);
+}
+
+/**
+ * @function buildTableHTML
+ * @description Generates the HTML string for the <table> itself.
+ * @param {string} tableId - The unique ID for this table.
+ * @param {string[]} headers - Array of column headers.
+ * @param {object[]} data - Array of data objects.
+ * @param {object} subTabData - The sub-tab's data.
+ * @returns {string} The HTML string for the <table>.
+ */
+function buildTableHTML(tableId, headers, data, subTabData) {
+  const FNAME = "buildTableHTML";
+  
+  if (!data || data.length === 0) {
+    return `
+      <div class="p-5 text-center">
+        <h4>No Data Available</h4>
+        <p>No records found for ${subTabData.View_Label}.</p>
+      </div>`;
+  }
+  
+  // --- 1. Create Table Header Row ---
+  // We add Checkbox and Actions columns
+  let headerHtml = `
+    <th class="col-checkbox">
+      <input class="form-check-input" type="checkbox" id="header-check-${tableId}">
+    </th>
+  `;
+  headers.forEach(header => {
+    headerHtml += `<th>${header}</th>`;
+  });
+  headerHtml += `<th class="col-actions">Actions</th>`;
+
+  // --- 2. Create Table Body Rows ---
+  let bodyHtml = '';
+  data.forEach((row, rowIndex) => {
+    // Find a unique ID for the row. Default to index.
+    const rowId = row.ID || row.id || row.User_Id || row.Project_ID || row.Expense_ID || row.Material_ID || rowIndex;
+
+    bodyHtml += `<tr data-row-id="${rowId}">`;
+    
+    // Add Checkbox cell
+    bodyHtml += `
+      <td class="col-checkbox">
+        <input class="form-check-input row-checkbox" type="checkbox" data-row-id="${rowId}">
+      </td>
+    `;
+
+    // Add Data cells
+    headers.forEach(header => {
+      let cellValue = row[header];
+      // Handle null/undefined
+      if (cellValue === null || typeof cellValue === 'undefined') {
+        cellValue = '';
+      }
+      // TODO: Add formatting for dates, currency, etc.
+      bodyHtml += `<td>${cellValue}</td>`;
+    });
+
+    // Add Actions cell
+    // TODO: Dynamically build these buttons based on permissions
+    bodyHtml += `
+      <td class="col-actions">
+        <div class="table-row-actions">
+          <button class="btn btn-sm btn-outline-primary" title="View Details">
+            <i class="bi bi-eye-fill"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" title="Edit">
+            <i class="bi bi-pencil-fill"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger" title="Delete">
+            <i class="bi bi-trash"></i>
+          </button>
+        </div>
+      </td>
+    `;
+    
+    bodyHtml += `</tr>`;
+  });
+
+  return `
+    <table class="table dynamic-view-table" id="${tableId}">
+      <thead>
+        <tr>${headerHtml}</tr>
+      </thead>
+      <tbody>
+        ${bodyHtml}
+      </tbody>
+    </table>
+  `;
+}
+
+/**
+ * @function attachTableListeners
+ * @description Attaches live listeners for search, checkboxes, etc.
+ * @param {object} subTabData - The sub-tab's data.
+ * @param {string} tableId - The unique ID for this table.
+ */
+function attachTableListeners(subTabData, tableId) {
+  const FNAME = "attachTableListeners";
+  const searchInput = document.getElementById(`view-search-${subTabData.Sub_ID}`);
+  const table = document.getElementById(tableId);
+  
+  if (!table) {
+    log.warn(FNAME, `Table not found for listeners: #${tableId}`);
+    return;
+  }
+  
+  const tableBody = table.querySelector('tbody');
+  if (!tableBody) {
+     log.warn(FNAME, `Table body not found for listeners: #${tableId}`);
+     return;
+  }
+
+  // --- 1. Search Bar Listener ---
+  if (searchInput) {
+    searchInput.addEventListener('keyup', () => {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      log.debug(FNAME, `Search term: '${searchTerm}'`);
+      
+      tableBody.querySelectorAll('tr').forEach(row => {
+        const rowText = row.textContent.toLowerCase();
+        if (rowText.includes(searchTerm)) {
+          row.classList.remove('hidden-row');
+        } else {
+          row.classList.add('hidden-row');
+        }
+      });
+    });
+  }
+
+  // --- 2. Checkbox Listeners ---
+  const headerCheckbox = document.getElementById(`header-check-${tableId}`);
+  const rowCheckboxes = tableBody.querySelectorAll('.row-checkbox');
+  const bulkDeleteBtn = document.getElementById(`bulk-delete-${subTabData.Sub_ID}`);
+
+  // Header checkbox toggles all row checkboxes
+  if (headerCheckbox) {
+    headerCheckbox.addEventListener('change', () => {
+      const isChecked = headerCheckbox.checked;
+      rowCheckboxes.forEach(cb => {
+        cb.checked = isChecked;
+      });
+      updateBulkDeleteButton();
+    });
+  }
+  
+  // Row checkboxes update header checkbox and bulk delete button
+  rowCheckboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      updateBulkDeleteButton();
+      
+      // Update header checkbox state
+      if (headerCheckbox) {
+        const allChecked = Array.from(rowCheckboxes).every(r => r.checked);
+        headerCheckbox.checked = allChecked;
+      }
+    });
+  });
+
+  function updateBulkDeleteButton() {
+    if (!bulkDeleteBtn) return;
+    const anyChecked = Array.from(rowCheckboxes).some(r => r.checked);
+    bulkDeleteBtn.disabled = !anyChecked;
+  }
+}
+
+/**
+ * @function hexToRgba
+ * @description Utility to convert a hex color to rgba with opacity.
+ * @param {string} hex - The hex color (e.g., #FF0000).
+ * @param {number} alpha - The opacity (0.0 to 1.0).
+ * @returns {string} The rgba color string.
+ */
+function hexToRgba(hex, alpha) {
+  const FNAME = "hexToRgba";
+  try {
+    let r = 0, g = 0, b = 0;
+    if (hex.length == 4) { // #F03
+      r = parseInt(hex[1] + hex[1], 16);
+      g = parseInt(hex[2] + hex[2], 16);
+      b = parseInt(hex[3] + hex[3], 16);
+    } else if (hex.length == 7) { // #FF0033
+      r = parseInt(hex.substring(1, 3), 16);
+      g = parseInt(hex.substring(3, 5), 16);
+      b = parseInt(hex.substring(5, 7), 16);
+    }
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  } catch (e) {
+    log.error(FNAME, `Error converting hex ${hex}: ${e.message}`);
+    return `rgba(240, 240, 240, ${alpha})`; // Return a default light grey
+  }
+}
+</script>
