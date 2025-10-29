@@ -4084,166 +4084,18 @@ function getTabRegister() {
       return String(a.tabId || "").localeCompare(String(b.tabId || ""));
     });
 
-  const merged = mergeTabRegisterFallbacks_(result);
-
+  // Bypassing the merge function to return the raw sheet result.
+  // This completes the fix to make SYS_Tab_Register the single source of truth.
   debugLog(FNAME, "resolved", {
-    tabs: merged.length,
-    subTabs: merged.reduce(
+    tabs: result.length,
+    subTabs: result.reduce(
       (count, tab) => count + (Array.isArray(tab.subTabs) ? tab.subTabs.length : 0),
       0
     ),
     source: sheet ? sheet.getName() : sourceName || "<unknown>",
   });
 
-  return merged;
-}
-
-function mergeTabRegisterFallbacks_(tabs) {
-  const parseSortOrder = (value) => {
-    if (value == null || value === "") return null;
-    const num = Number(value);
-    return Number.isFinite(num) ? num : null;
-  };
-
-  const cloned = Array.isArray(tabs)
-    ? tabs.map((tab) => ({
-        tabId: tab.tabId,
-        tabLabelEn: tab.tabLabelEn || "",
-        tabLabelAr: tab.tabLabelAr || "",
-        route: tab.route || "",
-        sortOrder: parseSortOrder(tab.sortOrder),
-        sourceSheet: tab.sourceSheet || "",
-        permissions: tab.permissions || "",
-        subTabs: Array.isArray(tab.subTabs)
-          ? tab.subTabs.map((sub) => ({
-              subId: sub.subId,
-              subLabelEn: sub.subLabelEn || "",
-              subLabelAr: sub.subLabelAr || "",
-              route: sub.route || "",
-              sortOrder: parseSortOrder(sub.sortOrder),
-              sourceSheet: sub.sourceSheet || "",
-            }))
-          : [],
-      }))
-    : [];
-
-  const tabMap = new Map();
-  cloned.forEach((tab) => {
-    const key = String(tab.tabId || "").toLowerCase();
-    if (!key) return;
-    tabMap.set(key, tab);
-  });
-
-  const fallbackTabs =
-    typeof TAB_REGISTER_FALLBACKS !== "undefined" ? TAB_REGISTER_FALLBACKS : [];
-
-  fallbackTabs.forEach((fallback) => {
-    const normalizedFallback = {
-      tabId: fallback.tabId,
-      tabLabelEn: fallback.tabLabelEn || "",
-      tabLabelAr: fallback.tabLabelAr || "",
-      route: fallback.route || "",
-      sortOrder: parseSortOrder(fallback.sortOrder),
-      sourceSheet: fallback.sourceSheet || "",
-      permissions: fallback.permissions || "",
-      subTabs: Array.isArray(fallback.subTabs)
-        ? fallback.subTabs.map((sub) => ({
-            subId: sub.subId,
-            subLabelEn: sub.subLabelEn || "",
-            subLabelAr: sub.subLabelAr || "",
-            route: sub.route || "",
-            sortOrder: parseSortOrder(sub.sortOrder),
-            sourceSheet: sub.sourceSheet || "",
-          }))
-        : [],
-    };
-
-    const key = String(normalizedFallback.tabId || "").toLowerCase();
-    if (!key) return;
-
-    if (!tabMap.has(key)) {
-      tabMap.set(key, normalizedFallback);
-      return;
-    }
-
-    const existing = tabMap.get(key);
-    // Only supplement missing metadata; do not inject fallback sub-tabs when a tab already exists.
-    if (!existing.tabLabelEn && normalizedFallback.tabLabelEn) {
-      existing.tabLabelEn = normalizedFallback.tabLabelEn;
-    }
-    if (!existing.tabLabelAr && normalizedFallback.tabLabelAr) {
-      existing.tabLabelAr = normalizedFallback.tabLabelAr;
-    }
-    if (
-      (existing.sortOrder == null || !Number.isFinite(existing.sortOrder)) &&
-      normalizedFallback.sortOrder != null
-    ) {
-      existing.sortOrder = normalizedFallback.sortOrder;
-    }
-    if (!existing.permissions && normalizedFallback.permissions) {
-      existing.permissions = normalizedFallback.permissions;
-    }
-
-    if (Array.isArray(normalizedFallback.subTabs) && normalizedFallback.subTabs.length) {
-      const seenSubIds = new Set(
-        Array.isArray(existing.subTabs)
-          ? existing.subTabs
-              .map((sub) => String(sub?.subId || "").toLowerCase())
-              .filter(Boolean)
-          : []
-      );
-
-      normalizedFallback.subTabs.forEach((sub) => {
-        const subKey = String(sub?.subId || "").toLowerCase();
-        if (!subKey || seenSubIds.has(subKey)) return;
-        seenSubIds.add(subKey);
-        existing.subTabs = Array.isArray(existing.subTabs) ? existing.subTabs : [];
-        existing.subTabs.push({
-          subId: sub.subId,
-          subLabelEn: sub.subLabelEn || "",
-          subLabelAr: sub.subLabelAr || "",
-          route: sub.route || "",
-          sortOrder: parseSortOrder(sub.sortOrder),
-          sourceSheet: sub.sourceSheet || "",
-        });
-      });
-    }
-  });
-
-  const merged = Array.from(tabMap.values()).map((tab) => ({
-    tabId: tab.tabId,
-    tabLabelEn: tab.tabLabelEn || "",
-    tabLabelAr: tab.tabLabelAr || "",
-    route: tab.route || "",
-    sortOrder: parseSortOrder(tab.sortOrder),
-    sourceSheet: tab.sourceSheet || "",
-    permissions: tab.permissions || "",
-    subTabs: Array.isArray(tab.subTabs)
-      ? tab.subTabs.map((sub) => ({
-          subId: sub.subId,
-          subLabelEn: sub.subLabelEn || "",
-          subLabelAr: sub.subLabelAr || "",
-          route: sub.route || "",
-          sortOrder: parseSortOrder(sub.sortOrder),
-          sourceSheet: sub.sourceSheet || "",
-        }))
-      : [],
-  }));
-
-  merged.sort((a, b) => {
-    const aOrder =
-      a.sortOrder != null && Number.isFinite(a.sortOrder)
-        ? a.sortOrder
-        : Number.MAX_SAFE_INTEGER;
-    const bOrder =
-      b.sortOrder != null && Number.isFinite(b.sortOrder)
-        ? b.sortOrder
-        : Number.MAX_SAFE_INTEGER;
-    if (aOrder !== bOrder) return aOrder - bOrder;
-    return String(a.tabId || "").localeCompare(String(b.tabId || ""));
-  });
-
-  return merged;
+  return result;
 }
 
 function logAction(userId, actionType, entityType, recordId, details = {}) {
