@@ -307,8 +307,16 @@
         min-width: 150px;
         padding: 0.65rem 1rem;
         border-radius: 14px;
-        background: var(--glassy-surface-bg),
-          linear-gradient(160deg, var(--nav-card-primary), var(--nav-card-secondary));
+        background: radial-gradient(
+            circle at top,
+            rgba(255, 255, 255, 0.16),
+            transparent 65%
+          ),
+          linear-gradient(
+            160deg,
+            var(--nav-card-primary),
+            var(--nav-card-secondary)
+          );
         border: 1px solid var(--nav-card-border, var(--glassy-border));
         color: var(--color-text-primary);
         cursor: pointer;
@@ -364,42 +372,42 @@
         --icon-color: currentColor;
       }
       .nav-btn[data-theme="projects"] {
-        --nav-card-primary: rgba(40, 52, 82, 0.92);
-        --nav-card-secondary: rgba(22, 30, 50, 0.88);
-        --nav-card-border: rgba(90, 140, 255, 0.32);
-        --nav-card-glow: rgba(90, 140, 255, 0.48);
+        --nav-card-primary: rgba(90, 140, 255, 0.82);
+        --nav-card-secondary: rgba(46, 80, 200, 0.92);
+        --nav-card-border: rgba(90, 140, 255, 0.6);
+        --nav-card-glow: rgba(90, 140, 255, 0.65);
         --nav-theme-accent: #5a8cff;
         --theme-accent: #5a8cff;
       }
       .nav-btn[data-theme="finance"] {
-        --nav-card-primary: rgba(55, 45, 26, 0.92);
-        --nav-card-secondary: rgba(34, 28, 16, 0.88);
-        --nav-card-border: rgba(210, 170, 80, 0.28);
-        --nav-card-glow: rgba(210, 170, 80, 0.45);
+        --nav-card-primary: rgba(210, 170, 80, 0.78);
+        --nav-card-secondary: rgba(140, 100, 32, 0.92);
+        --nav-card-border: rgba(210, 170, 80, 0.58);
+        --nav-card-glow: rgba(210, 170, 80, 0.65);
         --nav-theme-accent: #d2aa50;
         --theme-accent: #d2aa50;
       }
       .nav-btn[data-theme="hr"] {
-        --nav-card-primary: rgba(36, 54, 48, 0.92);
-        --nav-card-secondary: rgba(19, 33, 28, 0.88);
-        --nav-card-border: rgba(102, 214, 168, 0.28);
-        --nav-card-glow: rgba(102, 214, 168, 0.45);
+        --nav-card-primary: rgba(102, 214, 168, 0.78);
+        --nav-card-secondary: rgba(48, 140, 106, 0.9);
+        --nav-card-border: rgba(102, 214, 168, 0.6);
+        --nav-card-glow: rgba(102, 214, 168, 0.65);
         --nav-theme-accent: #66d6a8;
         --theme-accent: #66d6a8;
       }
       .nav-btn[data-theme="users"] {
-        --nav-card-primary: rgba(46, 33, 52, 0.92);
-        --nav-card-secondary: rgba(27, 18, 32, 0.88);
-        --nav-card-border: rgba(200, 110, 210, 0.28);
-        --nav-card-glow: rgba(200, 110, 210, 0.45);
+        --nav-card-primary: rgba(200, 110, 210, 0.78);
+        --nav-card-secondary: rgba(120, 60, 160, 0.92);
+        --nav-card-border: rgba(200, 110, 210, 0.58);
+        --nav-card-glow: rgba(200, 110, 210, 0.65);
         --nav-theme-accent: #c86ed2;
         --theme-accent: #c86ed2;
       }
       .nav-btn[data-theme="portal"] {
-        --nav-card-primary: rgba(36, 36, 36, 0.92);
-        --nav-card-secondary: rgba(17, 17, 17, 0.88);
-        --nav-card-border: rgba(212, 175, 55, 0.32);
-        --nav-card-glow: rgba(212, 175, 55, 0.5);
+        --nav-card-primary: rgba(212, 175, 55, 0.82);
+        --nav-card-secondary: rgba(150, 110, 30, 0.92);
+        --nav-card-border: rgba(212, 175, 55, 0.6);
+        --nav-card-glow: rgba(212, 175, 55, 0.65);
         --nav-theme-accent: var(--color-accent);
         --theme-accent: var(--color-accent);
       }
@@ -528,8 +536,16 @@
         padding: 2rem 1.6rem;
         border: 1px solid var(--card-border, var(--glassy-border));
         border-radius: 16px;
-        background: var(--glassy-surface-bg),
-          linear-gradient(160deg, var(--card-primary), var(--card-secondary));
+        background: radial-gradient(
+            circle at top,
+            rgba(255, 255, 255, 0.18),
+            transparent 68%
+          ),
+          linear-gradient(
+            160deg,
+            var(--card-primary),
+            var(--card-secondary)
+          );
         box-shadow: var(--glassy-shadow);
         cursor: pointer;
         transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s,
@@ -754,14 +770,14 @@
       }
       .pane-table-scroll table {
         width: 100%;
-        table-layout: fixed;
-        min-width: 100%;
+        min-width: 720px;
+        table-layout: auto;
       }
       table {
         width: 100%;
-        min-width: 100%;
+        min-width: 720px;
         border-collapse: collapse;
-        table-layout: fixed;
+        table-layout: auto;
         background: var(--glassy-surface-bg);
         border: 1px solid var(--glassy-border);
         box-shadow: var(--glassy-shadow-soft);
@@ -769,14 +785,14 @@
         border-radius: 14px;
       }
       .generic-table {
-        table-layout: fixed;
+        table-layout: auto;
       }
       table thead {
         background: var(--table-header-bg, rgba(24, 24, 32, 0.98));
       }
       .table-wrapper table {
         width: 100%;
-        min-width: 100%;
+        min-width: 720px;
       }
       .table-wrapper thead,
       .pane-table-scroll thead {
