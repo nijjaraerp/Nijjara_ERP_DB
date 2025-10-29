@@ -2873,6 +2873,7 @@
         box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
       }
     </style>
+    <?!= include('ViewTab.css'); ?>
 
     <style>
       /* --- View/Add Tab Styles --- */
@@ -3684,6 +3685,7 @@
       </form>
     </dialog>
 
+    <?!= include('ViewTab.js'); ?>
     <script>
       (function () {
         const views = Array.from(document.querySelectorAll(".view"));
@@ -5538,68 +5540,40 @@
          */
         function loadViewTabContent(subTabData, contentContainer) {
           const FNAME = "loadViewTabContent";
-          if (typeof log.debug === "function") {
-            log.debug(
-              FNAME,
-              `Loading 'View' content for ${subTabData.Sub_ID} from sheet ${subTabData.Source_Sheet}`
-            );
-          }
+          log.debug(
+            FNAME,
+            `Loading 'View' content for ${subTabData.Sub_ID} from sheet ${subTabData.Source_Sheet}`
+          );
 
-          if (!(window.google && google.script && google.script.run)) {
-            hideSpinner();
-            contentContainer.innerHTML = `
-              <div class="p-4 alert alert-info">
-                Apps Script runtime is unavailable. Unable to load data for <strong>${
-                  subTabData.Source_Sheet || "?"
-                }</strong>.
-              </div>`;
-            return;
-          }
+          // Show a simple spinner while data is fetched
+          showSpinner('Loading view data...');
 
-          showSpinner("Loading view data...");
           google.script.run
             .withSuccessHandler((response) => {
               hideSpinner();
-              const safeResponse = response || {};
-              const rows = Array.isArray(safeResponse.data)
-                ? safeResponse.data
-                : [];
-              if (typeof log.debug === "function") {
-                log.debug(
-                  FNAME,
-                  `Successfully fetched data for ${subTabData.Source_Sheet}`,
-                  safeResponse
-                );
-              }
+              log.debug(
+                FNAME,
+                `Successfully fetched data for ${subTabData.Source_Sheet}`,
+                response
+              );
 
-              contentContainer.innerHTML = `
-                <div class="p-4">
-                  <h2>${subTabData.View_Label || "View"}</h2>
-                  <p>Data will be rendered here from <strong>${
-                    subTabData.Source_Sheet || "?"
-                  }</strong>.</p>
-                  <p>Found ${rows.length} rows.</p>
-                  <pre style="max-height: 400px; overflow-y: auto; background: #f4f4f4; border: 1px solid #ccc; padding: 10px;">${
-                    JSON.stringify(rows, null, 2)
-                  }</pre>
-                </div>`;
+              if (response && response.success) {
+                // --- THIS IS THE NEW LOGIC ---
+                // Call the main function from ViewTab.js to build the UI
+                buildDynamicTableView(subTabData, response, contentContainer);
+              } else {
+                // Handle error response from server
+                let errorMsg = (response && response.message) ? response.message : "Received an unsuccessful response from server.";
+                log.error(FNAME, errorMsg, response);
+                contentContainer.innerHTML = `<div class="p-4 alert alert-danger">Error loading view data: ${errorMsg}</div>`;
+              }
             })
             .withFailureHandler((err) => {
               hideSpinner();
-              if (typeof log.error === "function") {
-                log.error(
-                  FNAME,
-                  `Failed to get data for ${subTabData.Source_Sheet}`,
-                  err
-                );
-              }
-              const message = err && err.message ? err.message : "Unknown error";
-              contentContainer.innerHTML = `
-                <div class="p-4 alert alert-danger">
-                  Error loading view data: ${message}
-                </div>`;
+              log.error(FNAME, `Failed to get data for ${subTabData.Source_Sheet}`, err);
+              contentContainer.innerHTML = `<div class="p-4 alert alert-danger">Error loading view data: ${err.message}</div>`;
             })
-            .getViewData(subTabData.Source_Sheet, subTabData.Sub_ID);
+            .getViewData(subTabData.Source_Sheet, subTabData.Sub_ID); // Calls the function in Code.js
         }
 
         /**
