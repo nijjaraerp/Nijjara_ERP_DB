@@ -857,6 +857,70 @@ function getBootstrapData(userOverride, permissionsOverride) {
   }
 }
 
+/**
+ * @function getViewData
+ * @description Fetches data for a standard "View" tab's dynamic table.
+ * @param {string} sourceName The name of the sheet (e.g., "PV_PRJ_Main") to fetch data from.
+ * @param {string} subTabId The Sub_ID of the tab requesting the data (for logging).
+ * @returns {object} An object { success: boolean, data: Array<object>, headers: Array<string>, message?: string }.
+ */
+function getViewData(sourceName, subTabId) {
+  const FNAME = "getViewData";
+  const user = getActor();
+  debugLog(FNAME, "request", {
+    sourceName,
+    subTabId,
+    actor: user && user.email,
+  });
+
+  if (!sourceName) {
+    debugLog(FNAME, "missingSource", { subTabId });
+    return {
+      success: false,
+      message: "No source sheet name was provided.",
+      data: [],
+      headers: [],
+    };
+  }
+
+  try {
+    const data = loadSheetData_(sourceName);
+    let headers = [];
+    if (data && data.length > 0) {
+      headers = Object.keys(data[0]);
+    }
+
+    debugLog(FNAME, "success", {
+      sourceName,
+      subTabId,
+      rowCount: Array.isArray(data) ? data.length : 0,
+      headerCount: headers.length,
+    });
+
+    return {
+      success: true,
+      data: data || [],
+      headers,
+    };
+  } catch (e) {
+    debugLog(FNAME, "error", {
+      sourceName,
+      subTabId,
+      actor: user && user.email,
+      error: e && e.message,
+      stack: e && e.stack,
+    });
+    return {
+      success: false,
+      message: `Server error while fetching data for ${sourceName}: ${
+        e && e.message ? e.message : "unknown"
+      }`,
+      data: [],
+      headers: [],
+    };
+  }
+}
+
 function buildBootstrapPayload_(rawUser, permissionsOverride) {
   const sanitizedUser = sanitizeUserForClient_(rawUser);
   const role = sanitizedUser?.Role_Id || sanitizedUser?.role || "GUEST";
