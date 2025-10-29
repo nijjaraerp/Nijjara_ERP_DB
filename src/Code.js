@@ -776,45 +776,43 @@ function setRowValue_(headers, row, value, ...candidates) {
 
 /** ---- ENTRY POINT ---- */
 function doGet(e) {
-  // Add a clear marker for deployment vs. real user runs
-  Logger.log(
-    "[doGet] invoked at %s with params: %s",
-    new Date(),
-    safeStringify_(e)
-  );
-
-  const result = withErrorHandling(
-    function () {
-      debugLog("doGet", "render", { query: e && e.parameter });
-
-      const t = HtmlService.createTemplateFromFile("Dashboard");
-      t.appName = CONFIG.APP_NAME;
-
-      const output = t
-        .evaluate()
-        .setTitle(CONFIG.APP_NAME + " - Demo Portal")
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-
-      Logger.log("[doGet] returning HtmlOutput at %s", new Date());
-      return output;
-    },
-    "doGet",
-    { query: e && e.parameter }
-  );
-
-  if (result && result.error) {
-    Logger.log("[doGet] returning error Html due to: %s", result.message);
-    const html = HtmlService.createHtmlOutput(
-      Utilities.formatString(
-        "<p><strong>Application Error:</strong> %s</p>",
-        result.message
-      )
+  const FNAME = 'doGet';
+  debugLog(FNAME, 'doGet request received', { params: e.parameter });
+  try {
+    const html = HtmlService.createTemplateFromFile('Dashboard');
+    // We don't pass any data to the template here;
+    // all data is fetched by the client-side JS after load.
+    const output = html.evaluate();
+    output
+      .setTitle('Nijjara ERP')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT)
+      .addMetaTag(
+        'viewport',
+        'width=device-width, initial-scale=1, shrink-to-fit=no'
+      );
+    return output;
+  } catch (err) {
+    debugLog(FNAME, `Error rendering Dashboard: ${err.message}`, {
+      error: err,
+      stack: err.stack,
+    });
+    return HtmlService.createHtmlOutput(
+      `<b>Failed to load ERP:</b><br><pre>${err.message}\n${err.stack}</pre>`
     );
-    html.setTitle("Application Error");
-    return html;
   }
+}
 
-  return result;
+/**
+ * @function include
+ * @description A helper function to include the content of another .html file
+ * (like CSS or JS) into the main template.
+ * Called from within Dashboard.html using <?!= include('ViewTab.css'); ?>
+ * @param {string} filename The name of the file (e.g., "ViewTab.css" or "ViewTab.js").
+ * @returns {string} The raw HTML/CSS/JS content of the file.
+ */
+function include(filename) {
+  // We use .html extension because that's what Apps Script requires for HtmlService
+  return HtmlService.createHtmlOutputFromFile(filename + '.html').getContent();
 }
 
 /** ---- DATA ACCESS ---- */
