@@ -1,121 +1,278 @@
 /**
  * ============================================================================
- *  NIJJARA ERP - FULL SHEET SETUP SCRIPT
- *  This script creates all system, HR, project, and finance sheets with headers
- *  and seeds base SYS data.
+ * NIJJARA ERP - FULL SHEET SETUP SCRIPT
+ * This script creates all system, HR, project, and finance sheets with headers
+ * and seeds base SYS data. It also includes logic to update the tab register
+ * for the dynamic render engine.
  * ============================================================================
  */
 
-const SYSTEM_USER = "SYSTEM";
-const TARGET_SPREADSHEET_ID = "1Oj7So4c5vBDpvj0pIfDeXz6XxBrY011J4xZwKlSkDzo";
-const TARGET_SPREADSHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1Oj7So4c5vBDpvj0pIfDeXz6XxBrY011J4xZwKlSkDzo/edit";
+const SYSTEM_USER = 'SYSTEM';
+// !!! IMPORTANT: Set this ID to your actual Google Sheet ID before running !!!
+const TARGET_SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+const TARGET_SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit`;
 
 function getTargetSpreadsheet() {
+  const FNAME = 'getTargetSpreadsheet';
   try {
     const active = SpreadsheetApp.getActiveSpreadsheet();
     if (active) {
-      const activeId = typeof active.getId === "function" ? active.getId() : "";
+      const activeId = typeof active.getId === 'function' ? active.getId() : '';
+      debugLog(FNAME, 'Active spreadsheet found', { activeId });
       if (!TARGET_SPREADSHEET_ID || activeId === TARGET_SPREADSHEET_ID) {
+        debugLog(FNAME, 'Using active spreadsheet.');
         return active;
       }
+      debugLog(FNAME, 'Active spreadsheet ID does not match target ID.', {
+        activeId,
+        targetId: TARGET_SPREADSHEET_ID,
+      });
     }
   } catch (err) {
-    Logger.log(`getTargetSpreadsheet active lookup failed: ${err}`);
+    debugLog(FNAME, `Active spreadsheet lookup failed: ${err.message || err}`, {
+      error: err,
+    });
   }
 
-  if (TARGET_SPREADSHEET_ID) {
-    return SpreadsheetApp.openById(TARGET_SPREADSHEET_ID);
+  if (TARGET_SPREADSHEET_ID && TARGET_SPREADSHEET_ID !== 'YOUR_SPREADSHEET_ID_HERE') {
+    try {
+      debugLog(FNAME, 'Attempting to open spreadsheet by ID.', {
+        targetId: TARGET_SPREADSHEET_ID,
+      });
+      const ssById = SpreadsheetApp.openById(TARGET_SPREADSHEET_ID);
+      debugLog(FNAME, 'Successfully opened spreadsheet by ID.');
+      return ssById;
+    } catch (err) {
+      debugLog(
+        FNAME,
+        `Failed to open spreadsheet by ID: ${err.message || err}`,
+        { targetId: TARGET_SPREADSHEET_ID, error: err }
+      );
+    }
+  } else {
+    debugLog(FNAME, 'TARGET_SPREADSHEET_ID is not set or is placeholder.', {
+      targetId: TARGET_SPREADSHEET_ID,
+    });
   }
 
   throw new Error(
-    "Unable to resolve target spreadsheet. Set TARGET_SPREADSHEET_ID to the deployment workbook ID."
+    'Unable to resolve target spreadsheet. Set TARGET_SPREADSHEET_ID in Setup.js to the deployment workbook ID.'
   );
 }
 
 function ensureISODate(date) {
-  if (!(date instanceof Date)) return new Date().toISOString().split("T")[0];
-  return date.toISOString().split("T")[0];
+  if (!(date instanceof Date) || isNaN(date.getTime())) {
+    return new Date().toISOString().split('T')[0];
+  }
+  return date.toISOString().split('T')[0];
 }
 
 function appendRowsIfEmpty(sheet, rows) {
-  if (sheet.getLastRow() <= 1)
-    sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  const FNAME = 'appendRowsIfEmpty';
+  if (!sheet || !rows || rows.length === 0) {
+    debugLog(FNAME, 'Skipped: Invalid sheet or empty rows.', {
+      sheetName: sheet ? sheet.getName() : 'N/A',
+      rowCount: rows ? rows.length : 0,
+    });
+    return;
+  }
+
+  try {
+    const lastRow = sheet.getLastRow();
+    debugLog(FNAME, 'Checking sheet status.', {
+      sheetName: sheet.getName(),
+      lastRow,
+    });
+    if (lastRow <= 1) {
+      sheet
+        .getRange(2, 1, rows.length, rows[0].length)
+        .setValues(rows);
+      debugLog(FNAME, 'Append successful.', {
+        sheetName: sheet.getName(),
+        appended: rows.length,
+      });
+    } else {
+      debugLog(FNAME, 'Skipped: Sheet already has data beyond header.', {
+        sheetName: sheet.getName(),
+        lastRow,
+      });
+    }
+  } catch (err) {
+    debugLog(FNAME, `Error appending rows: ${err.message || err}`, {
+      sheetName: sheet.getName(),
+      error: err,
+    });
+  }
 }
 
 function appendRowsIfMissing(sheet, rows, keyIndexes) {
+  const FNAME = 'appendRowsIfMissing';
   if (!sheet || !Array.isArray(rows) || !rows.length) {
+    debugLog(FNAME, 'Skipped: Invalid sheet or empty rows.', {
+      sheetName: sheet ? sheet.getName() : 'N/A',
+      rowCount: rows ? rows.length : 0,
+    });
     return;
   }
 
   const keys = Array.isArray(keyIndexes) && keyIndexes.length ? keyIndexes : null;
   if (!keys) {
+    debugLog(FNAME, 'No keyIndexes provided, falling back to appendRowsIfEmpty logic.', {
+      sheetName: sheet.getName(),
+    });
     appendRowsIfEmpty(sheet, rows);
     return;
   }
 
-  const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) {
-    appendRowsIfEmpty(sheet, rows);
-    return;
-  }
-
-  const width = Math.max(sheet.getLastColumn(), rows[0].length);
-  const existingData = sheet.getRange(2, 1, lastRow - 1, width).getValues();
-  const existingKeys = new Set();
-
-  existingData.forEach((row) => {
-    const signature = keys
-      .map((index) => String(row[index] ?? ""))
-      .join("||");
-    if (signature) {
-      existingKeys.add(signature);
+  try {
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      debugLog(FNAME, 'Sheet empty or only header, appending all rows via appendRowsIfEmpty.', {
+        sheetName: sheet.getName(),
+      });
+      appendRowsIfEmpty(sheet, rows);
+      return;
     }
-  });
 
-  const newRows = [];
-  rows.forEach((row) => {
-    const signature = keys
-      .map((index) => String(row[index] ?? ""))
-      .join("||");
-    if (!signature) return;
-    if (!existingKeys.has(signature)) {
-      newRows.push(row);
-      existingKeys.add(signature);
+    const width = Math.max(sheet.getLastColumn(), rows[0].length);
+    const existingData = sheet.getRange(2, 1, lastRow - 1, width).getValues();
+    const existingKeys = new Set();
+    debugLog(FNAME, `Fetched ${existingData.length} existing rows to build keys.`, {
+      sheetName: sheet.getName(),
+    });
+
+    existingData.forEach((row, index) => {
+      try {
+        const signature = keys
+          .map((keyIndex) => String(row[keyIndex] ?? ''))
+          .join('||');
+        if (signature) {
+          existingKeys.add(signature);
+        } else {
+          debugLog(FNAME, `Warning: Empty signature generated for existing row index ${index}`, {
+            sheetName: sheet.getName(),
+            rowIndex: index + 2,
+          });
+        }
+      } catch (keyError) {
+        debugLog(FNAME, `Error generating signature for existing row index ${index}: ${keyError.message || keyError}`, {
+          sheetName: sheet.getName(),
+          rowIndex: index + 2,
+          rowData: JSON.stringify(row),
+          error: keyError,
+        });
+      }
+    });
+
+    const newRows = [];
+    rows.forEach((row, index) => {
+      try {
+        const signature = keys
+          .map((keyIndex) => String(row[keyIndex] ?? ''))
+          .join('||');
+        if (!signature) {
+          debugLog(FNAME, `Warning: Empty signature generated for input row index ${index}. Skipping.`, {
+            sheetName: sheet.getName(),
+            inputIndex: index,
+          });
+          return;
+        }
+        if (!existingKeys.has(signature)) {
+          newRows.push(row);
+          existingKeys.add(signature);
+        }
+      } catch (keyError) {
+        debugLog(FNAME, `Error generating signature for input row index ${index}: ${keyError.message || keyError}`, {
+          sheetName: sheet.getName(),
+          inputIndex: index,
+          rowData: JSON.stringify(row),
+          error: keyError,
+        });
+      }
+    });
+
+    debugLog(FNAME, `Found ${newRows.length} new rows to append out of ${rows.length} input rows.`, {
+      sheetName: sheet.getName(),
+    });
+
+    if (!newRows.length) {
+      debugLog(FNAME, 'No new rows to append.', { sheetName: sheet.getName() });
+      return;
     }
-  });
 
-  if (!newRows.length) {
-    return;
+    sheet
+      .getRange(lastRow + 1, 1, newRows.length, rows[0].length)
+      .setValues(newRows);
+    debugLog(FNAME, 'Append successful.', {
+      sheetName: sheet.getName(),
+      appended: newRows.length,
+      startRow: lastRow + 1,
+    });
+  } catch (err) {
+    debugLog(FNAME, `Error processing rows: ${err.message || err}`, {
+      sheetName: sheet.getName(),
+      error: err,
+    });
   }
-
-  sheet
-    .getRange(lastRow + 1, 1, newRows.length, rows[0].length)
-    .setValues(newRows);
 }
 
 function createOrClearSheet(ss, name, headers) {
+  const FNAME = 'createOrClearSheet';
+  debugLog(FNAME, 'Processing sheet.', { sheetName: name });
   let sh = ss.getSheetByName(name);
-  if (!sh) sh = ss.insertSheet(name);
-  else sh.clear();
+  try {
+    if (!sh) {
+      debugLog(FNAME, 'Sheet not found, creating.', { sheetName: name });
+      sh = ss.insertSheet(name);
+      logSetupAction('CREATE_SHEET', name, name, 'Created missing sheet during setup.');
+    } else {
+      debugLog(FNAME, 'Sheet found, clearing content.', { sheetName: name });
+      sh.clearContents();
+      logSetupAction('CLEAR_SHEET', name, name, 'Cleared sheet content during setup.');
+    }
 
-  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
-  sh.getRange(1, 1, 1, headers.length)
-    .setFontWeight("bold")
-    .setBackground("#E0E0E0");
-  return sh;
+    if (headers && headers.length > 0) {
+      debugLog(FNAME, `Setting ${headers.length} headers.`, {
+        sheetName: name,
+        headers,
+      });
+      sh.getRange(1, 1, 1, headers.length)
+        .setValues([headers])
+        .setFontWeight('bold')
+        .setBackground('#E0E0E0');
+    } else {
+      debugLog(FNAME, 'Warning: No headers provided.', { sheetName: name });
+    }
+    return sh;
+  } catch (err) {
+    debugLog(FNAME, `Error processing sheet: ${err.message || err}`, {
+      sheetName: name,
+      error: err,
+    });
+    throw err;
+  }
 }
 
 function ensureSheetsAvailable(ss, sheetNames, contextLabel) {
-  const missing = sheetNames.filter((name) => !ss.getSheetByName(name));
-  if (missing.length) {
-    Logger.log(
-      `⚠️ ${contextLabel} seeding skipped; missing sheet(s): ${missing.join(
-        ", "
-      )}`
-    );
+  const FNAME = 'ensureSheetsAvailable';
+  if (!ss || !Array.isArray(sheetNames) || !sheetNames.length) {
+    debugLog(FNAME, 'Skipped: Invalid spreadsheet or sheetNames array.', { contextLabel });
     return false;
   }
+
+  const allSheetNames = new Set(ss.getSheets().map((sheet) => sheet.getName()));
+  const missing = sheetNames.filter((name) => !allSheetNames.has(name));
+
+  if (missing.length) {
+    debugLog(FNAME, `⚠️ ${contextLabel} seeding/operation skipped; missing sheet(s): ${missing.join(', ')}`, {
+      missingSheets: missing,
+    });
+    return false;
+  }
+
+  debugLog(FNAME, `All required sheets available for ${contextLabel}.`, {
+    requiredSheets: sheetNames,
+  });
   return true;
 }
 
@@ -132,12 +289,38 @@ function columnToLetter(columnNumber) {
 }
 
 function applyFormulaToViewSheet(sheet, formula) {
-  if (!sheet) return;
-  const maxRows = sheet.getMaxRows();
-  if (maxRows > 1) {
-    sheet.getRange(2, 1, maxRows - 1, sheet.getMaxColumns()).clearContent();
+  const FNAME = 'applyFormulaToViewSheet';
+  if (!sheet) {
+    debugLog(FNAME, 'Skipped: Invalid sheet object.', { formula });
+    return;
   }
-  sheet.getRange(2, 1).setFormula(formula);
+  const sheetName = sheet.getName();
+  debugLog(FNAME, 'Applying formula.', { sheetName, formula });
+  try {
+    const maxRows = sheet.getMaxRows();
+    if (maxRows > 1) {
+      debugLog(FNAME, 'Clearing content from row 2 down.', { sheetName, maxRows });
+      sheet.getRange(2, 1, maxRows - 1, sheet.getMaxColumns()).clearContent();
+    }
+    sheet.getRange('A2').setFormula(formula);
+    debugLog(FNAME, 'Formula applied successfully.', { sheetName });
+  } catch (err) {
+    debugLog(FNAME, `Error applying formula: ${err.message || err}`, {
+      sheetName,
+      formula,
+      error: err,
+    });
+  }
+}
+
+function debugLog(functionName, message, details = {}) {
+  const logEntry = {
+    timestamp: new Date().toISOString(),
+    function: functionName,
+    message,
+    ...details,
+  };
+  Logger.log(JSON.stringify(logEntry, null, 2));
 }
 
 /** ---------- SCHEMA ---------- **/
@@ -199,6 +382,10 @@ function getSheetSchemas() {
       "Route",
       "Sort_Order",
       "Source_Sheet",
+      "Render_Mode",
+      "Add_Form_ID",
+      "View_Label",
+      "Add_Label",
       "Permissions",
     ],
     SYS_Dropdowns: [
@@ -891,491 +1078,263 @@ function getSheetSchemas() {
     ],
     FIN_KPIs: ["Metric", "Value", "Notes"],
   };
-  schemas.PV_PRJ_Main = Array.isArray(schemas.PRJ_Main) ? schemas.PRJ_Main.slice() : [];
-  schemas.PV_PRJ_Tasks = Array.isArray(schemas.PRJ_Tasks) ? schemas.PRJ_Tasks.slice() : [];
-  schemas.PV_PRJ_Costs = Array.isArray(schemas.PRJ_Costs) ? schemas.PRJ_Costs.slice() : [];
-  schemas.PV_PRJ_Clients = Array.isArray(schemas.PRJ_Clients) ? schemas.PRJ_Clients.slice() : [];
-  schemas.PV_PRJ_Schedule_Calc = Array.isArray(schemas.PRJ_Schedule_Calc) ? schemas.PRJ_Schedule_Calc.slice() : [];
-  schemas.PV_PRJ_Dashboard = Array.isArray(schemas.PRJ_Dashboard) ? schemas.PRJ_Dashboard.slice() : [];
-  schemas.PV_PRJ_KPIs = Array.isArray(schemas.PRJ_KPIs) ? schemas.PRJ_KPIs.slice() : [];
-  schemas.PV_PRJ_InDirExp_Allocations = Array.isArray(schemas.PRJ_InDirExp_Allocations) ? schemas.PRJ_InDirExp_Allocations.slice() : [];
-  schemas.PV_FIN_Project_Revenue = Array.isArray(schemas.FIN_PROJECT_REVENUE) ? schemas.FIN_PROJECT_REVENUE.slice() : [];
-  schemas.PV_FIN_Revenues = Array.isArray(schemas.FIN_REVENUES) ? schemas.FIN_REVENUES.slice() : [];
-  schemas.PV_FIN_Journal = Array.isArray(schemas.FIN_JOURNAL) ? schemas.FIN_JOURNAL.slice() : [];
-  schemas.PV_FIN_Custody = Array.isArray(schemas.FIN_CUSTODY) ? schemas.FIN_CUSTODY.slice() : [];
-  schemas.PV_FIN_GL_Totals = Array.isArray(schemas.FIN_GL_Totals) ? schemas.FIN_GL_Totals.slice() : [];
-  schemas.PV_FIN_KPIs = Array.isArray(schemas.FIN_KPIs) ? schemas.FIN_KPIs.slice() : [];
-  schemas.PV_FIN_InDirExpense_Once = Array.isArray(schemas.FIN_InDirExpense_Once) ? schemas.FIN_InDirExpense_Once.slice() : [];
-  schemas.PV_FIN_InDirExpense_Repeated = Array.isArray(schemas.FIN_InDirExpense_Repeated) ? schemas.FIN_InDirExpense_Repeated.slice() : [];
-  schemas.PV_HR_Employees = Array.isArray(schemas.HR_EMPLOYEES) ? schemas.HR_EMPLOYEES.slice() : [];
-  schemas.PV_HR_Departments = Array.isArray(schemas.HR_DEPARTMENTS) ? schemas.HR_DEPARTMENTS.slice() : [];
-  schemas.PV_HR_Attendance = Array.isArray(schemas.HR_ATTENDANCE) ? schemas.HR_ATTENDANCE.slice() : [];
-  schemas.PV_HR_Leave = Array.isArray(schemas.HR_LEAVE) ? schemas.HR_LEAVE.slice() : [];
-  schemas.PV_HR_Leave_Requests = Array.isArray(schemas.HR_LEAVE_REQUESTS) ? schemas.HR_LEAVE_REQUESTS.slice() : [];
-  schemas.PV_HR_Advances = Array.isArray(schemas.HR_ADVANCES) ? schemas.HR_ADVANCES.slice() : [];
-  schemas.PV_HR_Deductions = Array.isArray(schemas.HR_DEDUCTIONS) ? schemas.HR_DEDUCTIONS.slice() : [];
-  schemas.PV_HR_Payroll = Array.isArray(schemas.HR_PAYROLL) ? schemas.HR_PAYROLL.slice() : [];
+  const baseToPvMap = {
+      PRJ_Main: 'PV_PRJ_Main',
+      PRJ_Tasks: 'PV_PRJ_Tasks',
+      PRJ_Costs: 'PV_PRJ_Costs',
+      PRJ_Clients: 'PV_PRJ_Clients',
+      PRJ_Schedule_Calc: 'PV_PRJ_Schedule_Calc',
+      PRJ_Dashboard: 'PV_PRJ_Dashboard',
+      PRJ_KPIs: 'PV_PRJ_KPIs',
+      PRJ_InDirExp_Allocations: 'PV_PRJ_InDirExp_Allocations',
+      PRJ_Materials: 'PV_PRJ_Materials',
+      FIN_DirectExpenses: 'PV_FIN_DirectExpenses_View',
+      FIN_InDirExpense_Repeated: 'PV_FIN_InDirExpense_Repeated_View',
+      FIN_InDirExpense_Once: 'PV_FIN_InDirExpense_Once_View',
+      FIN_Project_Revenue: 'PV_FIN_Project_Revenue_View',
+      FIN_Revenues: 'PV_FIN_Revenues_View',
+      FIN_Journal: 'PV_FIN_Journal_View',
+      FIN_Custody: 'PV_FIN_Custody_View',
+      FIN_GL_Totals: 'PV_FIN_GL_Totals_View',
+      FIN_KPIs: 'PV_FIN_KPIs',
+      HR_Employees: 'PV_HR_Employees',
+      HR_Departments: 'PV_HR_Departments',
+      HR_Attendance: 'PV_HR_Attendance',
+      HR_Leave: 'PV_HR_Leave',
+      HR_Leave_Requests: 'PV_HR_Leave_Requests',
+      HR_Advances: 'PV_HR_Advances',
+      HR_Deductions: 'PV_HR_Deductions',
+      HR_Payroll: 'PV_HR_Payroll',
+      SYS_Users: 'PV_SYS_Users_Table',
+      FIN_InDirExpense_Repeated_View: 'PV_FIN_InDirExpense_Repeated_View',
+      FIN_InDirExpense_Once_View: 'PV_FIN_InDirExpense_Once_View',
+      FIN_Project_Revenue_View: 'PV_FIN_Project_Revenue_View',
+      FIN_Revenues_View: 'PV_FIN_Revenues_View',
+      FIN_Journal_View: 'PV_FIN_Journal_View',
+      FIN_Custody_View: 'PV_FIN_Custody_View',
+      FIN_GL_Totals_View: 'PV_FIN_GL_Totals_View',
+      FIN_DirectExpenses_View: 'PV_FIN_DirectExpenses_View',
+  };
+
+  for (const baseName in baseToPvMap) {
+    const pvName = baseToPvMap[baseName];
+    if (!schemas[pvName] && schemas[baseName]) {
+      schemas[pvName] = Array.isArray(schemas[baseName]) ? schemas[baseName].slice() : [];
+      debugLog('getSheetSchemas', `Copied schema from ${baseName} to ${pvName} as it was missing.`);
+    } else if (!schemas[pvName] && !schemas[baseName]) {
+      debugLog('getSheetSchemas', `Warning: Both ${baseName} and ${pvName} schemas are missing.`);
+    }
+  }
 
   return schemas;
 }
 
 /** ---------- SEED DATA ---------- **/
 function seedSysSettings(ss) {
-  const sh = ss.getSheetByName("SYS_Settings");
+  const FNAME = 'seedSysSettings';
+  const sh = ss.getSheetByName('SYS_Settings');
+  if (!sh) {
+    debugLog(FNAME, 'Skipped: Sheet SYS_Settings not found.');
+    return;
+  }
   const now = new Date();
   const rows = [
-    ["APP_NAME", "Nijjara_ERP", "Application name", SYSTEM_USER, now, now],
-    ["DEFAULT_CURRENCY", "EGP", "Default currency", SYSTEM_USER, now, now],
+    ['APP_NAME', 'Nijjara_ERP', 'Application name', SYSTEM_USER, now, now],
+    ['DEFAULT_CURRENCY', 'EGP', 'Default currency', SYSTEM_USER, now, now],
     [
-      "BOOTSTRAP_TIMESTAMP",
+      'BOOTSTRAP_TIMESTAMP',
       now.toISOString(),
-      "Boot timestamp",
+      'Boot timestamp',
       SYSTEM_USER,
       now,
       now,
     ],
   ];
+  debugLog(FNAME, 'Attempting to seed settings.');
   appendRowsIfEmpty(sh, rows);
 }
 
 function seedSysTabRegister(ss) {
-  const sh = ss.getSheetByName("SYS_Tab_Register");
+  const FNAME = 'seedSysTabRegister';
+  const sh = ss.getSheetByName('SYS_Tab_Register');
+  if (!sh) {
+    debugLog(FNAME, 'Skipped: Sheet SYS_Tab_Register not found.');
+    return;
+  }
   const rows = [
-    [
-      "TAB",
-      "Tab_SYS_Management",
-      "System's Management",
-      "إدارة النظام",
-      "",
-      "",
-      "",
-      "",
-      1,
-      "",
-      "SYS_VIEW",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "System's Management",
-      "إدارة النظام",
-      "Sub_SYS_Overview",
-      "Overview",
-      "نظرة عامة",
-      "/sys",
-      1,
-      "PV_SYS_Overview",
-      "SYS_VIEW",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "System's Management",
-      "إدارة النظام",
-      "Sub_SYS_Users",
-      "Users",
-      "المستخدمون",
-      "/sys/users",
-      2,
-      "PV_SYS_Users_Table",
-      "SYS_VIEW",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "System's Management",
-      "إدارة النظام",
-      "Sub_SYS_Roles",
-      "Roles",
-      "الأدوار",
-      "/sys/roles",
-      3,
-      "SYS_Roles",
-      "SYS_VIEW",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "System's Management",
-      "إدارة النظام",
-      "Sub_SYS_Permissions",
-      "Permissions",
-      "الأذونات",
-      "/sys/permissions",
-      4,
-      "SYS_Permissions",
-      "SYS_VIEW",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "System's Management",
-      "إدارة النظام",
-      "Sub_SYS_RolePerms",
-      "Role Permissions",
-      "تعيين أذونات الأدوار",
-      "/sys/role-perms",
-      5,
-      "SYS_Role_Permissions",
-      "SYS_VIEW",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "System's Management",
-      "إدارة النظام",
-      "Sub_SYS_Properties",
-      "User Properties",
-      "خصائص المستخدم",
-      "/sys/properties",
-      6,
-      "SYS_User_Properties",
-      "SYS_VIEW",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "System's Management",
-      "إدارة النظام",
-      "Sub_SYS_Sessions",
-      "Sessions",
-      "الجلسات",
-      "/sys/sessions",
-      7,
-      "SYS_Sessions",
-      "SYS_VIEW",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "System's Management",
-      "إدارة النظام",
-      "Sub_SYS_Audit",
-      "Audit",
-      "التدقيق",
-      "/sys/audit",
-      8,
-      "SYS_Audit_Report",
-      "SYS_VIEW",
-    ],
-    [
-      "TAB",
-      "Tab_PRJ_Management",
-      "Projects",
-      "إدارة المشاريع",
-      "",
-      "",
-      "",
-      "",
-      20,
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "Projects",
-      "إدارة المشاريع",
-      "Sub_PRJ_Main",
-      "Projects",
-      "قائمة المشاريع",
-      "/projects",
-      1,
-      "PV_PRJ_Main",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "Projects",
-      "إدارة المشاريع",
-      "Sub_PRJ_Tasks",
-      "Tasks",
-      "المهام",
-      "/projects/tasks",
-      2,
-      "PV_PRJ_Tasks",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "Projects",
-      "إدارة المشاريع",
-      "Sub_PRJ_Costs",
-      "Costs",
-      "التكاليف",
-      "/projects/costs",
-      3,
-      "PV_PRJ_Costs",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "Projects",
-      "إدارة المشاريع",
-      "Sub_PRJ_Materials",
-      "Materials",
-      "المواد",
-      "/projects/materials",
-      4,
-      "PV_PRJ_Materials",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "Projects",
-      "إدارة المشاريع",
-      "Sub_PRJ_Revenue",
-      "Revenue",
-      "الإيرادات",
-      "/projects/revenue",
-      5,
-      "PV_FIN_Project_Revenue_View",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "TAB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "",
-      "",
-      "",
-      "",
-      30,
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "Sub_FIN_Direct",
-      "Direct Expenses",
-      "المصاريف المباشرة",
-      "/fin/direct",
-      1,
-      "PV_FIN_DirectExpenses_View",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "Sub_FIN_Indirect_Rep",
-      "Indirect Expenses (Repeat)",
-      "المصاريف غير المباشرة (متكررة)",
-      "/fin/indirect-rep",
-      2,
-      "PV_FIN_InDirExpense_Repeated_View",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "Sub_FIN_Indirect_Once",
-      "Indirect Expenses (Once)",
-      "المصاريف غير المباشرة (مرة واحدة)",
-      "/fin/indirect-once",
-      3,
-      "PV_FIN_InDirExpense_Once_View",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "Sub_FIN_PrjRevenue",
-      "Project Revenue",
-      "إيرادات المشاريع",
-      "/fin/prj-revenue",
-      4,
-      "PV_FIN_Project_Revenue_View",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "Sub_FIN_GenRevenue",
-      "General Revenues",
-      "الإيرادات العامة",
-      "/fin/gen-revenue",
-      5,
-      "PV_FIN_Revenues_View",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "Sub_FIN_Journal",
-      "Journal",
-      "دفتر اليومية",
-      "/fin/journal",
-      6,
-      "PV_FIN_Journal_View",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "Sub_FIN_Custody",
-      "Custody",
-      "العهد",
-      "/fin/custody",
-      7,
-      "PV_FIN_Custody_View",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "Sub_FIN_GL",
-      "GL Totals",
-      "إجمالي الحسابات",
-      "/fin/gl",
-      8,
-      "PV_FIN_GL_Totals_View",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "Finance Management",
-      "إدارة المالية",
-      "Sub_FIN_KPIs",
-      "KPIs",
-      "المؤشرات الرئيسية",
-      "/fin/kpis",
-      9,
-      "PV_FIN_KPIs",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "TAB",
-      "Tab_HR_Management",
-      "HR Management",
-      "إدارة الموارد البشرية",
-      "",
-      "",
-      "",
-      "",
-      40,
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "HR Management",
-      "إدارة الموارد البشرية",
-      "Sub_HR_Employees",
-      "Employees",
-      "الموظفون",
-      "/hr/employees",
-      1,
-      "PV_HR_Employees",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "HR Management",
-      "إدارة الموارد البشرية",
-      "Sub_HR_Attendance",
-      "Attendance",
-      "الحضور",
-      "/hr/attendance",
-      2,
-      "PV_HR_Attendance",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "HR Management",
-      "إدارة الموارد البشرية",
-      "Sub_HR_Leave",
-      "Leave",
-      "الإجازات",
-      "/hr/leave",
-      3,
-      "PV_HR_Leave",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "HR Management",
-      "إدارة الموارد البشرية",
-      "Sub_HR_Leave_Requests",
-      "Leave Requests",
-      "طلبات الإجازة",
-      "/hr/leave-requests",
-      4,
-      "PV_HR_Leave_Requests",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "HR Management",
-      "إدارة الموارد البشرية",
-      "Sub_HR_Advances",
-      "Advances",
-      "السلف",
-      "/hr/advances",
-      5,
-      "PV_HR_Advances",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "HR Management",
-      "إدارة الموارد البشرية",
-      "Sub_HR_Deductions",
-      "Deductions",
-      "الخصومات",
-      "/hr/deductions",
-      6,
-      "PV_HR_Deductions",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "HR Management",
-      "إدارة الموارد البشرية",
-      "Sub_HR_Payroll",
-      "Payroll",
-      "الرواتب",
-      "/hr/payroll",
-      7,
-      "PV_HR_Payroll",
-      "HR_VIEW_EMPLOYEES",
-    ],
+    ['TAB', 'Tab_SYS_Management', 'System Management', 'إدارة النظام', '', '', '', '/sys', 1, 'SYS_Settings', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Overview', 'Overview', 'نظرة عامة', '/sys/overview', 1, 'SYS_Profile_View', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Users', 'Users', 'المستخدمون', '/sys/users', 2, 'PV_SYS_Users_Table', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Roles', 'Roles', 'الأدوار', '/sys/roles', 3, 'SYS_Roles', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Permissions', 'Permissions', 'الأذونات', '/sys/permissions', 4, 'SYS_Permissions', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_RolePerms', 'Role Permissions', 'تعيين أذونات الأدوار', '/sys/role-perms', 5, 'SYS_Role_Permissions', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Properties', 'User Properties', 'خصائص المستخدم', '/sys/properties', 6, 'SYS_User_Properties', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Sessions', 'Sessions', 'الجلسات', '/sys/sessions', 7, 'SYS_Sessions', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Audit', 'Audit Logs', 'سجل التدقيق', '/sys/audit', 8, 'SYS_Audit_Log', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Settings', 'Settings', 'الإعدادات', '/sys/settings', 9, 'SYS_Settings', '', '', '', '', 'SYS_VIEW_USERS'],
+
+    ['TAB', 'Tab_HR_Management', 'Human Resources (HR)', 'الموارد البشرية', '', '', '', '/hr', 20, 'HR_Employees', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_KPIs', 'KPIs', 'مؤشرات الأداء', '/hr/kpis', 1, 'HR_KPIs', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Employees', 'Employees', 'الموظفون', '/hr/employees', 2, 'HR_Employees', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Attendance', 'Attendance', 'الحضور والانصراف', '/hr/attendance', 3, 'HR_Attendance', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_LeaveReqs', 'Leave Requests', 'طلبات الإجازة', '/hr/leave-reqs', 4, 'HR_Leave_Requests', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Absence', 'Absence Deductions', 'خصومات الغياب', '/hr/absence', 5, 'HR_Absence_Deductions', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Payroll', 'Payroll', 'الرواتب', '/hr/payroll', 6, 'HR_Payroll', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Advances', 'Advances', 'السلف', '/hr/advances', 7, 'HR_Advances', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Overtime', 'Overtime', 'الوقت الإضافي', '/hr/overtime', 8, 'HR_OverTime', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Penalties', 'Penalties & Deductions', 'الجزاءات والخصومات', '/hr/penalties', 9, 'HR_Deductions', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Depts', 'Departments', 'الأقسام', '/hr/depts', 10, 'HR_Departments', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_LeaveAnalysis', 'Leave Analysis', 'تحليل الإجازات', '/hr/leave-analysis', 11, 'HR_Leave_Analysis', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Holidays', 'Public Holidays', 'العطلات الرسمية', '/hr/holidays', 12, 'SYS_PubHolidays', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+
+    ['TAB', 'Tab_PRJ_Management', 'Projects', 'المشاريع', '', '', '', '/prj', 30, 'PRJ_Main', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_KPIs', 'KPIs', 'مؤشرات الأداء', '/prj/kpis', 1, 'PRJ_KPIs', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_List', 'Project List', 'قائمة المشاريع', '/prj/list', 2, 'PV_PRJ_Main', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Tasks', 'Tasks', 'المهام', '/prj/tasks', 3, 'PV_PRJ_Tasks', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Clients', 'Clients', 'العملاء', '/prj/clients', 4, 'PV_PRJ_Clients', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Materials', 'Materials', 'المواد', '/prj/materials', 5, 'PV_PRJ_Materials', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Schedule', 'Schedule Calculation', 'حساب الجدول الزمني', '/prj/schedule', 6, 'PV_PRJ_Schedule_Calc', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Dashboard', 'Dashboard', 'لوحة المتابعة', '/prj/dashboard', 7, 'PRJ_Dashboard', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Allocations', 'Indirect Expense Allocations', 'توزيع المصروفات غير المباشرة', '/prj/allocations', 8, 'PV_PRJ_InDirExp_Allocations', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+
+    ['TAB', 'Tab_FIN_Management', 'Finance', 'المالية', '', '', '', '/fin', 40, 'FIN_Journal', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_KPIs', 'KPIs', 'مؤشرات الأداء', '/fin/kpis', 1, 'FIN_KPIs', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Direct', 'Direct Expenses', 'المصروفات المباشرة', '/fin/direct', 2, 'PV_FIN_DirectExpenses_View', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Indirect_Rep', 'Indirect Expenses (Repeated)', 'مصروفات غير مباشرة (متكررة)', '/fin/indirect-rep', 3, 'FIN_InDirExpense_Repeated', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Indirect_Once', 'Indirect Expenses (Once)', 'مصروفات غير مباشرة (مرة واحدة)', '/fin/indirect-once', 4, 'FIN_InDirExpense_Once', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_PrjRevenue', 'Project Revenue', 'إيرادات المشاريع', '/fin/prj-revenue', 5, 'FIN_Project_Revenue', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_GenRevenue', 'General Revenues', 'الإيرادات العامة', '/fin/gen-revenue', 6, 'FIN_Revenues', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Journal', 'Journal', 'قيود اليومية', '/fin/journal', 7, 'FIN_Journal', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Custody', 'Custody', 'العهد', '/fin/custody', 8, 'FIN_Custody', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_GL', 'GL Totals', 'ملخص الأستاذ العام', '/fin/gl', 9, 'FIN_GL_Totals', '', '', '', '', 'FIN_VIEW_REPORTS'],
   ];
-  appendRowsIfEmpty(sh, rows);
+  debugLog(FNAME, 'Attempting to seed initial tab register data.');
+  appendRowsIfMissing(sh, rows, [0, 1, 4]);
+}
+
+function updateTabRegisterRenderLogic(ss) {
+  const FNAME = 'updateTabRegisterRenderLogic';
+  debugLog(FNAME, 'Starting update process for SYS_Tab_Register render logic columns.');
+  const tabSheet = ss.getSheetByName('SYS_Tab_Register');
+  const formSheet = ss.getSheetByName('SYS_Dynamic_Forms');
+
+  if (!tabSheet) {
+    debugLog(FNAME, 'FAILED: SYS_Tab_Register sheet not found.');
+    return;
+  }
+  if (!formSheet) {
+    debugLog(FNAME, 'FAILED: SYS_Dynamic_Forms sheet not found (needed for Add_Form_ID lookup).');
+    return;
+  }
+
+  try {
+    const tabData = tabSheet.getDataRange().getValues();
+    const headers = tabData[0];
+    const updatedData = [headers];
+
+    const colIdx = {
+      recordType: headers.indexOf('Record_Type'),
+      subId: headers.indexOf('Sub_ID'),
+      subLabelEn: headers.indexOf('Sub_Label_EN'),
+      renderMode: headers.indexOf('Render_Mode'),
+      addFormId: headers.indexOf('Add_Form_ID'),
+      viewLabel: headers.indexOf('View_Label'),
+      addLabel: headers.indexOf('Add_Label'),
+    };
+
+    for (const key in colIdx) {
+      if (colIdx[key] === -1) {
+        debugLog(FNAME, `FAILED: Missing required column in SYS_Tab_Register: ${key}`);
+        return;
+      }
+    }
+    debugLog(FNAME, 'Found required column indices', colIdx);
+
+    const formDefinitions = getDynamicFormDefinitions();
+    const formIdLookup = new Map();
+    formDefinitions.forEach((formRow) => {
+      const formId = formRow[0];
+      const associatedSubId = formRow[2];
+      if (formId && associatedSubId && formId.startsWith('FORM_') && formId.includes('_Add')) {
+        if (!formIdLookup.has(associatedSubId)) {
+          formIdLookup.set(associatedSubId, formId);
+        }
+      }
+    });
+    debugLog(FNAME, `Built Add_Form_ID lookup map with ${formIdLookup.size} entries.`);
+
+    for (let i = 1; i < tabData.length; i++) {
+      const row = tabData[i].slice();
+      const recordType = row[colIdx.recordType];
+      const subId = row[colIdx.subId];
+      const subLabelEn = row[colIdx.subLabelEn];
+
+      if (recordType === 'SUB') {
+        let renderMode = 'ViewAdd';
+        let addFormId = '';
+        let viewLabel = `View ${subLabelEn || 'Items'}`;
+        let addLabel = `Add ${subLabelEn || 'Item'}`;
+
+        if (subId.includes('_Overview') || subId.endsWith('_KPIs') || subId.endsWith('_Dashboard')) {
+          renderMode = 'Dashboard';
+          viewLabel = '';
+          addLabel = '';
+        } else {
+          if (formIdLookup.has(subId)) {
+            addFormId = formIdLookup.get(subId);
+            const matchingFormDef = formDefinitions.find((def) => def[0] === addFormId);
+            if (matchingFormDef && matchingFormDef[1]) {
+              addLabel = matchingFormDef[1];
+            }
+          } else {
+            debugLog(FNAME, `Warning: Could not find matching 'Add' Form_ID for Sub_ID: ${subId}. Add_Form_ID will be empty.`, {
+              rowIndex: i + 1,
+            });
+          }
+        }
+
+        row[colIdx.renderMode] = renderMode;
+        row[colIdx.addFormId] = addFormId;
+        row[colIdx.viewLabel] = viewLabel;
+        row[colIdx.addLabel] = addLabel;
+      } else {
+        row[colIdx.renderMode] = '';
+        row[colIdx.addFormId] = '';
+        row[colIdx.viewLabel] = '';
+        row[colIdx.addLabel] = '';
+      }
+
+      updatedData.push(row);
+    }
+
+    debugLog(FNAME, 'Clearing existing data (keeping header format).');
+    if (tabSheet.getLastRow() > 1) {
+      tabSheet.getRange(2, 1, tabSheet.getLastRow() - 1, headers.length).clearContent();
+    }
+
+    if (updatedData.length > 1) {
+      const dataToWrite = updatedData.slice(1);
+      debugLog(FNAME, `Writing ${dataToWrite.length} updated rows back to sheet.`);
+      tabSheet.getRange(2, 1, dataToWrite.length, headers.length).setValues(dataToWrite);
+    } else {
+      debugLog(FNAME, 'No data rows to write back after update.');
+    }
+
+    logSetupAction('UPDATE_RENDER_LOGIC', 'SYS_Tab_Register', 'SYS_Tab_Register', `Updated ${updatedData.length - 1} rows with render engine columns.`);
+    debugLog(FNAME, 'Successfully updated SYS_Tab_Register with render logic.');
+  } catch (err) {
+    debugLog(FNAME, `ERROR during update: ${err.message || err}`, { error: err, stack: err.stack });
+    Logger.log(`ERROR in updateTabRegisterRenderLogic: ${err}`);
+  }
 }
 
 function seedSysProfileView(ss) {
-  const sh = ss.getSheetByName("SYS_Profile_View");
+  const FNAME = 'seedSysProfileView';
+  const sh = ss.getSheetByName('SYS_Profile_View');
+  if (!sh) {
+    debugLog(FNAME, 'Skipped: Sheet SYS_Profile_View not found.');
+    return;
+  }
   const rows = [
     [
       "PV_SYS_Overview_TotalUsers",
@@ -1448,14 +1407,18 @@ function seedSysProfileView(ss) {
       "",
     ],
   ];
-  appendRowsIfEmpty(sh, rows);
+  debugLog(FNAME, `Attempting to seed ${rows.length} profile view definitions.`);
+  appendRowsIfMissing(sh, rows, [0]);
 }
 
 let dynamicFormCache = null;
 function getDynamicFormDefinitions() {
+  const FNAME = 'getDynamicFormDefinitions';
   if (dynamicFormCache) {
+    debugLog(FNAME, 'Returning cached form definitions.');
     return dynamicFormCache;
   }
+  debugLog(FNAME, 'Building form definitions (first time).');
   dynamicFormCache = [
     [
       "FORM_SYS_AddUser",
@@ -6282,12 +6245,19 @@ function getDynamicFormDefinitions() {
       "",
     ],
   ];
+  debugLog(FNAME, `Built ${dynamicFormCache.length} form definition rows.`);
   return dynamicFormCache;
 }
 
 function seedSysDynamicForms(ss) {
-  const sh = ss.getSheetByName("SYS_Dynamic_Forms");
+  const FNAME = 'seedSysDynamicForms';
+  const sh = ss.getSheetByName('SYS_Dynamic_Forms');
+  if (!sh) {
+    debugLog(FNAME, 'Skipped: Sheet SYS_Dynamic_Forms not found.');
+    return;
+  }
   const rows = getDynamicFormDefinitions();
+  debugLog(FNAME, `Attempting to seed/update ${rows.length} form definitions.`);
   appendRowsIfMissing(sh, rows, [0, 5]);
 }
 
@@ -6650,13 +6620,25 @@ function seedSysRoles(ss) {
 
 /** ---------- MAIN RUNNER ---------- **/
 function setupERPAllSheets() {
-  const ss = getTargetSpreadsheet();
-  const schemas = getSheetSchemas();
-  Object.keys(schemas).forEach((name) =>
-    createOrClearSheet(ss, name, schemas[name])
-  );
-  seedCoreData();
-  Logger.log("✅ Full ERP Setup Completed.");
+  const FNAME = 'setupERPAllSheets';
+  debugLog(FNAME, 'Starting full ERP sheet setup (CREATE/CLEAR).');
+  try {
+    const ss = getTargetSpreadsheet();
+    const schemas = getSheetSchemas();
+    Object.keys(schemas).forEach((name) => {
+      debugLog(FNAME, `Ensuring sheet: ${name}`);
+      createOrClearSheet(ss, name, schemas[name]);
+    });
+    debugLog(FNAME, 'All sheets created/cleared. Seeding core data...');
+    seedCoreData(ss);
+    debugLog(FNAME, 'Applying initial render logic to SYS_Tab_Register...');
+    updateTabRegisterRenderLogic(ss);
+    Logger.log('✅ Full ERP Setup Completed (Sheets Created/Cleared & Seeded).');
+    debugLog(FNAME, '✅ Full ERP Setup Completed.');
+  } catch (err) {
+    debugLog(FNAME, `ERROR during full setup: ${err.message || err}`, { error: err, stack: err.stack });
+    Logger.log(`ERROR during setupERPAllSheets: ${err}`);
+  }
 }
 
 /**
@@ -6691,49 +6673,95 @@ function logSetupAction(action, entity, targetSheet, details) {
 }
 
 function auditAndSeedERP() {
-  const ss = getTargetSpreadsheet();
-  const schemas = getSheetSchemas();
-  const created = [];
-  Object.keys(schemas).forEach(function (name) {
-    let sheet = ss.getSheetByName(name);
-    const headers = schemas[name];
-    if (!sheet) {
-      // Sheet missing: create and set headers
-      sheet = ss.insertSheet(name);
-      sheet
-        .getRange(1, 1, 1, headers.length)
-        .setValues([headers])
-        .setFontWeight('bold')
-        .setBackground('#E0E0E0');
-      created.push(name);
-      logSetupAction('CREATE_SHEET', name, name, 'Created missing sheet and set headers');
-    } else {
-      // Check header row; update if mismatched length or labels
-      const existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
-      let mismatch = existing.length !== headers.length;
-      if (!mismatch) {
-        for (var i = 0; i < headers.length; i++) {
-          if (existing[i] !== headers[i]) {
-            mismatch = true;
-            break;
+  const FNAME = 'auditAndSeedERP';
+  debugLog(FNAME, 'Starting ERP Audit & Seed process.');
+  try {
+    const ss = getTargetSpreadsheet();
+    const schemas = getSheetSchemas();
+    const created = [];
+    const updatedHeaders = [];
+
+    Object.keys(schemas).forEach(function (name) {
+      let sheet = ss.getSheetByName(name);
+      const headers = schemas[name];
+      const headerLength = headers ? headers.length : 0;
+      debugLog(FNAME, `Auditing sheet: ${name}`, { expectedHeaders: headerLength });
+
+      if (!sheet) {
+        debugLog(FNAME, `Sheet missing, creating: ${name}`);
+        sheet = ss.insertSheet(name);
+        if (headerLength > 0) {
+          sheet
+            .getRange(1, 1, 1, headerLength)
+            .setValues([headers])
+            .setFontWeight('bold')
+            .setBackground('#E0E0E0');
+          debugLog(FNAME, `Set headers for new sheet: ${name}`);
+        }
+        created.push(name);
+        logSetupAction('CREATE_SHEET', name, name, 'Created missing sheet during audit.');
+      } else {
+        if (headerLength > 0) {
+          const currentHeadersRange = sheet.getRange(1, 1, 1, sheet.getMaxColumns());
+          const currentHeaders = currentHeadersRange.getValues()[0].filter(String);
+          let mismatch = currentHeaders.length !== headerLength;
+          if (!mismatch) {
+            for (let i = 0; i < headerLength; i++) {
+              if (currentHeaders[i] !== headers[i]) {
+                mismatch = true;
+                break;
+              }
+            }
           }
+
+          if (mismatch) {
+            debugLog(FNAME, `Header mismatch found for: ${name}. Updating headers.`, { expected: headers, actual: currentHeaders });
+            sheet.getRange(1, 1, 1, sheet.getMaxColumns()).clearContent();
+            sheet
+              .getRange(1, 1, 1, headerLength)
+              .setValues([headers])
+              .setFontWeight('bold')
+              .setBackground('#E0E0E0');
+            updatedHeaders.push(name);
+            logSetupAction('UPDATE_HEADERS', name, name, 'Updated header row to match schema during audit.');
+          } else {
+            debugLog(FNAME, `Headers match for: ${name}.`);
+          }
+        } else {
+          debugLog(FNAME, `No headers defined in schema for: ${name}, skipping header check.`);
         }
       }
-      if (mismatch) {
-        sheet
-          .getRange(1, 1, 1, headers.length)
-          .setValues([headers])
-          .setFontWeight('bold')
-          .setBackground('#E0E0E0');
-        logSetupAction('UPDATE_HEADERS', name, name, 'Updated header row to match schema');
-      }
-    }
-  });
-  // Seed missing data using existing seeder functions (idempotent)
-  seedCoreData();
-  Logger.log('✅ Audit and seeding complete. Created sheets: ' + created.join(', '));
-  return created;
+    });
+
+    debugLog(FNAME, 'Auditing complete. Seeding core data if missing...');
+    seedCoreData(ss);
+    debugLog(FNAME, 'Applying render logic update to SYS_Tab_Register...');
+    updateTabRegisterRenderLogic(ss);
+
+    Logger.log(`✅ Audit and seeding complete. Created: ${created.join(', ') || 'None'}. Updated Headers: ${updatedHeaders.join(', ') || 'None'}.`);
+    debugLog(FNAME, '✅ Audit & Seed process finished.', { createdSheets: created, updatedHeaders });
+    return { created, updatedHeaders };
+  } catch (err) {
+    debugLog(FNAME, `ERROR during audit & seed: ${err.message || err}`, { error: err, stack: err.stack });
+    Logger.log(`ERROR during auditAndSeedERP: ${err}`);
+  }
 }
+
+function runFullSystemUpdate() {
+  const FNAME = 'runFullSystemUpdate';
+  Logger.log(`Starting Full System Update via ${FNAME}...`);
+  debugLog(FNAME, 'Initiating system update sequence.');
+  try {
+    auditAndSeedERP();
+    Logger.log('✅✅✅ Full System Update Completed Successfully! ✅✅✅');
+    debugLog(FNAME, '✅ Full System Update sequence finished successfully.');
+    SpreadsheetApp.flush();
+  } catch (err) {
+    Logger.log(`❌❌❌ ERROR during Full System Update: ${err.message || err}`);
+    debugLog(FNAME, `❌ Update sequence failed: ${err.message || err}`, { error: err, stack: err.stack });
+  }
+}
+
 /** ---------- Seed Admin User ---------- **/
 function seedAdminUser(ss) {
   const sh = ss.getSheetByName("SYS_Users");
@@ -7211,24 +7239,36 @@ function seedSysRolePermissions(ss) {
   appendRowsIfEmpty(sh, rolePermissions);
   Logger.log("✅ SYS_Role_Permissions seeded successfully.");
 }
-function seedCoreData() {
-  const ss = getTargetSpreadsheet();
-  seedSysSettings(ss);
-  seedSysRoles(ss);
-  seedSysDropdowns(ss);
-  seedSysTabRegister(ss);
-  seedSysProfileView(ss);
-  seedSysDynamicForms(ss);
-  seedSysPermissions(ss);
-  seedSysRolePermissions(ss);
-  seedAdminUser(ss);
-  seedSysUsersView(ss);
-  seedSysUserProperties(ss);
-  seedSysDocuments(ss);
-  seedSysSessions(ss);
-  seedSysAuditLog(ss);
-  seedAllModules(ss);
-  Logger.log("✅ Core SYS + Admin seeding completed.");
+function seedCoreData(ss) {
+  const FNAME = 'seedCoreData';
+  debugLog(FNAME, 'Starting core data seeding.');
+  try {
+    const targetSS = ss || getTargetSpreadsheet();
+
+    seedSysSettings(targetSS);
+    seedSysRoles(targetSS);
+    seedSysPermissions(targetSS);
+    seedSysRolePermissions(targetSS);
+    seedSysDropdowns(targetSS);
+    seedSysTabRegister(targetSS);
+    seedSysDynamicForms(targetSS);
+    seedAdminUser(targetSS);
+
+    seedSysProfileView(targetSS);
+    seedSysUsersView(targetSS);
+    seedSysUserProperties(targetSS);
+    seedSysDocuments(targetSS);
+    seedSysSessions(targetSS);
+    seedSysAuditLog(targetSS);
+
+    seedAllModules(targetSS);
+
+    debugLog(FNAME, '✅ Core data seeding process completed.');
+    Logger.log('✅ Core SYS + Modules seeding completed.');
+  } catch (err) {
+    debugLog(FNAME, `ERROR during core data seeding: ${err.message || err}`, { error: err, stack: err.stack });
+    Logger.log(`ERROR in seedCoreData: ${err}`);
+  }
 }
 /**
  * Main seeder function to populate the 'New Project' form definition
