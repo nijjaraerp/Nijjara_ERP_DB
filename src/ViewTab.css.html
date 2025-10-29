@@ -1,0 +1,107 @@
+<style>
+/* --- View Tab: Container --- */
+.view-tab-content-wrapper {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box; /* Ensures padding is included in height */
+}
+
+/* --- View Tab: Header (Search, Filters, Actions) --- */
+.view-tab-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+  flex-shrink: 0;
+}
+
+.view-search-bar {
+  flex-grow: 1;
+  min-width: 250px;
+}
+
+.view-filter-dropdown {
+  min-width: 180px;
+}
+
+.view-action-btn-group {
+  margin-left: auto; /* Pushes action buttons to the right */
+}
+
+/* --- View Tab: Table Container --- */
+.view-table-container {
+  flex-grow: 1;
+  overflow-y: auto; /* Makes the table body scrollable */
+  overflow-x: auto; /* Allows horizontal scroll for wide tables */
+  margin-top: 1.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem;
+}
+
+/* --- View Tab: Dynamic Table --- */
+.dynamic-view-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dynamic-view-table th,
+.dynamic-view-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #dee2e6;
+  text-align: left;
+  white-space: nowrap; /* Prevents text wrap */
+  vertical-align: middle;
+}
+
+.dynamic-view-table thead {
+  position: -webkit-sticky; /* Safari */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Color-coded header using --parent-color */
+.dynamic-view-table th {
+  background-color: var(--parent-color-light, #f8f9fa);
+  color: var(--parent-color, #212529);
+  font-weight: 600;
+  border-bottom-width: 2px;
+}
+
+.dynamic-view-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dynamic-view-table tbody tr:hover {
+  background-color: #f1f3f5;
+}
+
+/* --- Table Row Actions (e.g., Details, Edit buttons) --- */
+.table-row-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Hide rows that don't match search/filter */
+.dynamic-view-table tbody tr.hidden-row {
+  display: none;
+}
+
+/* --- Checkbox Column --- */
+.dynamic-view-table th.col-checkbox,
+.dynamic-view-table td.col-checkbox {
+  width: 1%;
+  text-align: center;
+  padding-right: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+.dynamic-view-table th.col-actions,
+.dynamic-view-table td.col-actions {
+  width: 1%;
+  white-space: nowrap;
+}
+</style>
