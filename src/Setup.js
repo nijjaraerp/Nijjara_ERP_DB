@@ -9,7 +9,7 @@
 
 const SYSTEM_USER = 'SYSTEM';
 // !!! IMPORTANT: Set this ID to your actual Google Sheet ID before running !!!
-const TARGET_SPREADSHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
+const TARGET_SPREADSHEET_ID = '1Oj7So4c5vBDpvj0pIfDeXz6XxBrY011J4xZwKlSkDzo';
 const TARGET_SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit`;
 
 function getTargetSpreadsheet() {
