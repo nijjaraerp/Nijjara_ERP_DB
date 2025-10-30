@@ -52,6 +52,7 @@ const CONFIG = {
     HR_ADVANCES: "HR_Advances",
     HR_DEDUCTIONS: "HR_Deductions",
     HR_PAYROLL: "HR_Payroll",
+    PV_HR_Employees: "PV_HR_Employees",
   },
   DEBUG: true,
   DEBUG_MAX_ARRAY_LENGTH: 25,
@@ -156,7 +157,7 @@ const DYNAMIC_FORMS_FALLBACK = Object.freeze({
 
 const HR_PANE_CONFIG = Object.freeze({
   Sub_HR_Employees: {
-    sheetName: CONFIG.SHEETS.HR_EMPLOYEES,
+    sheetName: CONFIG.SHEETS.PV_HR_Employees, // Corrected from HR_Employees
     idColumn: "Employee_ID",
     entity: "HR_Employees",
     idPrefix: "EMP",
@@ -882,24 +883,38 @@ function getViewData(sourceName, subTabId) {
   }
 
   try {
-    const data = loadSheetData_(sourceName);
-    let headers = [];
-    if (data && data.length > 0) {
-      headers = Object.keys(data[0]);
-    }
+    const sheetData = loadSheetData_(sourceName);
+    const headers = Array.isArray(sheetData?.headers)
+      ? sheetData.headers
+      : [];
+
+    const rowsArray = Array.isArray(sheetData?.rows) ? sheetData.rows : [];
+    const data = rowsArray.map((row, index) => {
+      if (row && typeof row === "object" && !Array.isArray(row)) {
+        return Object.assign({ __rowIndex: index + 2 }, row);
+      }
+      if (!Array.isArray(row)) {
+        return { __rowIndex: index + 2 };
+      }
+      const record = { __rowIndex: index + 2 };
+      headers.forEach((header, headerIndex) => {
+        record[header] = row[headerIndex];
+      });
+      return record;
+    });
 
     debugLog(FNAME, "success", {
       sourceName,
       subTabId,
-      rowCount: Array.isArray(data) ? data.length : 0,
+      rowCount: data.length,
       headerCount: headers.length,
     });
 
-    return {
+    return sanitizeForClientResponse_({
       success: true,
-      data: data || [],
+      data,
       headers,
-    };
+    });
   } catch (e) {
     debugLog(FNAME, "error", {
       sourceName,

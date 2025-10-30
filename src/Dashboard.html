@@ -123,6 +123,10 @@
         color: var(--color-text-primary);
         overflow: hidden;
       }
+
+      #main-content-wrapper {
+        height: 100%; /* Fix for child containers not expanding */
+      }
       @keyframes fadeIn {
         from {
           opacity: 0;
@@ -865,7 +869,6 @@
         flex: 1 1 auto;
         overflow-y: auto;
         overflow-x: auto;
-        max-height: 60vh;
       }
       .pane-table-scroll table {
         width: 100%;
@@ -1877,6 +1880,19 @@
         background: var(--glassy-surface-bg);
         box-shadow: var(--glassy-shadow);
         backdrop-filter: blur(var(--glassy-blur));
+        max-width: 100%;
+      }
+      .direct-expense__table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        border-radius: 12px;
+      }
+      .direct-expense__table-wrapper::-webkit-scrollbar {
+        height: 8px;
+      }
+      .direct-expense__table-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
       }
       .direct-expense__section[hidden] {
         display: none !important;
@@ -9842,6 +9858,11 @@
 
           const table = document.createElement("table");
           table.className = "sys-table direct-expense__table";
+
+          const tableWrapper = document.createElement("div");
+          tableWrapper.className = "direct-expense__table-wrapper";
+          tableWrapper.appendChild(table);
+
           const thead = document.createElement("thead");
           const headerRow = document.createElement("tr");
           const headerCells = [];
@@ -9889,7 +9910,7 @@
 
           const tbody = document.createElement("tbody");
           table.appendChild(tbody);
-          container.appendChild(table);
+          container.appendChild(tableWrapper);
 
           const updateCount = (visibleCount) => {
             countBadge.textContent = `عدد السجلات: ${visibleCount} من ${totalRecords}`;
@@ -10177,6 +10198,8 @@
             if (records.length) {
               const itemsTable = document.createElement("table");
               itemsTable.className = "sys-table direct-expense__table";
+              const itemsWrapper = document.createElement("div");
+              itemsWrapper.className = "direct-expense__table-wrapper";
               const itemsHead = document.createElement("thead");
               const headRow = document.createElement("tr");
               const itemColumns = [
@@ -10240,7 +10263,8 @@
                 itemsBody.appendChild(row);
               });
 
-              body.appendChild(itemsTable);
+              itemsWrapper.appendChild(itemsTable);
+              body.appendChild(itemsWrapper);
             } else {
               const noDetails = document.createElement("p");
               noDetails.className = "direct-expense__empty";
