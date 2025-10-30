@@ -133,8 +133,9 @@
   text-align: right; /* Changed to right-align for Arabic */
   vertical-align: middle;
   /* CRITICAL: Allow text to wrap */
-  white-space: normal; 
-  word-wrap: break-word; 
+  white-space: normal;
+  word-wrap: break-word;
+  word-break: break-all; /* ADDED: Force break for long strings */
 }
 
 .dynamic-view-table thead {
@@ -144,10 +145,10 @@
   z-index: 10;
 }
 
-/* Color-coded header from image */
+/* Table header (dark) */
 .dynamic-view-table th {
-  /* Use parent color for solid header */
-  background-color: var(--parent-color, #333); 
+  /* UPDATED: Set to dark grey/black to match screenshot */
+  background-color: #212529;
   color: #ffffff; /* White text for contrast */
   font-weight: 600;
   border-bottom: 2px solid rgba(0, 0, 0, 0.5);

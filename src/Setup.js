@@ -1175,7 +1175,7 @@ function seedSysTabRegister(ss) {
 
     ['TAB', 'Tab_HR_Management', 'Human Resources (HR)', 'الموارد البشرية', '', '', '', '/hr', 20, 'HR_Employees', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
     ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_KPIs', 'KPIs', 'مؤشرات الأداء', '/hr/kpis', 1, 'HR_KPIs', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
-    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Employees', 'Employees', 'الموظفون', '/hr/employees', 2, 'HR_Employees', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Employees', 'Employees', 'الموظفون', '/hr/employees', 2, 'PV_HR_Employees', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
     ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Attendance', 'Attendance', 'الحضور والانصراف', '/hr/attendance', 3, 'HR_Attendance', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
     ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_LeaveReqs', 'Leave Requests', 'طلبات الإجازة', '/hr/leave-reqs', 4, 'HR_Leave_Requests', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
     ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Absence', 'Absence Deductions', 'خصومات الغياب', '/hr/absence', 5, 'HR_Absence_Deductions', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
