@@ -175,37 +175,136 @@
         color: var(--color-accent);
         font-weight: 600;
       }
-      .form-group {
-        margin-bottom: 1.2rem;
-        text-align: right;
-      }
-      .form-group label {
-        display: block;
-        margin-bottom: 0.4rem;
-        font-size: 0.95rem;
-        color: var(--color-text-secondary);
-      }
-      .form-group input {
-        width: 100%;
-        padding: 0.8rem 1rem;
-        border: 1px solid var(--glassy-border);
+      /* --- Form & Input Styles (NEW GLOSSY THEME) --- */
+      .form-section {
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        background: var(--glassy-input-bg);
-        color: var(--color-text-primary);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.1));
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        margin-bottom: 1.5rem;
+      }
+
+      .form-section-header {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--parent-color, var(--color-text-primary));
+        padding-bottom: 0.75rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--parent-color, rgba(255, 255, 255, 0.1));
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.25rem;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .form-group label {
+        font-size: 0.9rem;
+        color: var(--color-text-secondary, #a0a0a0);
+        margin-bottom: 0.5rem;
+      }
+
+      /* Glossy/Inset Inputs for Forms */
+      .form-group input[type="text"],
+      .form-group input[type="email"],
+      .form-group input[type="password"],
+      .form-group input[type="number"],
+      .form-group input[type="date"],
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        background: linear-gradient(145deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+        color: var(--color-text-primary, #f0f0f0);
         font-size: 1rem;
-        outline: 0;
-        transition: border-color 0.25s, box-shadow 0.25s,
-          transform 0.25s ease;
-        backdrop-filter: blur(calc(var(--glassy-blur) / 1.5));
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08),
-          0 12px 24px rgba(0, 0, 0, 0.35);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(255, 255, 255, 0.05);
+        transition: all 0.2s ease-in-out;
       }
-      .form-group input:focus {
-        border-color: rgba(212, 175, 55, 0.8);
-        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.35),
-          0 14px 32px rgba(0, 0, 0, 0.45);
-        transform: translateY(-1px);
+
+      .form-group input[type="text"]::placeholder,
+      .form-group textarea::placeholder {
+        color: var(--color-text-secondary, #a0a0a0);
+        opacity: 0.7;
       }
+
+      .form-group input[type="text"]:focus,
+      .form-group input[type="email"]:focus,
+      .form-group input[type="password"]:focus,
+      .form-group input[type="number"]:focus,
+      .form-group input[type="date"]:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: var(--parent-color, #4285f4);
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--parent-color);
+      }
+
+      .form-group input[readonly] {
+        background: rgba(0, 0, 0, 0.2);
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
+      .form-group textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      /* Form Actions (Save/Cancel buttons) */
+      .form-actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 1.5rem;
+      }
+
+      /* Glossy buttons for forms */
+      .form-actions .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.4);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+      .form-actions .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+      }
+
+      .form-actions .btn-save {
+        background: linear-gradient(145deg, var(--parent-color, #0d6efd), color-mix(in srgb, var(--parent-color, #0d6efd) 70%, #000));
+        color: white;
+      }
+      .form-actions .btn-cancel {
+        background: linear-gradient(145deg, #6c757d, #343a40);
+        color: white;
+      }
+      .form-actions .btn:disabled {
+        background: #555;
+        border-color: #333;
+        color: #999;
+        opacity: 0.7;
+        transform: none;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        cursor: not-allowed;
+      }
+
+      /* --- End of Form Styles --- */
       .main-button {
         width: 100%;
         padding: 0.9rem 1.2rem;

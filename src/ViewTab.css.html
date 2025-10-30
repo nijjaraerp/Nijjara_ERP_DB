@@ -1,408 +1,228 @@
 <style>
-/* -------------------------------------------------------------
- * View/Add Tabs – Shared Visual Language
- * ----------------------------------------------------------- */
+/* --- View Tab: Main Container (The "Pad") --- */
 .view-tab-content-wrapper {
-  position: relative;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  flex: 1;
   height: 100%;
-  color: rgba(244, 246, 250, 0.92);
+  box-sizing: border-box;
+  /* Glassy/3D Effect */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.1));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-.view-tab-toolbar {
-  position: relative;
+/* --- View Tab: Header (Search, Filters, Actions) --- */
+.view-tab-header {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 1rem;
-  align-items: flex-end;
-  padding: 1.1rem 1.25rem;
-  border-radius: 18px;
-  background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.18),
-      rgba(10, 10, 18, 0.68)
-    ),
-    var(--parent-color-surface, rgba(0, 0, 0, 0.45));
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 15px 30px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(16px);
-  overflow: hidden;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 12px 12px 0 0;
 }
 
-.view-tab-toolbar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at top right,
-    rgba(255, 255, 255, 0.25),
-    transparent 60%
-  );
-  opacity: 0.45;
-  pointer-events: none;
+.view-search-bar {
+  flex-grow: 1;
+  min-width: 250px;
 }
 
-.view-toolbar-block {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  flex: 1 1 220px;
-  min-width: 200px;
-  z-index: 1;
-}
-
-.view-toolbar-block--grow {
-  flex: 2 1 320px;
-}
-
-.view-toolbar-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.view-search-input,
-.view-filter-select {
+/* Glossy/Inset Inputs and Selects */
+.view-search-bar input[type="text"],
+.view-filter-dropdown-group select {
   width: 100%;
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.18),
-      rgba(12, 12, 20, 0.72)
-    ),
-    rgba(0, 0, 0, 0.35);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 12px 24px rgba(0, 0, 0, 0.35);
-  color: #f7f9fc;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  padding: 0.65rem 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+  color: var(--color-text-primary, #f0f0f0);
+  font-size: 0.95rem;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease-in-out;
 }
 
-.view-search-input::placeholder,
-.view-filter-select::placeholder {
-  color: rgba(255, 255, 255, 0.62);
+.view-search-bar input[type="text"]::placeholder {
+  color: var(--color-text-secondary, #a0a0a0);
 }
 
-.view-search-input:focus,
-.view-filter-select:focus {
+.view-search-bar input[type="text"]:focus,
+.view-filter-dropdown-group select:focus {
   outline: none;
-  border-color: var(--parent-color-edge, rgba(255, 255, 255, 0.45));
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.25),
-    0 14px 32px var(--parent-color-glow, rgba(0, 0, 0, 0.45));
+  border-color: var(--parent-color, #4285f4);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--parent-color);
 }
 
 .view-filter-dropdown-group {
   display: flex;
-  gap: 0.75rem;
   flex-wrap: wrap;
-  z-index: 1;
+  gap: 1rem;
+  flex-grow: 1;
+  min-width: 200px;
+}
+.view-filter-dropdown-group select {
+  flex: 1;
+  min-width: 200px;
 }
 
 .view-action-btn-group {
-  margin-inline-start: auto;
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  z-index: 1;
+  margin-left: auto; /* Pushes action buttons to the right */
+  flex-shrink: 0;
 }
 
-.view-tab-action-btn {
-  position: relative;
-  padding: 0.85rem 1.6rem;
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background: linear-gradient(
-      145deg,
-      var(--parent-color, #0d6efd),
-      rgba(255, 255, 255, 0.16)
-    ),
-    rgba(0, 0, 0, 0.35);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    0 18px 36px var(--parent-color-glow, rgba(0, 0, 0, 0.45));
-  color: #f7f9ff;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
-  transition: transform 0.25s ease, box-shadow 0.25s ease,
-    filter 0.25s ease, opacity 0.2s ease;
+/* Glossy Buttons */
+.view-action-btn-group .btn {
+  padding: 0.65rem 1.2rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
 }
-
-.view-tab-action-btn:hover:not(:disabled) {
+.view-action-btn-group .btn:hover {
   transform: translateY(-2px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 24px 44px var(--parent-color-glow, rgba(0, 0, 0, 0.55));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+.view-action-btn-group .btn:disabled {
+  background: #555;
+  border-color: #333;
+  color: #999;
+  opacity: 0.7;
+  transform: none;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+/* Specific button colors from image */
+.view-action-btn-group .btn-danger {
+  background: linear-gradient(145deg, #e57373, #c62828);
+  color: white;
+}
+.view-action-btn-group .btn-primary {
+  background: linear-gradient(145deg, #64b5f6, #1976d2);
+  color: white;
 }
 
-.view-tab-action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-/* -------------------------------------------------------------
- * Table Wrapper
- * ----------------------------------------------------------- */
+/* --- View Tab: Table Container --- */
 .view-table-container {
-  position: relative;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 1rem;
-  border-radius: 22px;
-  background: linear-gradient(
-      165deg,
-      rgba(255, 255, 255, 0.12),
-      rgba(8, 8, 16, 0.78)
-    ),
-    rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 18px 38px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+  flex-grow: 1;
+  /* CRITICAL: Remove horizontal scroll */
+  overflow-y: auto; 
+  overflow-x: hidden; 
+  margin-top: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  border-radius: 0 0 12px 12px;
+  background: rgba(0, 0, 0, 0.1);
 }
 
-.view-table-container::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at top left,
-    rgba(255, 255, 255, 0.22),
-    transparent 65%
-  );
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.view-table-scroll {
-  position: relative;
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 0.25rem;
-  z-index: 1;
-}
-
-.view-table-scroll::-webkit-scrollbar {
-  width: 10px;
-}
-
-.view-table-scroll::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.28),
-    rgba(0, 0, 0, 0.45)
-  );
-  border-radius: 999px;
-  border: 2px solid rgba(0, 0, 0, 0.35);
-}
-
-.view-table-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+/* --- View Tab: Dynamic Table --- */
 .dynamic-view-table {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-  color: rgba(247, 249, 255, 0.92);
-  font-size: 0.92rem;
-}
-
-.dynamic-view-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 3;
+  border-collapse: collapse;
+  /* CRITICAL: Force table to fit container width */
+  table-layout: fixed; 
 }
 
 .dynamic-view-table th,
 .dynamic-view-table td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: right; /* Changed to right-align for Arabic */
   vertical-align: middle;
-  white-space: normal;
-  word-break: break-word;
-  hyphens: auto;
+  /* CRITICAL: Allow text to wrap */
+  white-space: normal; 
+  word-wrap: break-word; 
 }
 
+.dynamic-view-table thead {
+  position: -webkit-sticky; /* Safari */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Color-coded header from image */
 .dynamic-view-table th {
-  background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.18),
-      var(--parent-color-light, rgba(255, 255, 255, 0.08))
-    ),
-    rgba(0, 0, 0, 0.35);
-  color: #ffffff;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
-}
-
-.dynamic-view-table tbody tr {
-  transition: transform 0.25s ease, box-shadow 0.25s ease,
-    background 0.25s ease;
-  background: rgba(14, 14, 24, 0.45);
-}
-
-.dynamic-view-table tbody tr:nth-child(odd) {
-  background: rgba(18, 18, 30, 0.6);
-}
-
-.dynamic-view-table tbody tr:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.45);
-  background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.12),
-      rgba(0, 0, 0, 0.35)
-    ),
-    rgba(0, 0, 0, 0.35);
+  /* Use parent color for solid header */
+  background-color: var(--parent-color, #333); 
+  color: #ffffff; /* White text for contrast */
+  font-weight: 600;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.5);
 }
 
 .dynamic-view-table tbody tr:last-child td {
   border-bottom: none;
 }
 
+.dynamic-view-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* --- Table Row Actions (e.g., Details, Edit buttons) --- */
+.table-row-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+/* Glossy small buttons for table rows */
+.table-row-actions .btn {
+  padding: 0.3rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  color: #fff;
+  white-space: nowrap; /* Keep buttons on one line */
+}
+.table-row-actions .btn:hover {
+  transform: translateY(-1px);
+}
+.table-row-actions .btn-primary {
+  background: linear-gradient(145deg, #64b5f6, #1976d2);
+}
+.table-row-actions .btn-secondary {
+  background: linear-gradient(145deg, #90a4ae, #455a64);
+}
+.table-row-actions .btn-danger {
+  background: linear-gradient(145deg, #e57373, #c62828);
+}
+
+
+/* Hide rows that don't match search/filter */
 .dynamic-view-table tbody tr.hidden-row {
   display: none;
 }
 
+/* --- Checkbox Column --- */
 .dynamic-view-table th.col-checkbox,
 .dynamic-view-table td.col-checkbox {
-  width: 60px;
+  width: 50px; /* Fixed width for checkbox */
   text-align: center;
 }
 
+/* --- Actions Column --- */
 .dynamic-view-table th.col-actions,
 .dynamic-view-table td.col-actions {
-  width: 160px;
+  width: 240px; /* Fixed width for 3 text buttons */
   text-align: center;
 }
 
-.table-row-actions {
-  display: inline-flex;
-  gap: 0.5rem;
-  align-items: center;
-  justify-content: center;
+/* Override Bootstrap defaults inside our view */
+.view-tab-content-wrapper .form-control {
+  background: linear-gradient(145deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+  color: var(--color-text-primary, #f0f0f0);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 1px rgba(255, 255, 255, 0.05);
 }
-
-.table-action-btn {
-  padding: 0.45rem 0.85rem;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.22),
-      rgba(0, 0, 0, 0.45)
-    ),
-    rgba(0, 0, 0, 0.35);
-  color: rgba(247, 249, 255, 0.92);
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.45);
-  transition: transform 0.25s ease, box-shadow 0.25s ease,
-    background 0.25s ease, color 0.25s ease;
+.view-tab-content-wrapper .form-control:focus {
+  border-color: var(--parent-color, #4285f4);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--parent-color);
 }
-
-.table-action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 14px 26px rgba(0, 0, 0, 0.4);
-}
-
-.table-action-btn.is-primary {
-  background: linear-gradient(
-      145deg,
-      var(--parent-color, #0d6efd),
-      rgba(255, 255, 255, 0.18)
-    ),
-    rgba(0, 0, 0, 0.35);
-  border-color: var(--parent-color-edge, rgba(255, 255, 255, 0.38));
-}
-
-.table-action-btn.is-danger {
-  background: linear-gradient(
-      145deg,
-      rgba(220, 76, 76, 0.95),
-      rgba(80, 0, 0, 0.65)
-    ),
-    rgba(0, 0, 0, 0.35);
-  border-color: rgba(255, 120, 120, 0.45);
-}
-
-.table-action-btn:focus {
-  outline: none;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.25),
-    0 12px 26px rgba(0, 0, 0, 0.5);
-}
-
-.table-action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.view-tab-content-wrapper input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(0, 0, 0, 0.35);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    0 8px 18px rgba(0, 0, 0, 0.35);
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-
-.view-tab-content-wrapper input[type="checkbox"]:checked {
-  background: linear-gradient(
-    145deg,
-    var(--parent-color, #0d6efd),
-    rgba(255, 255, 255, 0.2)
-  );
-  border-color: var(--parent-color-edge, rgba(255, 255, 255, 0.4));
-}
-
-.view-tab-content-wrapper input[type="checkbox"]:focus {
-  outline: none;
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.25),
-    0 10px 24px rgba(0, 0, 0, 0.45);
-}
-
-/* Empty states */
-.view-table-empty-state {
-  padding: 3rem 1rem;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.view-table-empty-state h4 {
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.view-table-empty-state p {
-  font-size: 0.95rem;
-  opacity: 0.7;
+.view-tab-content-wrapper .btn {
+  color: #fff;
 }
 </style>
