@@ -22,34 +22,44 @@ function buildDynamicTableView(subTabData, response, contentContainer) {
   const parentTab = g.bootstrap.tabs.find(t => t.Tab_ID === subTabData.Tab_ID);
   const parentColor = parentTab ? parentTab.Tab_Color || '#4285f4' : '#4285f4';
   const parentColorLight = hexToRgba(parentColor, 0.15); // For header bg
+  const parentColorGlow = hexToRgba(parentColor, 0.35);
+  const parentColorSurface = hexToRgba(parentColor, 0.18);
+  const parentColorEdge = hexToRgba(parentColor, 0.6);
 
   // Unique ID for the table for event binding
   const tableId = `dynamic-table-${subTabData.Sub_ID}`;
 
   // --- 1. Build the outer shell (Header + Table Container) ---
   let html = `
-    <div class="view-tab-content-wrapper" 
-         style="--parent-color: ${parentColor}; --parent-color-light: ${parentColorLight};">
-      
-      <div class="view-tab-header">
-        <div class="view-search-bar">
-          <input type="text" 
-                 class="form-control" 
-                 id="view-search-${subTabData.Sub_ID}" 
-                 placeholder="Type to search table...">
+    <div class="view-tab-content-wrapper"
+         style="--parent-color: ${parentColor}; --parent-color-light: ${parentColorLight}; --parent-color-glow: ${parentColorGlow}; --parent-color-surface: ${parentColorSurface}; --parent-color-edge: ${parentColorEdge};">
+
+      <div class="view-tab-toolbar">
+        <div class="view-toolbar-block view-toolbar-block--grow">
+          <label class="view-toolbar-label" for="view-search-${subTabData.Sub_ID}">البحث في السجلات</label>
+          <input type="text"
+                 class="view-search-input"
+                 id="view-search-${subTabData.Sub_ID}"
+                 placeholder="ابحث في الجدول..."
+                 autocomplete="off"
+                 aria-label="البحث في السجلات" />
         </div>
-        <div class="view-filter-dropdown-group d-flex gap-3">
+        <div class="view-toolbar-block">
+          <label class="view-toolbar-label" for="view-filter-${subTabData.Sub_ID}">المرشحات</label>
+          <div class="view-filter-dropdown-group" id="view-filter-${subTabData.Sub_ID}">
           </div>
+        </div>
         <div class="view-action-btn-group">
-          <button class="btn btn-danger" id="bulk-delete-${subTabData.Sub_ID}" disabled>
-            <i class="bi bi-trash-fill me-1"></i>
-            Delete Selected
+          <button class="view-tab-action-btn" id="bulk-delete-${subTabData.Sub_ID}" disabled>
+            حذف العناصر المحددة
           </button>
         </div>
       </div>
 
       <div class="view-table-container">
-        ${buildTableHTML(tableId, response.headers, response.data, subTabData)}
+        <div class="view-table-scroll">
+          ${buildTableHTML(tableId, response.headers, response.data, subTabData)}
+        </div>
       </div>
     </div>
   `;
@@ -74,9 +84,9 @@ function buildTableHTML(tableId, headers, data, subTabData) {
   
   if (!data || data.length === 0) {
     return `
-      <div class="p-5 text-center">
-        <h4>No Data Available</h4>
-        <p>No records found for ${subTabData.View_Label}.</p>
+      <div class="view-table-empty-state">
+        <h4>لا توجد بيانات</h4>
+        <p>لم يتم العثور على سجلات لعرضها في ${subTabData.View_Label || "هذا الجدول"}.</p>
       </div>`;
   }
   
@@ -90,7 +100,7 @@ function buildTableHTML(tableId, headers, data, subTabData) {
   headers.forEach(header => {
     headerHtml += `<th>${header}</th>`;
   });
-  headerHtml += `<th class="col-actions">Actions</th>`;
+  headerHtml += `<th class="col-actions">العمليات</th>`;
 
   // --- 2. Create Table Body Rows ---
   let bodyHtml = '';
@@ -123,15 +133,9 @@ function buildTableHTML(tableId, headers, data, subTabData) {
     bodyHtml += `
       <td class="col-actions">
         <div class="table-row-actions">
-          <button class="btn btn-sm btn-outline-primary" title="View Details">
-            <i class="bi bi-eye-fill"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" title="Edit">
-            <i class="bi bi-pencil-fill"></i>
-          </button>
-          <button class="btn btn-sm btn-outline-danger" title="Delete">
-            <i class="bi bi-trash"></i>
-          </button>
+          <button class="table-action-btn is-primary" type="button" title="عرض التفاصيل">عرض</button>
+          <button class="table-action-btn" type="button" title="تعديل السجل">تعديل</button>
+          <button class="table-action-btn is-danger" type="button" title="حذف السجل">حذف</button>
         </div>
       </td>
     `;
