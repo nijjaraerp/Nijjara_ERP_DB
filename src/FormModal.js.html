@@ -26,6 +26,9 @@
       getModal() ||
       createGlobalModal();
 
+    window.currentFormId = formId || null;
+    window.currentSubTab = subTabId || null;
+
     modalState.currentFormId = formId;
     modalState.recordData = recordData || null;
     modalState.subTabId = subTabId || null;
@@ -94,6 +97,10 @@
     modalState.subTabId = null;
     modalState.isEditMode = false;
     modal.classList.remove('is-loading');
+
+    window.currentFormId = null;
+    window.currentFormStructure = null;
+    window.currentSubTab = null;
   }
 
   function buildFormFields(formStructure, recordData = null, isEditMode = false) {
@@ -213,6 +220,10 @@
     modalState.isEditMode = !!isEditMode;
     modalState.subTabId = subTabId || modalState.subTabId;
 
+    window.currentFormId = modalState.currentFormId;
+    window.currentFormStructure = modalState.formStructure;
+    window.currentSubTab = modalState.subTabId;
+
     const modalTitle = modal.querySelector('.modal-title');
     if (modalTitle) {
       modalTitle.textContent = resolveFormTitle(formStructure, modalState.subTabId, modalState.isEditMode);
@@ -259,18 +270,19 @@
 
       const tabButton = document.createElement('button');
       tabButton.type = 'button';
-      tabButton.className = 'vertical-tab-btn';
+      tabButton.className = 'vertical-tab-btn vertical-tab-button';
       tabButton.dataset.sectionId = sectionId;
       tabButton.textContent = label;
       tabButton.addEventListener('click', () => setActiveSection(sectionId));
 
       const panel = document.createElement('div');
-      panel.className = 'vertical-tab-panel';
+      panel.className = 'vertical-tab-panel tab-content';
       panel.dataset.sectionId = sectionId;
       panel.appendChild(section);
 
       if (index === 0) {
-        tabButton.classList.add('is-active');
+        tabButton.classList.add('is-active', 'active');
+        panel.classList.add('active');
         panel.style.display = '';
       } else {
         panel.style.display = 'none';
@@ -294,6 +306,10 @@
     wrapper.className = 'form-field';
     if (field.fieldId) {
       wrapper.dataset.fieldId = field.fieldId;
+    }
+    if (field.required) {
+      wrapper.classList.add('required');
+      wrapper.dataset.required = 'true';
     }
 
     const label = document.createElement('label');
@@ -330,12 +346,19 @@
     }
 
     const fieldName = resolveFieldName(field);
-    input.name = fieldName;
+    const primaryName = field.fieldId || field.targetColumn || fieldName;
+    input.name = primaryName ? String(primaryName).trim() : fieldName;
     input.id = inputId;
     input.dataset.fieldName = fieldName;
     input.dataset.fieldType = type;
     input.dataset.targetColumn = field.targetColumn || '';
-    if (field.fieldId) input.dataset.fieldId = field.fieldId;
+    if (field.fieldId) {
+      input.dataset.fieldId = field.fieldId;
+    }
+    input.dataset.label = label.textContent;
+    if (field.placeholder) {
+      input.placeholder = field.placeholder;
+    }
 
     if (field.required) {
       input.required = true;
@@ -504,11 +527,15 @@
     const panels = modal.querySelectorAll('.vertical-tabs-content .vertical-tab-panel');
 
     navButtons.forEach((button) => {
-      button.classList.toggle('is-active', button.dataset.sectionId === sectionId);
+      const isMatch = button.dataset.sectionId === sectionId;
+      button.classList.toggle('is-active', isMatch);
+      button.classList.toggle('active', isMatch);
     });
 
     panels.forEach((panel) => {
-      panel.style.display = panel.dataset.sectionId === sectionId ? '' : 'none';
+      const isMatch = panel.dataset.sectionId === sectionId;
+      panel.style.display = isMatch ? '' : 'none';
+      panel.classList.toggle('active', isMatch);
     });
   }
 
@@ -541,10 +568,21 @@
       if (!key) {
         return;
       }
-      if (input.type === 'checkbox') {
-        payload[key] = input.checked;
-      } else {
-        payload[key] = input.value;
+      const value = input.type === 'checkbox' ? input.checked : input.value;
+      payload[key] = value;
+
+      const fieldId = input.dataset.fieldId;
+      if (fieldId && !(fieldId in payload)) {
+        payload[fieldId] = value;
+      }
+
+      const fieldName = input.dataset.fieldName;
+      if (fieldName && !(fieldName in payload)) {
+        payload[fieldName] = value;
+      }
+
+      if (input.name && !(input.name in payload)) {
+        payload[input.name] = value;
       }
     });
 

@@ -2989,6 +2989,7 @@
       }
     </style>
     <?!= include('ViewTab.css'); ?>
+    <?!= include('FormModal.css'); ?>
 
   </head>
   <body>
@@ -3647,6 +3648,180 @@
     <?!= include('ViewTab.js'); ?>
 
     <script>
+      if (typeof window.currentFormId === "undefined") {
+        window.currentFormId = null;
+      }
+      if (typeof window.currentFormStructure === "undefined") {
+        window.currentFormStructure = null;
+      }
+      if (typeof window.currentSubTab === "undefined") {
+        window.currentSubTab = null;
+      }
+
+      if (typeof window.collectFormData !== "function") {
+        window.collectFormData = function collectFormData() {
+          const formData = {};
+          const fields = document.querySelectorAll(
+            ".form-field input, .form-field select, .form-field textarea"
+          );
+          fields.forEach((field) => {
+            const key =
+              field.dataset.targetColumn ||
+              field.dataset.fieldId ||
+              field.dataset.fieldName ||
+              field.name ||
+              field.id;
+            if (!key) {
+              return;
+            }
+            const value = field.type === "checkbox" ? field.checked : field.value;
+            formData[key] = value;
+
+            if (field.dataset.fieldId && !(field.dataset.fieldId in formData)) {
+              formData[field.dataset.fieldId] = value;
+            }
+            if (field.dataset.fieldName && !(field.dataset.fieldName in formData)) {
+              formData[field.dataset.fieldName] = value;
+            }
+            if (field.name && !(field.name in formData)) {
+              formData[field.name] = value;
+            }
+          });
+          return formData;
+        };
+      }
+
+      if (typeof window.validateForm !== "function") {
+        window.validateForm = function validateForm(formData, formStructure) {
+          const errors = [];
+          if (!Array.isArray(formStructure)) {
+            return errors;
+          }
+
+          const isEmptyValue = (value, field) => {
+            if (value === false && (field?.type === "checkbox" || field?.type === "boolean")) {
+              return false;
+            }
+            return value === undefined || value === null || value === "";
+          };
+
+          formStructure.forEach((field) => {
+            if (!field || !field.required) {
+              return;
+            }
+            const candidates = [
+              field.fieldId,
+              field.Field_ID,
+              field.targetColumn,
+              field.Target_Column,
+              field.label,
+              field.Label,
+            ]
+              .map((item) => (typeof item === "string" ? item.trim() : item))
+              .filter(Boolean);
+
+            let value;
+            for (const candidate of candidates) {
+              if (candidate in formData) {
+                value = formData[candidate];
+                break;
+              }
+              const normalized = String(candidate).replace(/\s+/g, "_");
+              if (normalized in formData) {
+                value = formData[normalized];
+                break;
+              }
+              const lower = normalized.toLowerCase();
+              if (lower in formData) {
+                value = formData[lower];
+                break;
+              }
+            }
+
+            if (isEmptyValue(value, field)) {
+              errors.push(`حقل ${field.label || field.fieldId || field.targetColumn || "بدون عنوان"} مطلوب`);
+            }
+          });
+
+          return errors;
+        };
+      }
+
+      if (typeof window.submitFormModal !== "function") {
+        window.submitFormModal = function submitFormModal(event) {
+          event?.preventDefault?.();
+          console.log("🔄 Submit form modal called");
+
+          if (!window.currentFormId) {
+            window.showToast?.("❌ لم يتم تحديد نموذج للحفظ", "error");
+            return;
+          }
+
+          const formData = window.collectFormData();
+          console.log("📤 Form data to submit:", formData);
+
+          const errors = window.validateForm(formData, window.currentFormStructure);
+          if (errors.length > 0) {
+            window.showToast?.(`❌ ${errors.join(", ")}`, "error");
+            return;
+          }
+
+          const modal = document.getElementById("globalFormModal");
+          const submitBtn = modal?.querySelector(".submit-btn");
+          const originalText = submitBtn?.textContent;
+          if (submitBtn) {
+            submitBtn.textContent = "جاري الحفظ...";
+            submitBtn.disabled = true;
+          }
+
+          const runner = google?.script?.run;
+          if (!runner) {
+            if (submitBtn) {
+              submitBtn.textContent = originalText;
+              submitBtn.disabled = false;
+            }
+            window.showToast?.("❌ خدمة Google Apps Script غير متاحة", "error");
+            return;
+          }
+
+          runner
+            .withSuccessHandler((response) => {
+              if (submitBtn) {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+              }
+
+              if (response?.success) {
+                window.showToast?.("✅ تم حفظ البيانات بنجاح", "success");
+                if (typeof window.closeModal === "function") {
+                  window.closeModal();
+                } else if (typeof window.closeFormModal === "function") {
+                  window.closeFormModal();
+                }
+
+                const subTabToRefresh =
+                  window.currentSubTab ||
+                  (typeof window.getCurrentSubTab === "function"
+                    ? window.getCurrentSubTab()
+                    : null);
+                if (subTabToRefresh && typeof window.loadSubTabContent === "function") {
+                  window.loadSubTabContent(subTabToRefresh);
+                }
+              } else {
+                window.showToast?.(`❌ فشل الحفظ: ${response?.message || "خطأ غير معروف"}`, "error");
+              }
+            })
+            .withFailureHandler((error) => {
+              if (submitBtn) {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+              }
+              window.showToast?.(`❌ خطأ في الحفظ: ${error?.message || "غير متاح"}`, "error");
+            })
+            .submitDynamicForm(window.currentFormId, formData);
+        };
+      }
+
       // Global modal handler - fallback implementation if FormModal module is unavailable
       if (typeof window.openFormModal !== "function") {
         window.openFormModal = function openFormModal(
@@ -3683,6 +3858,12 @@
           modal.classList.add("is-loading");
           modal.style.display = "flex";
 
+          const submitBtn = modal.querySelector(".submit-btn");
+          if (submitBtn && !submitBtn.dataset.fallbackBound) {
+            submitBtn.addEventListener("click", window.submitFormModal);
+            submitBtn.dataset.fallbackBound = "true";
+          }
+
           const scriptRunner = google?.script?.run;
           if (!scriptRunner) {
             window.showToast?.("خدمة النماذج غير متاحة", "error");
@@ -3694,6 +3875,10 @@
               modal.classList.remove("is-loading");
               if (response.success) {
                 console.log("✅ Form data loaded, calling renderFormInModal");
+                window.currentFormStructure = Array.isArray(response.formStructure)
+                  ? response.formStructure
+                  : [];
+                window.currentSubTab = subTabId || null;
                 if (typeof renderFormInModal === "function") {
                   renderFormInModal(
                     response.formStructure,
@@ -3744,6 +3929,9 @@
           if (nav) {
             nav.innerHTML = "";
           }
+          window.currentFormStructure = null;
+          window.currentFormId = null;
+          window.currentSubTab = null;
         };
       }
 
