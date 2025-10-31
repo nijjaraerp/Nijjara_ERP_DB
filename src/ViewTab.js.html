@@ -1,276 +1,715 @@
 <script>
-/**
- * ============================================================================
- * NIJJARA ERP - ViewTab.js
- * Contains all client-side logic for building, filtering, and interacting
- * with the dynamic "View" tab tables.
- * ============================================================================
- */
+(function () {
+  const g = (window.g = window.g || {});
+  const DataPad = (window.DataPad = window.DataPad || {});
 
-/**
- * @function buildDynamicTableView
- * @description Main entry point for building the 'View' tab UI.
- * @param {object} subTabData - The data object for the sub-tab.
- * @param {object} response - The {success, data, headers} object from getViewData.
- * @param {HTMLElement} contentContainer - The container to render into.
- */
-function buildDynamicTableView(subTabData, response, contentContainer) {
-  const FNAME = "buildDynamicTableView";
-  log.debug(FNAME, `Building view for ${subTabData.Sub_ID}`, { data: response });
+  const DATE_COLUMN_HINTS = [/date/i, /_at$/i, /Date$/i, /\bOn$/i];
 
-  // Get parent tab color for theming
-  const parentTab = g.bootstrap.tabs.find(t => t.Tab_ID === subTabData.Tab_ID);
-  const parentColor = parentTab ? parentTab.Tab_Color || '#4285f4' : '#4285f4';
-  const parentColorLight = hexToRgba(parentColor, 0.15); // For header bg
+  DataPad.render = function renderDynamicDataPad(subTabData, container) {
+    if (!container || !subTabData) return;
 
-  // Unique ID for the table for event binding
-  const tableId = `dynamic-table-${subTabData.Sub_ID}`;
+    const paneKey = subTabData.Pane || subTabData.Sub_ID || subTabData.SubId || "";
+    const color =
+      subTabData.Tab_Color ||
+      subTabData.tabColor ||
+      (g.bootstrap && g.bootstrap.themeColor) ||
+      "#d4af37";
 
-  // --- 1. Build the outer shell (Header + Table Container) ---
-  // This HTML structure is updated to match the layout in Picture1.jpg
-  let html = `
-    <div class="view-tab-content-wrapper" 
-         style="--parent-color: ${parentColor}; --parent-color-light: ${parentColorLight};">
-      
-      <div class="view-tab-header">
-        
-        <div class="view-search-bar">
-          <input type="text" 
-                 class="form-control" 
-                 id="view-search-${subTabData.Sub_ID}" 
-                 placeholder="Search in ${subTabData.Sub_Label_EN || 'table'}...">
-        </div>
-        
-        <div class="view-filter-dropdown-group">
-          <select class="form-select" id="filter-dropdown-1-${subTabData.Sub_ID}" aria-label="Filter 1">
-            <option value="">Filter by Department</option>
-          </select>
-          <select class="form-select" id="filter-dropdown-2-${subTabData.Sub_ID}" aria-label="Filter 2">
-            <option value="">Filter by Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </select>
-        </div>
-        
-        <div class="view-action-btn-group">
-          <button class="btn btn-danger" id="bulk-delete-${subTabData.Sub_ID}" disabled>
-            <i class="bi bi-trash-fill me-1"></i>
-            Delete Selected
-          </button>
-        </div>
+    const shell = document.createElement("div");
+    shell.className = "data-pad-shell";
+    shell.innerHTML = buildSkeleton();
+    container.innerHTML = "";
+    container.appendChild(shell);
 
-      </div>
+    const headerEl = shell.querySelector(".data-pad__header");
+    const tableContainer = shell.querySelector(".data-pad__table-inner");
+    const loadingEl = shell.querySelector(".data-pad__loading");
 
-      <div class="view-table-container">
-        ${buildTableHTML(tableId, response.headers, response.data, subTabData)}
-      </div>
-    </div>
-  `;
+    applyThemeColor(shell, color);
+    populateHeader(subTabData, headerEl, color);
 
-  contentContainer.innerHTML = html;
+    const state = {
+      dataset: [],
+      filtered: [],
+      headers: [],
+      selected: new Set(),
+      subTabData,
+      paneKey,
+      color,
+    };
 
-  // --- 3. Attach Event Listeners ---
-  attachTableListeners(subTabData, tableId);
-}
+    attachHeaderListeners(headerEl, state, tableContainer);
+    fetchFilterDefinitions(subTabData)
+      .then((definitions) => populateFilters(headerEl, definitions, state))
+      .catch((err) => console.error("Failed to load filters", err));
 
-/**
- * @function buildTableHTML
- * @description Generates the HTML string for the <table> itself.
- * @param {string} tableId - The unique ID for this table.
- * @param {string[]} headers - Array of column headers.
- * @param {object[]} data - Array of data objects.
- * @param {object} subTabData - The sub-tab's data.
- * @returns {string} The HTML string for the <table>.
- */
-function buildTableHTML(tableId, headers, data, subTabData) {
-  const FNAME = "buildTableHTML";
-  
-  if (!data || data.length === 0) {
+    loadingEl.hidden = false;
+    google.script.run
+      .withFailureHandler((err) => {
+        loadingEl.hidden = true;
+        console.error("getViewData failed", err);
+        tableContainer.innerHTML = `<p class="muted">${
+          err && err.message
+            ? err.message
+            : "تعذّر تحميل البيانات لهذا التبويب."
+        }</p>`;
+      })
+      .withSuccessHandler((response) => {
+        loadingEl.hidden = true;
+        const rows = Array.isArray(response?.data) ? response.data : [];
+        const headers = Array.isArray(response?.headers) ? response.headers : [];
+        state.dataset = rows;
+        state.filtered = rows.slice();
+        state.headers = headers;
+        renderTable(tableContainer, state);
+      })
+      .getViewData(subTabData.Source_Sheet, subTabData.Sub_ID);
+  };
+
+  function buildSkeleton() {
     return `
-      <div class="p-5 text-center" style="color: #fff;">
-        <h4>No Data Available</h4>
-        <p>No records found for ${subTabData.View_Label}.</p>
-      </div>`;
+      <section class="data-pad" aria-live="polite">
+        <header class="data-pad__header"></header>
+        <div class="data-pad__table">
+          <div class="data-pad__table-inner"></div>
+          <div class="data-pad__loading" hidden>
+            <p>يتم الآن تحميل البيانات...</p>
+          </div>
+        </div>
+      </section>
+    `;
   }
-  
-  // --- 1. Create Table Header Row ---
-  // We add Checkbox and Actions columns
-  let headerHtml = `
-    <th class="col-checkbox">
-      <input class="form-check-input" type="checkbox" id="header-check-${tableId}">
-    </th>
-  `;
-  headers.forEach(header => {
-    // Sanitize header text
-    const headerEl = document.createElement('th');
-    headerEl.textContent = header;
-    headerHtml += headerEl.outerHTML;
-  });
-  headerHtml += `<th class="col-actions">Actions</th>`;
 
-  // --- 2. Create Table Body Rows ---
-  let bodyHtml = '';
-  data.forEach((row, rowIndex) => {
-    // Find a unique ID for the row. Default to index.
-    const rowId = row.ID || row.id || row.User_Id || row.Project_ID || row.Expense_ID || row.Material_ID || rowIndex;
+  function applyThemeColor(root, color) {
+    if (!root || !color) return;
+    root.style.setProperty("--theme-accent", color);
+    root.style.setProperty("--theme-accent-16", hexToRgba(color, 0.16));
+  }
 
-    bodyHtml += `<tr data-row-id="${rowId}">`;
-    
-    // Add Checkbox cell
-    bodyHtml += `
-      <td class="col-checkbox">
-        <input class="form-check-input row-checkbox" type="checkbox" data-row-id="${rowId}">
-      </td>
+  function populateHeader(subTabData, headerEl) {
+    if (!headerEl) return;
+    const title =
+      subTabData.View_Label ||
+      subTabData.Sub_Label_AR ||
+      subTabData.Sub_Label_EN ||
+      "";
+    const addLabel =
+      subTabData.Add_Label ||
+      subTabData.AddLabel ||
+      "إضافة";
+
+    const formsRegister = (g.bootstrap && g.bootstrap.forms) || {};
+    const paneKey = subTabData.Pane || subTabData.Sub_ID || "";
+    const formMeta =
+      formsRegister[paneKey] ||
+      formsRegister[subTabData.Sub_ID] ||
+      formsRegister[subTabData.Route] ||
+      {};
+
+    const quickActions = Array.isArray(formMeta.quickActions)
+      ? formMeta.quickActions
+      : [];
+
+    const showSearch = Boolean(subTabData.Search_Bar);
+
+    headerEl.innerHTML = `
+      <div class="data-pad__title">
+        <span class="data-pad__badge">${subTabData.Tab_ID || ""}</span>
+        <h2>${title || ""}</h2>
+      </div>
+      <div class="data-pad__search" ${showSearch ? "" : "hidden"}>
+        <input type="search" class="data-pad__search-input" placeholder="بحث ذكي" data-role="search" />
+        <input type="date" class="data-pad__search-date" data-role="date-from" aria-label="من تاريخ" />
+        <input type="date" class="data-pad__search-date" data-role="date-to" aria-label="إلى تاريخ" />
+      </div>
+      <div class="data-pad__filters" data-role="filters"></div>
+      <div class="data-pad__actions" data-role="actions">
+        <button type="button" class="btn btn--primary" data-role="add">${addLabel}</button>
+        ${quickActions
+          .map(
+            (action) => `
+              <button type="button" class="btn btn--ghost" data-role="quick-action" data-action="${
+                action.action
+              }">
+                ${action.label}
+              </button>
+            `
+          )
+          .join("")}
+      </div>
+    `;
+  }
+
+  function attachHeaderListeners(headerEl, state, tableContainer) {
+    if (!headerEl) return;
+    const searchInput = headerEl.querySelector('[data-role="search"]');
+    const fromInput = headerEl.querySelector('[data-role="date-from"]');
+    const toInput = headerEl.querySelector('[data-role="date-to"]');
+    const filtersWrapper = headerEl.querySelector('[data-role="filters"]');
+    const addButton = headerEl.querySelector('[data-role="add"]');
+
+    const onFiltersChanged = () => {
+      applyFilters(state);
+      renderTable(tableContainer, state);
+    };
+
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        state.searchText = searchInput.value || "";
+        onFiltersChanged();
+      });
+    }
+
+    if (fromInput) {
+      fromInput.addEventListener("change", () => {
+        state.dateFrom = fromInput.value || "";
+        onFiltersChanged();
+      });
+    }
+
+    if (toInput) {
+      toInput.addEventListener("change", () => {
+        state.dateTo = toInput.value || "";
+        onFiltersChanged();
+      });
+    }
+
+    if (filtersWrapper) {
+      filtersWrapper.addEventListener("change", (event) => {
+        const select = event.target.closest("select[data-column]");
+        if (!select) return;
+        const column = select.dataset.column;
+        const value = select.value;
+        state.columnFilters = state.columnFilters || {};
+        if (value) {
+          state.columnFilters[column] = value;
+        } else {
+          delete state.columnFilters[column];
+        }
+        onFiltersChanged();
+      });
+    }
+
+    if (addButton) {
+      addButton.addEventListener("click", () => {
+        openDynamicFormModal({ mode: "add", state });
+      });
+    }
+
+    headerEl.addEventListener("click", (event) => {
+      const actionButton = event.target.closest('[data-role="quick-action"]');
+      if (!actionButton) return;
+      const actionKey = actionButton.dataset.action;
+      handleQuickAction(actionKey, state);
+    });
+  }
+
+  function fetchFilterDefinitions(subTabData) {
+    if (!subTabData || !subTabData.Sub_ID) return Promise.resolve([]);
+    return new Promise((resolve) => {
+      google.script.run
+        .withFailureHandler((err) => {
+          console.error("getFilterOptionsForSubTab failed", err);
+          resolve([]);
+        })
+        .withSuccessHandler((res) => {
+          if (res && res.success && Array.isArray(res.definitions)) {
+            resolve(res.definitions);
+          } else {
+            resolve([]);
+          }
+        })
+        .getFilterOptionsForSubTab(subTabData.Sub_ID);
+    });
+  }
+
+  function populateFilters(headerEl, definitions, state) {
+    if (!headerEl) return;
+    const wrapper = headerEl.querySelector('[data-role="filters"]');
+    if (!wrapper) return;
+    if (!Array.isArray(definitions) || !definitions.length) {
+      wrapper.hidden = true;
+      return;
+    }
+    wrapper.hidden = false;
+    wrapper.innerHTML = definitions
+      .map((def) => {
+        const label = def.label || def.column;
+        const optionsHtml = ["<option value=\"\">الكل</option>"]
+          .concat(
+            (def.options || []).map(
+              (opt) =>
+                `<option value="${opt.value}">${opt.label || opt.value}</option>`
+            )
+          )
+          .join("");
+        return `
+          <label class="visually-hidden" for="filter-${def.settingKey}">${label}</label>
+          <select id="filter-${def.settingKey}" data-column="${def.column}">
+            ${optionsHtml}
+          </select>
+        `;
+      })
+      .join("");
+  }
+
+  function applyFilters(state) {
+    const rows = Array.isArray(state.dataset) ? state.dataset : [];
+    const headers = Array.isArray(state.headers) ? state.headers : [];
+    const search = (state.searchText || "").toLowerCase().trim();
+    const dateFrom = parseDate(state.dateFrom);
+    const dateTo = parseDate(state.dateTo, true);
+    const columnFilters = state.columnFilters || {};
+
+    state.filtered = rows.filter((row) => {
+      if (search) {
+        const text = headers
+          .map((header) => normalizeValue(row[header]))
+          .join(" ")
+          .toLowerCase();
+        if (!text.includes(search)) return false;
+      }
+
+      const columns = Object.keys(columnFilters);
+      if (columns.length) {
+        const invalid = columns.some((column) => {
+          const expected = columnFilters[column];
+          const value = normalizeValue(row[column]);
+          return expected && value !== expected;
+        });
+        if (invalid) return false;
+      }
+
+      if (dateFrom || dateTo) {
+        const rowDates = headers
+          .filter((header) => DATE_COLUMN_HINTS.some((regex) => regex.test(header)))
+          .map((header) => parseDate(row[header]));
+        const effectiveDate = rowDates.find((d) => d instanceof Date && !Number.isNaN(d));
+        if (effectiveDate) {
+          if (dateFrom && effectiveDate < dateFrom) return false;
+          if (dateTo && effectiveDate > dateTo) return false;
+        }
+      }
+
+      return true;
+    });
+  }
+
+  function renderTable(container, state) {
+    if (!container) return;
+    const headers = Array.isArray(state.headers) ? state.headers : [];
+    const rows = Array.isArray(state.filtered) ? state.filtered : [];
+
+    if (!headers.length) {
+      container.innerHTML = "<p class=\"muted\">لا توجد أعمدة للعرض.</p>";
+      return;
+    }
+
+    if (!rows.length) {
+      container.innerHTML = "<p class=\"muted\">لا توجد بيانات مطابقة للمعايير الحالية.</p>";
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.className = "dynamic-data-table";
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    headers.forEach((header) => {
+      const th = document.createElement("th");
+      th.textContent = header;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      tr.dataset.rowId = row.__rowIndex || row.ID || row.Id || "";
+      headers.forEach((header) => {
+        const td = document.createElement("td");
+        td.textContent = normalizeValue(row[header]);
+        tr.appendChild(td);
+      });
+      tr.addEventListener("click", () => {
+        openDynamicFormModal({ mode: "edit", state, record: row });
+      });
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    container.innerHTML = "";
+    container.appendChild(table);
+  }
+
+  function openDynamicFormModal({ mode, state, record }) {
+    const subTabData = state.subTabData || {};
+    const formsRegister = (g.bootstrap && g.bootstrap.forms) || {};
+    const paneKey = state.paneKey || subTabData.Sub_ID || "";
+    const formMeta =
+      formsRegister[paneKey] ||
+      formsRegister[subTabData.Sub_ID] ||
+      formsRegister[subTabData.Route] ||
+      {};
+
+    const baseFormId =
+      (mode === "edit" && (subTabData.Edit_Form_ID || formMeta.editFormId)) ||
+      subTabData.Add_Form_ID ||
+      formMeta.formId;
+
+    if (!baseFormId) {
+      console.warn("No dynamic form id available for", paneKey);
+      return;
+    }
+
+    const overlay = document.createElement("div");
+    overlay.className = "dynamic-form-modal";
+    overlay.innerHTML = `
+      <div class="dynamic-form-modal__dialog" role="dialog" aria-modal="true">
+        <aside class="dynamic-form-modal__sidebar" data-role="sections"></aside>
+        <div class="dynamic-form-modal__content">
+          <div class="dynamic-form-modal__header">
+            <h3>${mode === "edit" ? "عرض / تعديل" : "إضافة"}</h3>
+            <button type="button" class="btn btn--muted" data-role="close">إغلاق</button>
+          </div>
+          <form class="dynamic-form-modal__form" data-role="form">
+            <div class="dynamic-form-modal__fields" data-role="fields"></div>
+            <div class="dynamic-form-modal__footer">
+              <button type="button" class="btn btn--muted" data-role="cancel">إلغاء</button>
+              <button type="submit" class="btn btn--primary" data-role="submit">حفظ</button>
+            </div>
+          </form>
+        </div>
+      </div>
     `;
 
-    // Add Data cells
-    headers.forEach(header => {
-      let cellValue = row[header];
-      // Handle null/undefined
-      if (cellValue === null || typeof cellValue === 'undefined') {
-        cellValue = '';
+    document.body.appendChild(overlay);
+
+    const removeOverlay = () => {
+      overlay.remove();
+    };
+
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) {
+        removeOverlay();
       }
-      
-      // Create a dummy element to safely set text content
-      const tdEl = document.createElement('td');
-      
-      // TODO: Add formatting for dates, currency, etc.
-      // For now, just set text content to prevent XSS
-      tdEl.textContent = cellValue;
-      bodyHtml += tdEl.outerHTML;
     });
 
-    // Add Actions cell (Updated to match Picture1.jpg)
-    bodyHtml += `
-      <td class="col-actions">
-        <div class="table-row-actions">
-          <button class="btn btn-sm btn-primary" title="View Details">
-            Details
-          </button>
-          <button class="btn btn-sm btn-secondary" title="Edit">
-            Edit
-          </button>
-          <button class="btn btn-sm btn-danger" title="Delete">
-            Delete
-          </button>
-        </div>
-      </td>
-    `;
-    
-    bodyHtml += `</tr>`;
-  });
+    overlay
+      .querySelector('[data-role="close"]')
+      .addEventListener("click", removeOverlay);
+    overlay
+      .querySelector('[data-role="cancel"]')
+      .addEventListener("click", removeOverlay);
 
-  return `
-    <table class="table dynamic-view-table" id="${tableId}">
-      <thead>
-        <tr>${headerHtml}</tr>
-      </thead>
-      <tbody>
-        ${bodyHtml}
-      </tbody>
-    </table>
-  `;
-}
+    const formEl = overlay.querySelector('[data-role="form"]');
+    const fieldsWrapper = overlay.querySelector('[data-role="fields"]');
+    const sectionsWrapper = overlay.querySelector('[data-role="sections"]');
+    const submitBtn = overlay.querySelector('[data-role="submit"]');
 
-/**
- * @function attachTableListeners
- * @description Attaches live listeners for search, checkboxes, etc.
- * @param {object} subTabData - The sub-tab's data.
- * @param {string} tableId - The unique ID for this table.
- */
-function attachTableListeners(subTabData, tableId) {
-  const FNAME = "attachTableListeners";
-  const searchInput = document.getElementById(`view-search-${subTabData.Sub_ID}`);
-  const table = document.getElementById(tableId);
-  
-  if (!table) {
-    log.warn(FNAME, `Table not found for listeners: #${tableId}`);
-    return;
-  }
-  
-  const tableBody = table.querySelector('tbody');
-  if (!tableBody) {
-     log.warn(FNAME, `Table body not found for listeners: #${tableId}`);
-     return;
+    if (mode === "edit" && !subTabData.Edit_Form_ID && formMeta.editFormId) {
+      // prefer explicit edit form id when available
+      state.editFormId = formMeta.editFormId;
+    }
+
+    google.script.run
+      .withFailureHandler((err) => {
+        console.error("getFormWithOptions failed", err);
+        fieldsWrapper.innerHTML = `<p class="error-text">تعذّر تحميل النموذج الديناميكي.</p>`;
+        submitBtn.disabled = true;
+      })
+      .withSuccessHandler((fields) => {
+        const visibleFields = (Array.isArray(fields) ? fields : []).filter(
+          (field) => field.show !== false
+        );
+        const sections = buildSections(visibleFields);
+        renderSectionsNav(sectionsWrapper, sections);
+        renderSection(fieldsWrapper, sections[0]);
+        attachSectionSwitching(
+          sectionsWrapper,
+          sections,
+          (section) => renderSection(fieldsWrapper, section)
+        );
+        bindFormSubmission(formEl, {
+          formId: baseFormId,
+          fields: visibleFields,
+          mode,
+          record,
+          state,
+          onComplete: () => {
+            removeOverlay();
+            refreshData(state);
+          },
+        });
+      })
+      .getFormWithOptions(baseFormId);
   }
 
-  // --- 1. Search Bar Listener ---
-  if (searchInput) {
-    searchInput.addEventListener('keyup', () => {
-      const searchTerm = searchInput.value.toLowerCase().trim();
-      log.debug(FNAME, `Search term: '${searchTerm}'`);
-      
-      tableBody.querySelectorAll('tr').forEach(row => {
-        const rowText = row.textContent.toLowerCase();
-        if (rowText.includes(searchTerm)) {
-          row.classList.remove('hidden-row');
+  function buildSections(fields) {
+    const groups = new Map();
+    (fields || []).forEach((field) => {
+      const sectionName = field.section || "النموذج";
+      if (!groups.has(sectionName)) groups.set(sectionName, []);
+      groups.get(sectionName).push(field);
+    });
+    return Array.from(groups.entries()).map(([name, sectionFields]) => ({
+      name,
+      fields: sectionFields,
+    }));
+  }
+
+  function renderSectionsNav(container, sections) {
+    if (!container) return;
+    container.innerHTML = "";
+    sections.forEach((section, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = section.name;
+      button.dataset.sectionIndex = index;
+      if (index === 0) button.classList.add("is-active");
+      container.appendChild(button);
+    });
+  }
+
+  function attachSectionSwitching(container, sections, onSelect) {
+    if (!container) return;
+    container.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-section-index]");
+      if (!button) return;
+      const index = Number(button.dataset.sectionIndex);
+      const section = sections[index];
+      if (!section) return;
+      container
+        .querySelectorAll("button[data-section-index]")
+        .forEach((btn) => btn.classList.toggle("is-active", btn === button));
+      onSelect(section);
+    });
+  }
+
+  function renderSection(container, section) {
+    if (!container || !section) return;
+    container.innerHTML = section.fields
+      .map((field) => renderField(field))
+      .join("");
+  }
+
+  function renderField(field) {
+    const baseKey = field.fieldId || field.targetColumn || field.label || Date.now();
+    const fieldId = `fld-${baseKey}`;
+    const label = field.label || field.targetColumn || field.fieldId || "";
+    const type = (field.type || "text").toLowerCase();
+    const nameAttr = field.fieldId || field.targetColumn || label;
+
+    switch (type) {
+      case "textarea":
+        return `
+          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
+            <label for="${fieldId}">${label}</label>
+            <textarea id="${fieldId}" name="${nameAttr}" rows="3"></textarea>
+          </div>
+        `;
+      case "dropdown":
+      case "select":
+        return `
+          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
+            <label for="${fieldId}">${label}</label>
+            <select id="${fieldId}" name="${nameAttr}">
+              ${(field.options || [])
+                .map(
+                  (option) =>
+                    `<option value="${option.value}">${
+                      option.label || option.value
+                    }</option>`
+                )
+                .join("")}
+            </select>
+          </div>
+        `;
+      case "checkbox":
+      case "boolean":
+        return `
+          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
+            <label>
+              <input type="checkbox" id="${fieldId}" name="${nameAttr}" />
+              ${label}
+            </label>
+          </div>
+        `;
+      case "date":
+        return `
+          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
+            <label for="${fieldId}">${label}</label>
+            <input type="date" id="${fieldId}" name="${nameAttr}" />
+          </div>
+        `;
+      case "number":
+        return `
+          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
+            <label for="${fieldId}">${label}</label>
+            <input type="number" id="${fieldId}" name="${nameAttr}" />
+          </div>
+        `;
+      default:
+        return `
+          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
+            <label for="${fieldId}">${label}</label>
+            <input type="text" id="${fieldId}" name="${nameAttr}" />
+          </div>
+        `;
+    }
+  }
+
+  function bindFormSubmission(formEl, { formId, fields, mode, record, state, onComplete }) {
+    if (!formEl) return;
+    const userRole =
+      (g.bootstrap && (g.bootstrap.role || g.bootstrap.user?.Role_Id)) || "";
+
+    const inputs = Array.from(formEl.querySelectorAll("[data-field-id]"));
+
+    inputs.forEach((wrapper) => {
+      const fieldKey = wrapper.dataset.fieldKey;
+      const input = wrapper.querySelector("input, select, textarea");
+      if (!input) return;
+      const field = fields.find((fld) =>
+        (fld.fieldId || fld.targetColumn || fld.label) === fieldKey
+      );
+      if (!field) return;
+      const editable = isFieldEditable(field, mode, userRole);
+      input.disabled = !editable;
+      if (field.defaultValue && mode === "add") {
+        input.value = field.defaultValue;
+        if (input.type === "checkbox") {
+          input.checked = Boolean(field.defaultValue);
+        }
+      }
+      if (record) {
+        const value =
+          record[field.targetColumn] ||
+          record[field.fieldId] ||
+          record[field.label];
+        if (value !== undefined && value !== null) {
+          if (input.type === "checkbox") {
+            input.checked = isTruthy(value);
+          } else {
+            input.value = value;
+          }
+        }
+      }
+    });
+
+    formEl.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const payload = {};
+      Array.from(formEl.elements).forEach((el) => {
+        if (!el.name) return;
+        if (el.type === "checkbox") {
+          payload[el.name] = el.checked;
         } else {
-          row.classList.add('hidden-row');
+          payload[el.name] = el.value;
         }
       });
+
+      const submitBtn = formEl.querySelector('[data-role="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+
+      google.script.run
+        .withFailureHandler((err) => {
+          console.error("submitDynamicForm failed", err);
+          if (submitBtn) submitBtn.disabled = false;
+        })
+        .withSuccessHandler((res) => {
+          if (submitBtn) submitBtn.disabled = false;
+          if (res && res.success) {
+            if (typeof onComplete === "function") onComplete(res);
+          }
+        })
+        .submitDynamicForm(formId, payload, { mode, record });
     });
   }
 
-  // --- 2. Checkbox Listeners ---
-  const headerCheckbox = document.getElementById(`header-check-${tableId}`);
-  const rowCheckboxes = tableBody.querySelectorAll('.row-checkbox');
-  const bulkDeleteBtn = document.getElementById(`bulk-delete-${subTabData.Sub_ID}`);
+  function isFieldEditable(field, mode, userRole) {
+    if (!field) return false;
+    if (mode === "view") return false;
+    if (field.readOnly) return false;
+    if (!field.roleId) return true;
+    const roles = String(field.roleId)
+      .split(/[;,\s]+/)
+      .map((role) => role.trim())
+      .filter(Boolean)
+      .map((role) => role.toUpperCase());
+    if (!roles.length) return true;
+    return roles.includes(String(userRole || "").toUpperCase());
+  }
 
-  // Header checkbox toggles all row checkboxes
-  if (headerCheckbox) {
-    headerCheckbox.addEventListener('change', () => {
-      const isChecked = headerCheckbox.checked;
-      rowCheckboxes.forEach(cb => {
-        cb.checked = isChecked;
-      });
-      updateBulkDeleteButton();
+  function refreshData(state) {
+    const subTabData = state.subTabData;
+    if (!subTabData || !subTabData.Source_Sheet) return;
+    const tableContainer = document.querySelector(
+      ".data-pad__table-inner"
+    );
+    if (!tableContainer) return;
+    google.script.run
+      .withFailureHandler((err) => console.error("refresh data failed", err))
+      .withSuccessHandler((response) => {
+        const rows = Array.isArray(response?.data) ? response.data : [];
+        const headers = Array.isArray(response?.headers) ? response.headers : [];
+        state.dataset = rows;
+        state.filtered = rows.slice();
+        state.headers = headers;
+        applyFilters(state);
+        renderTable(tableContainer, state);
+      })
+      .getViewData(subTabData.Source_Sheet, subTabData.Sub_ID);
+  }
+
+  function handleQuickAction(actionKey, state) {
+    if (!actionKey) return;
+    console.info("Quick action triggered", actionKey, {
+      selection: Array.from(state.selected || []),
     });
   }
-  
-  // Row checkboxes update header checkbox and bulk delete button
-  rowCheckboxes.forEach(cb => {
-    cb.addEventListener('change', () => {
-      updateBulkDeleteButton();
-      
-      // Update header checkbox state
-      if (headerCheckbox) {
-        const allChecked = Array.from(rowCheckboxes).every(r => r.checked);
-        headerCheckbox.checked = allChecked;
-      }
-    });
-  });
 
-  function updateBulkDeleteButton() {
-    if (!bulkDeleteBtn) return;
-    const anyChecked = Array.from(rowCheckboxes).some(r => r.checked);
-    bulkDeleteBtn.disabled = !anyChecked;
-  }
-}
-
-/**
- * @function hexToRgba
- * @description Utility to convert a hex color to rgba with opacity.
- * @param {string} hex - The hex color (e.g., #FF0000).
- * @param {number} alpha - The opacity (0.0 to 1.0).
- * @returns {string} The rgba color string.
- */
-function hexToRgba(hex, alpha) {
-  const FNAME = "hexToRgba";
-  try {
-    let r = 0, g = 0, b = 0;
-    if (hex.length == 4) { // #F03
-      r = parseInt(hex[1] + hex[1], 16);
-      g = parseInt(hex[2] + hex[2], 16);
-      b = parseInt(hex[3] + hex[3], 16);
-    } else if (hex.length == 7) { // #FF0033
-      r = parseInt(hex.substring(1, 3), 16);
-      g = parseInt(hex.substring(3, 5), 16);
-      b = parseInt(hex.substring(5, 7), 16);
+  function parseDate(value, endOfDay = false) {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    if (endOfDay) {
+      parsed.setHours(23, 59, 59, 999);
     }
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  } catch (e) {
-    log.error(FNAME, `Error converting hex ${hex}: ${e.message}`);
-    return `rgba(240, 240, 240, ${alpha})`; // Return a default light grey
+    return parsed;
   }
-}
+
+  function normalizeValue(value) {
+    if (value === null || typeof value === "undefined") return "";
+    if (value instanceof Date) {
+      return value.toISOString().split("T")[0];
+    }
+    return String(value);
+  }
+
+  function isTruthy(value) {
+    if (value === true) return true;
+    if (value === false) return false;
+    const text = String(value || "").toLowerCase();
+    return ["true", "1", "yes", "y", "نعم", "نشط"].includes(text);
+  }
+
+  function hexToRgba(hex, alpha) {
+    const normalized = String(hex || "").replace("#", "");
+    if (normalized.length === 3) {
+      const r = parseInt(normalized[0] + normalized[0], 16);
+      const g = parseInt(normalized[1] + normalized[1], 16);
+      const b = parseInt(normalized[2] + normalized[2], 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    if (normalized.length === 6) {
+      const r = parseInt(normalized.substring(0, 2), 16);
+      const g = parseInt(normalized.substring(2, 4), 16);
+      const b = parseInt(normalized.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    return `rgba(212, 175, 55, ${alpha})`;
+  }
+})();
 </script>
