@@ -934,6 +934,107 @@ function getViewData(sourceName, subTabId) {
   }
 }
 
+function getSubTabViewData(subTabId) {
+  const FNAME = "getSubTabViewData";
+  debugLog(FNAME, "start", { subTabId });
+
+  try {
+    const tabRegister = getTabRegister();
+    const subTabConfig = Array.isArray(tabRegister)
+      ? tabRegister
+          .flatMap((tab) => tab?.subTabs || [])
+          .find((sub) => sub?.subId === subTabId)
+      : null;
+
+    if (!subTabConfig) {
+      throw new Error(`Sub-tab ${subTabId} not found`);
+    }
+
+    const viewData = getViewData(subTabConfig.sourceSheet, subTabId);
+    const formsRegister = loadDynamicFormsRegisterSafe_();
+    const formConfig = formsRegister?.[subTabId];
+
+    return sanitizeForClientResponse_({
+      success: true,
+      subTabConfig: Object.assign(
+        {},
+        subTabConfig,
+        {
+          searchBar: !!subTabConfig.searchBar,
+          filterOptions: Array.isArray(subTabConfig.filterOptions)
+            ? subTabConfig.filterOptions
+            : [],
+        }
+      ),
+      formConfig,
+      viewData,
+    });
+  } catch (err) {
+    debugError(FNAME, err, { subTabId });
+    return {
+      success: false,
+      message: `Failed to load sub-tab data: ${err.message}`,
+    };
+  }
+}
+
+function getFormWithRecordData(formId, recordId, subTabId) {
+  const FNAME = "getFormWithRecordData";
+  debugLog(FNAME, "start", { formId, recordId, subTabId });
+
+  try {
+    const safeFormId = String(formId || "").trim();
+    if (!safeFormId) {
+      throw new Error("Form ID is required.");
+    }
+
+    const formStructure = getDynamicFormStructure(safeFormId);
+    let recordData = null;
+
+    if (recordId != null && recordId !== "") {
+      const tabRegister = getTabRegister();
+      const subTabConfig = Array.isArray(tabRegister)
+        ? tabRegister
+            .flatMap((tab) => tab?.subTabs || [])
+            .find((sub) => sub?.subId === subTabId)
+        : null;
+
+      const sourceSheet = subTabConfig?.sourceSheet;
+      if (sourceSheet) {
+        const sourceData = loadSheetData_(sourceSheet);
+        const headers = Array.isArray(sourceData?.headers)
+          ? sourceData.headers
+          : [];
+        const rows = Array.isArray(sourceData?.rows) ? sourceData.rows : [];
+        const idColumn = findHeaderIndex_(headers, "ID", "Id", "Record_ID");
+
+        if (idColumn >= 0) {
+          const recordRow = rows.find((row) => keysEqual_(row?.[idColumn], recordId));
+          if (Array.isArray(recordRow)) {
+            recordData = {};
+            headers.forEach((header, index) => {
+              recordData[header] = recordRow[index];
+            });
+          }
+        }
+      }
+    }
+
+    return sanitizeForClientResponse_({
+      success: true,
+      formStructure,
+      recordData,
+      isEdit: recordId != null && recordId !== "",
+    });
+  } catch (err) {
+    debugError(FNAME, err, { formId, recordId, subTabId });
+    return {
+      success: false,
+      message: `Failed to load form data: ${err.message}`,
+    };
+  }
+}
+
 function buildBootstrapPayload_(rawUser, permissionsOverride) {
   const sanitizedUser = sanitizeUserForClient_(rawUser);
   const role = sanitizedUser?.Role_Id || sanitizedUser?.role || "GUEST";

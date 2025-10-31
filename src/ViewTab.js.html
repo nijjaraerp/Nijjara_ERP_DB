@@ -1,715 +1,345 @@
 <script>
-(function () {
-  const g = (window.g = window.g || {});
-  const DataPad = (window.DataPad = window.DataPad || {});
+(function (window) {
+  'use strict';
 
-  const DATE_COLUMN_HINTS = [/date/i, /_at$/i, /Date$/i, /\bOn$/i];
+  const viewTab = window.viewTab || (window.viewTab = {});
 
-  DataPad.render = function renderDynamicDataPad(subTabData, container) {
-    if (!container || !subTabData) return;
+  function buildDynamicViewPad(subTabConfig, data) {
+    const container = document.createElement('div');
+    container.className = 'dynamic-view-pad';
+    if (subTabConfig?.subId) {
+      container.dataset.subTabId = subTabConfig.subId;
+    }
 
-    const paneKey = subTabData.Pane || subTabData.Sub_ID || subTabData.SubId || "";
-    const color =
-      subTabData.Tab_Color ||
-      subTabData.tabColor ||
-      (g.bootstrap && g.bootstrap.themeColor) ||
-      "#d4af37";
+    const header = buildViewPadHeader(subTabConfig);
+    container.appendChild(header);
 
-    const shell = document.createElement("div");
-    shell.className = "data-pad-shell";
-    shell.innerHTML = buildSkeleton();
-    container.innerHTML = "";
-    container.appendChild(shell);
+    if (subTabConfig?.searchBar || (Array.isArray(subTabConfig?.filterOptions) && subTabConfig.filterOptions.length > 0)) {
+      const searchFilters = buildSearchFilters(subTabConfig);
+      container.appendChild(searchFilters);
+    }
 
-    const headerEl = shell.querySelector(".data-pad__header");
-    const tableContainer = shell.querySelector(".data-pad__table-inner");
-    const loadingEl = shell.querySelector(".data-pad__loading");
+    const table = buildDataTable(
+      {
+        headers: Array.isArray(data?.headers) ? data.headers : [],
+        rows: Array.isArray(data?.rows) ? data.rows : [],
+      },
+      subTabConfig
+    );
+    container.appendChild(table);
 
-    applyThemeColor(shell, color);
-    populateHeader(subTabData, headerEl, color);
-
-    const state = {
-      dataset: [],
-      filtered: [],
-      headers: [],
-      selected: new Set(),
-      subTabData,
-      paneKey,
-      color,
-    };
-
-    attachHeaderListeners(headerEl, state, tableContainer);
-    fetchFilterDefinitions(subTabData)
-      .then((definitions) => populateFilters(headerEl, definitions, state))
-      .catch((err) => console.error("Failed to load filters", err));
-
-    loadingEl.hidden = false;
-    google.script.run
-      .withFailureHandler((err) => {
-        loadingEl.hidden = true;
-        console.error("getViewData failed", err);
-        tableContainer.innerHTML = `<p class="muted">${
-          err && err.message
-            ? err.message
-            : "تعذّر تحميل البيانات لهذا التبويب."
-        }</p>`;
-      })
-      .withSuccessHandler((response) => {
-        loadingEl.hidden = true;
-        const rows = Array.isArray(response?.data) ? response.data : [];
-        const headers = Array.isArray(response?.headers) ? response.headers : [];
-        state.dataset = rows;
-        state.filtered = rows.slice();
-        state.headers = headers;
-        renderTable(tableContainer, state);
-      })
-      .getViewData(subTabData.Source_Sheet, subTabData.Sub_ID);
-  };
-
-  function buildSkeleton() {
-    return `
-      <section class="data-pad" aria-live="polite">
-        <header class="data-pad__header"></header>
-        <div class="data-pad__table">
-          <div class="data-pad__table-inner"></div>
-          <div class="data-pad__loading" hidden>
-            <p>يتم الآن تحميل البيانات...</p>
-          </div>
-        </div>
-      </section>
-    `;
+    return container;
   }
 
-  function applyThemeColor(root, color) {
-    if (!root || !color) return;
-    root.style.setProperty("--theme-accent", color);
-    root.style.setProperty("--theme-accent-16", hexToRgba(color, 0.16));
+  function buildViewPadHeader(subTabConfig) {
+    const header = document.createElement('div');
+    header.className = 'view-pad-header';
+
+    const formConfig = window.bootstrapData?.forms?.[subTabConfig?.subId];
+    if (formConfig?.formId) {
+      const addButton = document.createElement('button');
+      addButton.type = 'button';
+      addButton.className = 'add-new-btn accent-button';
+      addButton.innerHTML = `<i class="fas fa-plus"></i> ${formConfig.titleAr || 'إضافة جديد'}`;
+      addButton.onclick = () => openFormModal(formConfig.formId, null, subTabConfig?.subId);
+      header.appendChild(addButton);
+    }
+
+    return header;
   }
 
-  function populateHeader(subTabData, headerEl) {
-    if (!headerEl) return;
-    const title =
-      subTabData.View_Label ||
-      subTabData.Sub_Label_AR ||
-      subTabData.Sub_Label_EN ||
-      "";
-    const addLabel =
-      subTabData.Add_Label ||
-      subTabData.AddLabel ||
-      "إضافة";
+  function buildDataTable(data, subTabConfig) {
+    const table = document.createElement('table');
+    table.className = 'dynamic-data-table';
+    table.dataset.subTabId = subTabConfig?.subId || '';
 
-    const formsRegister = (g.bootstrap && g.bootstrap.forms) || {};
-    const paneKey = subTabData.Pane || subTabData.Sub_ID || "";
-    const formMeta =
-      formsRegister[paneKey] ||
-      formsRegister[subTabData.Sub_ID] ||
-      formsRegister[subTabData.Route] ||
-      {};
+    const headerRow = buildTableHeaders(data.headers);
+    table.appendChild(headerRow);
 
-    const quickActions = Array.isArray(formMeta.quickActions)
-      ? formMeta.quickActions
-      : [];
-
-    const showSearch = Boolean(subTabData.Search_Bar);
-
-    headerEl.innerHTML = `
-      <div class="data-pad__title">
-        <span class="data-pad__badge">${subTabData.Tab_ID || ""}</span>
-        <h2>${title || ""}</h2>
-      </div>
-      <div class="data-pad__search" ${showSearch ? "" : "hidden"}>
-        <input type="search" class="data-pad__search-input" placeholder="بحث ذكي" data-role="search" />
-        <input type="date" class="data-pad__search-date" data-role="date-from" aria-label="من تاريخ" />
-        <input type="date" class="data-pad__search-date" data-role="date-to" aria-label="إلى تاريخ" />
-      </div>
-      <div class="data-pad__filters" data-role="filters"></div>
-      <div class="data-pad__actions" data-role="actions">
-        <button type="button" class="btn btn--primary" data-role="add">${addLabel}</button>
-        ${quickActions
-          .map(
-            (action) => `
-              <button type="button" class="btn btn--ghost" data-role="quick-action" data-action="${
-                action.action
-              }">
-                ${action.label}
-              </button>
-            `
-          )
-          .join("")}
-      </div>
-    `;
-  }
-
-  function attachHeaderListeners(headerEl, state, tableContainer) {
-    if (!headerEl) return;
-    const searchInput = headerEl.querySelector('[data-role="search"]');
-    const fromInput = headerEl.querySelector('[data-role="date-from"]');
-    const toInput = headerEl.querySelector('[data-role="date-to"]');
-    const filtersWrapper = headerEl.querySelector('[data-role="filters"]');
-    const addButton = headerEl.querySelector('[data-role="add"]');
-
-    const onFiltersChanged = () => {
-      applyFilters(state);
-      renderTable(tableContainer, state);
-    };
-
-    if (searchInput) {
-      searchInput.addEventListener("input", () => {
-        state.searchText = searchInput.value || "";
-        onFiltersChanged();
-      });
-    }
-
-    if (fromInput) {
-      fromInput.addEventListener("change", () => {
-        state.dateFrom = fromInput.value || "";
-        onFiltersChanged();
-      });
-    }
-
-    if (toInput) {
-      toInput.addEventListener("change", () => {
-        state.dateTo = toInput.value || "";
-        onFiltersChanged();
-      });
-    }
-
-    if (filtersWrapper) {
-      filtersWrapper.addEventListener("change", (event) => {
-        const select = event.target.closest("select[data-column]");
-        if (!select) return;
-        const column = select.dataset.column;
-        const value = select.value;
-        state.columnFilters = state.columnFilters || {};
-        if (value) {
-          state.columnFilters[column] = value;
-        } else {
-          delete state.columnFilters[column];
-        }
-        onFiltersChanged();
-      });
-    }
-
-    if (addButton) {
-      addButton.addEventListener("click", () => {
-        openDynamicFormModal({ mode: "add", state });
-      });
-    }
-
-    headerEl.addEventListener("click", (event) => {
-      const actionButton = event.target.closest('[data-role="quick-action"]');
-      if (!actionButton) return;
-      const actionKey = actionButton.dataset.action;
-      handleQuickAction(actionKey, state);
-    });
-  }
-
-  function fetchFilterDefinitions(subTabData) {
-    if (!subTabData || !subTabData.Sub_ID) return Promise.resolve([]);
-    return new Promise((resolve) => {
-      google.script.run
-        .withFailureHandler((err) => {
-          console.error("getFilterOptionsForSubTab failed", err);
-          resolve([]);
-        })
-        .withSuccessHandler((res) => {
-          if (res && res.success && Array.isArray(res.definitions)) {
-            resolve(res.definitions);
-          } else {
-            resolve([]);
-          }
-        })
-        .getFilterOptionsForSubTab(subTabData.Sub_ID);
-    });
-  }
-
-  function populateFilters(headerEl, definitions, state) {
-    if (!headerEl) return;
-    const wrapper = headerEl.querySelector('[data-role="filters"]');
-    if (!wrapper) return;
-    if (!Array.isArray(definitions) || !definitions.length) {
-      wrapper.hidden = true;
-      return;
-    }
-    wrapper.hidden = false;
-    wrapper.innerHTML = definitions
-      .map((def) => {
-        const label = def.label || def.column;
-        const optionsHtml = ["<option value=\"\">الكل</option>"]
-          .concat(
-            (def.options || []).map(
-              (opt) =>
-                `<option value="${opt.value}">${opt.label || opt.value}</option>`
-            )
-          )
-          .join("");
-        return `
-          <label class="visually-hidden" for="filter-${def.settingKey}">${label}</label>
-          <select id="filter-${def.settingKey}" data-column="${def.column}">
-            ${optionsHtml}
-          </select>
-        `;
-      })
-      .join("");
-  }
-
-  function applyFilters(state) {
-    const rows = Array.isArray(state.dataset) ? state.dataset : [];
-    const headers = Array.isArray(state.headers) ? state.headers : [];
-    const search = (state.searchText || "").toLowerCase().trim();
-    const dateFrom = parseDate(state.dateFrom);
-    const dateTo = parseDate(state.dateTo, true);
-    const columnFilters = state.columnFilters || {};
-
-    state.filtered = rows.filter((row) => {
-      if (search) {
-        const text = headers
-          .map((header) => normalizeValue(row[header]))
-          .join(" ")
-          .toLowerCase();
-        if (!text.includes(search)) return false;
-      }
-
-      const columns = Object.keys(columnFilters);
-      if (columns.length) {
-        const invalid = columns.some((column) => {
-          const expected = columnFilters[column];
-          const value = normalizeValue(row[column]);
-          return expected && value !== expected;
-        });
-        if (invalid) return false;
-      }
-
-      if (dateFrom || dateTo) {
-        const rowDates = headers
-          .filter((header) => DATE_COLUMN_HINTS.some((regex) => regex.test(header)))
-          .map((header) => parseDate(row[header]));
-        const effectiveDate = rowDates.find((d) => d instanceof Date && !Number.isNaN(d));
-        if (effectiveDate) {
-          if (dateFrom && effectiveDate < dateFrom) return false;
-          if (dateTo && effectiveDate > dateTo) return false;
-        }
-      }
-
-      return true;
-    });
-  }
-
-  function renderTable(container, state) {
-    if (!container) return;
-    const headers = Array.isArray(state.headers) ? state.headers : [];
-    const rows = Array.isArray(state.filtered) ? state.filtered : [];
-
-    if (!headers.length) {
-      container.innerHTML = "<p class=\"muted\">لا توجد أعمدة للعرض.</p>";
-      return;
-    }
-
-    if (!rows.length) {
-      container.innerHTML = "<p class=\"muted\">لا توجد بيانات مطابقة للمعايير الحالية.</p>";
-      return;
-    }
-
-    const table = document.createElement("table");
-    table.className = "dynamic-data-table";
-    const thead = document.createElement("thead");
-    const headRow = document.createElement("tr");
-    headers.forEach((header) => {
-      const th = document.createElement("th");
-      th.textContent = header;
-      headRow.appendChild(th);
-    });
-    thead.appendChild(headRow);
-    table.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-    rows.forEach((row) => {
-      const tr = document.createElement("tr");
-      tr.dataset.rowId = row.__rowIndex || row.ID || row.Id || "";
-      headers.forEach((header) => {
-        const td = document.createElement("td");
-        td.textContent = normalizeValue(row[header]);
-        tr.appendChild(td);
-      });
-      tr.addEventListener("click", () => {
-        openDynamicFormModal({ mode: "edit", state, record: row });
-      });
+    const tbody = document.createElement('tbody');
+    data.rows.forEach((row, index) => {
+      const tr = buildTableRow(row, data.headers, subTabConfig, index);
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
 
-    container.innerHTML = "";
-    container.appendChild(table);
+    return table;
   }
 
-  function openDynamicFormModal({ mode, state, record }) {
-    const subTabData = state.subTabData || {};
-    const formsRegister = (g.bootstrap && g.bootstrap.forms) || {};
-    const paneKey = state.paneKey || subTabData.Sub_ID || "";
-    const formMeta =
-      formsRegister[paneKey] ||
-      formsRegister[subTabData.Sub_ID] ||
-      formsRegister[subTabData.Route] ||
-      {};
+  function buildTableHeaders(headers) {
+    const thead = document.createElement('thead');
+    const tr = document.createElement('tr');
 
-    const baseFormId =
-      (mode === "edit" && (subTabData.Edit_Form_ID || formMeta.editFormId)) ||
-      subTabData.Add_Form_ID ||
-      formMeta.formId;
+    headers.forEach((header) => {
+      const th = document.createElement('th');
+      th.textContent = header || '';
+      th.dataset.column = header || '';
+      tr.appendChild(th);
+    });
 
-    if (!baseFormId) {
-      console.warn("No dynamic form id available for", paneKey);
+    const actionsHeader = document.createElement('th');
+    actionsHeader.className = 'row-actions-header';
+    actionsHeader.textContent = 'إجراءات';
+    actionsHeader.dataset.column = 'actions';
+    tr.appendChild(actionsHeader);
+
+    thead.appendChild(tr);
+    return thead;
+  }
+
+  function buildTableRow(row, headers, subTabConfig, rowIndex) {
+    const tr = document.createElement('tr');
+    tr.className = 'clickable-row';
+    tr.dataset.rowIndex = String(rowIndex);
+
+    tr.onclick = (event) => {
+      if (event.target.closest('.row-actions')) {
+        return;
+      }
+      openEditFormForRow(row, headers, subTabConfig);
+    };
+
+    headers.forEach((header) => {
+      const cellValue = row?.[header];
+      const td = document.createElement('td');
+      td.dataset.column = header || '';
+      td.textContent = cellValue !== undefined && cellValue !== null ? String(cellValue) : '';
+
+      const normalizedDate = normalizeDateValue(cellValue);
+      if (normalizedDate) {
+        td.dataset.date = normalizedDate;
+      }
+
+      tr.appendChild(td);
+    });
+
+    const actionsCell = document.createElement('td');
+    actionsCell.className = 'row-actions';
+    actionsCell.dataset.column = 'actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'edit-btn';
+    editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+    editBtn.onclick = (event) => {
+      event.stopPropagation();
+      openEditFormForRow(row, headers, subTabConfig);
+    };
+
+    actionsCell.appendChild(editBtn);
+    tr.appendChild(actionsCell);
+
+    return tr;
+  }
+
+  function openEditFormForRow(row, headers, subTabConfig) {
+    const formConfig = window.bootstrapData?.forms?.[subTabConfig?.subId];
+    const editFormId = formConfig?.editFormId || formConfig?.formId;
+
+    if (editFormId) {
+      openFormModal(editFormId, row, subTabConfig?.subId, true);
+    } else if (typeof window.showToast === 'function') {
+      window.showToast('تعذر فتح نموذج التعديل', 'error');
+    }
+  }
+
+  function buildSearchFilters(subTabConfig) {
+    const filtersContainer = document.createElement('div');
+    filtersContainer.className = 'search-filters-container';
+
+    if (subTabConfig?.searchBar) {
+      const searchBar = buildSearchBar();
+      filtersContainer.appendChild(searchBar);
+    }
+
+    if (Array.isArray(subTabConfig?.filterOptions) && subTabConfig.filterOptions.length > 0) {
+      const filterDropdowns = buildFilterDropdowns(subTabConfig.filterOptions);
+      filtersContainer.appendChild(filterDropdowns);
+    }
+
+    return filtersContainer;
+  }
+
+  function buildSearchBar() {
+    const searchContainer = document.createElement('div');
+    searchContainer.className = 'search-bar-container';
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = 'ابحث...';
+    searchInput.className = 'search-input';
+
+    const fromDate = document.createElement('input');
+    fromDate.type = 'date';
+    fromDate.className = 'date-filter from-date';
+    fromDate.placeholder = 'من تاريخ';
+
+    const toDate = document.createElement('input');
+    toDate.type = 'date';
+    toDate.className = 'date-filter to-date';
+    toDate.placeholder = 'إلى تاريخ';
+
+    let searchTimeout;
+    searchInput.addEventListener('input', (event) => {
+      const value = event.target.value;
+      clearTimeout(searchTimeout);
+      searchTimeout = window.setTimeout(() => {
+        performSearch(value, fromDate.value, toDate.value);
+      }, 300);
+    });
+
+    [fromDate, toDate].forEach((input) => {
+      input.addEventListener('change', () => {
+        performSearch(searchInput.value, fromDate.value, toDate.value);
+      });
+    });
+
+    searchContainer.appendChild(searchInput);
+    searchContainer.appendChild(fromDate);
+    searchContainer.appendChild(toDate);
+
+    return searchContainer;
+  }
+
+  function buildFilterDropdowns(filterOptions) {
+    const filtersContainer = document.createElement('div');
+    filtersContainer.className = 'filter-dropdowns-container';
+
+    filterOptions.forEach((filter) => {
+      const filterGroup = document.createElement('div');
+      filterGroup.className = 'filter-group';
+
+      const label = document.createElement('label');
+      label.textContent = filter.label;
+      label.htmlFor = `filter-${filter.column}`;
+
+      const select = document.createElement('select');
+      select.id = `filter-${filter.column}`;
+      select.className = 'filter-select';
+      select.dataset.column = filter.column;
+
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = `كل ${filter.label}`;
+      select.appendChild(defaultOption);
+
+      if (Array.isArray(filter.options)) {
+        filter.options.forEach((option) => {
+          const optionElement = document.createElement('option');
+          optionElement.value = option.value;
+          optionElement.textContent = option.label;
+          select.appendChild(optionElement);
+        });
+      }
+
+      select.addEventListener('change', applyFilters);
+
+      filterGroup.appendChild(label);
+      filterGroup.appendChild(select);
+      filtersContainer.appendChild(filterGroup);
+    });
+
+    return filtersContainer;
+  }
+
+  function performSearch(searchTerm = '', fromDate = '', toDate = '') {
+    const table = document.querySelector('.dynamic-data-table');
+    if (!table) {
       return;
     }
 
-    const overlay = document.createElement("div");
-    overlay.className = "dynamic-form-modal";
-    overlay.innerHTML = `
-      <div class="dynamic-form-modal__dialog" role="dialog" aria-modal="true">
-        <aside class="dynamic-form-modal__sidebar" data-role="sections"></aside>
-        <div class="dynamic-form-modal__content">
-          <div class="dynamic-form-modal__header">
-            <h3>${mode === "edit" ? "عرض / تعديل" : "إضافة"}</h3>
-            <button type="button" class="btn btn--muted" data-role="close">إغلاق</button>
-          </div>
-          <form class="dynamic-form-modal__form" data-role="form">
-            <div class="dynamic-form-modal__fields" data-role="fields"></div>
-            <div class="dynamic-form-modal__footer">
-              <button type="button" class="btn btn--muted" data-role="cancel">إلغاء</button>
-              <button type="submit" class="btn btn--primary" data-role="submit">حفظ</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
+    const rows = table.querySelectorAll('tbody tr');
+    const searchLower = String(searchTerm || '').toLowerCase();
 
-    document.body.appendChild(overlay);
+    rows.forEach((row) => {
+      let showRow = true;
 
-    const removeOverlay = () => {
-      overlay.remove();
-    };
-
-    overlay.addEventListener("click", (event) => {
-      if (event.target === overlay) {
-        removeOverlay();
+      const rowText = row.textContent.toLowerCase();
+      if (searchLower && !rowText.includes(searchLower)) {
+        showRow = false;
       }
-    });
 
-    overlay
-      .querySelector('[data-role="close"]')
-      .addEventListener("click", removeOverlay);
-    overlay
-      .querySelector('[data-role="cancel"]')
-      .addEventListener("click", removeOverlay);
+      if (fromDate || toDate) {
+        const dateCells = row.querySelectorAll('[data-date]');
+        let dateMatch = dateCells.length === 0;
 
-    const formEl = overlay.querySelector('[data-role="form"]');
-    const fieldsWrapper = overlay.querySelector('[data-role="fields"]');
-    const sectionsWrapper = overlay.querySelector('[data-role="sections"]');
-    const submitBtn = overlay.querySelector('[data-role="submit"]');
-
-    if (mode === "edit" && !subTabData.Edit_Form_ID && formMeta.editFormId) {
-      // prefer explicit edit form id when available
-      state.editFormId = formMeta.editFormId;
-    }
-
-    google.script.run
-      .withFailureHandler((err) => {
-        console.error("getFormWithOptions failed", err);
-        fieldsWrapper.innerHTML = `<p class="error-text">تعذّر تحميل النموذج الديناميكي.</p>`;
-        submitBtn.disabled = true;
-      })
-      .withSuccessHandler((fields) => {
-        const visibleFields = (Array.isArray(fields) ? fields : []).filter(
-          (field) => field.show !== false
-        );
-        const sections = buildSections(visibleFields);
-        renderSectionsNav(sectionsWrapper, sections);
-        renderSection(fieldsWrapper, sections[0]);
-        attachSectionSwitching(
-          sectionsWrapper,
-          sections,
-          (section) => renderSection(fieldsWrapper, section)
-        );
-        bindFormSubmission(formEl, {
-          formId: baseFormId,
-          fields: visibleFields,
-          mode,
-          record,
-          state,
-          onComplete: () => {
-            removeOverlay();
-            refreshData(state);
-          },
-        });
-      })
-      .getFormWithOptions(baseFormId);
-  }
-
-  function buildSections(fields) {
-    const groups = new Map();
-    (fields || []).forEach((field) => {
-      const sectionName = field.section || "النموذج";
-      if (!groups.has(sectionName)) groups.set(sectionName, []);
-      groups.get(sectionName).push(field);
-    });
-    return Array.from(groups.entries()).map(([name, sectionFields]) => ({
-      name,
-      fields: sectionFields,
-    }));
-  }
-
-  function renderSectionsNav(container, sections) {
-    if (!container) return;
-    container.innerHTML = "";
-    sections.forEach((section, index) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = section.name;
-      button.dataset.sectionIndex = index;
-      if (index === 0) button.classList.add("is-active");
-      container.appendChild(button);
-    });
-  }
-
-  function attachSectionSwitching(container, sections, onSelect) {
-    if (!container) return;
-    container.addEventListener("click", (event) => {
-      const button = event.target.closest("button[data-section-index]");
-      if (!button) return;
-      const index = Number(button.dataset.sectionIndex);
-      const section = sections[index];
-      if (!section) return;
-      container
-        .querySelectorAll("button[data-section-index]")
-        .forEach((btn) => btn.classList.toggle("is-active", btn === button));
-      onSelect(section);
-    });
-  }
-
-  function renderSection(container, section) {
-    if (!container || !section) return;
-    container.innerHTML = section.fields
-      .map((field) => renderField(field))
-      .join("");
-  }
-
-  function renderField(field) {
-    const baseKey = field.fieldId || field.targetColumn || field.label || Date.now();
-    const fieldId = `fld-${baseKey}`;
-    const label = field.label || field.targetColumn || field.fieldId || "";
-    const type = (field.type || "text").toLowerCase();
-    const nameAttr = field.fieldId || field.targetColumn || label;
-
-    switch (type) {
-      case "textarea":
-        return `
-          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
-            <label for="${fieldId}">${label}</label>
-            <textarea id="${fieldId}" name="${nameAttr}" rows="3"></textarea>
-          </div>
-        `;
-      case "dropdown":
-      case "select":
-        return `
-          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
-            <label for="${fieldId}">${label}</label>
-            <select id="${fieldId}" name="${nameAttr}">
-              ${(field.options || [])
-                .map(
-                  (option) =>
-                    `<option value="${option.value}">${
-                      option.label || option.value
-                    }</option>`
-                )
-                .join("")}
-            </select>
-          </div>
-        `;
-      case "checkbox":
-      case "boolean":
-        return `
-          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
-            <label>
-              <input type="checkbox" id="${fieldId}" name="${nameAttr}" />
-              ${label}
-            </label>
-          </div>
-        `;
-      case "date":
-        return `
-          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
-            <label for="${fieldId}">${label}</label>
-            <input type="date" id="${fieldId}" name="${nameAttr}" />
-          </div>
-        `;
-      case "number":
-        return `
-          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
-            <label for="${fieldId}">${label}</label>
-            <input type="number" id="${fieldId}" name="${nameAttr}" />
-          </div>
-        `;
-      default:
-        return `
-          <div class="dynamic-form-modal__field" data-field-id="${fieldId}" data-field-key="${baseKey}">
-            <label for="${fieldId}">${label}</label>
-            <input type="text" id="${fieldId}" name="${nameAttr}" />
-          </div>
-        `;
-    }
-  }
-
-  function bindFormSubmission(formEl, { formId, fields, mode, record, state, onComplete }) {
-    if (!formEl) return;
-    const userRole =
-      (g.bootstrap && (g.bootstrap.role || g.bootstrap.user?.Role_Id)) || "";
-
-    const inputs = Array.from(formEl.querySelectorAll("[data-field-id]"));
-
-    inputs.forEach((wrapper) => {
-      const fieldKey = wrapper.dataset.fieldKey;
-      const input = wrapper.querySelector("input, select, textarea");
-      if (!input) return;
-      const field = fields.find((fld) =>
-        (fld.fieldId || fld.targetColumn || fld.label) === fieldKey
-      );
-      if (!field) return;
-      const editable = isFieldEditable(field, mode, userRole);
-      input.disabled = !editable;
-      if (field.defaultValue && mode === "add") {
-        input.value = field.defaultValue;
-        if (input.type === "checkbox") {
-          input.checked = Boolean(field.defaultValue);
-        }
-      }
-      if (record) {
-        const value =
-          record[field.targetColumn] ||
-          record[field.fieldId] ||
-          record[field.label];
-        if (value !== undefined && value !== null) {
-          if (input.type === "checkbox") {
-            input.checked = isTruthy(value);
-          } else {
-            input.value = value;
+        dateCells.forEach((cell) => {
+          const cellDate = cell.dataset.date;
+          if (cellDate) {
+            if ((fromDate && cellDate < fromDate) || (toDate && cellDate > toDate)) {
+              dateMatch = false;
+            } else {
+              dateMatch = true;
+            }
           }
-        }
+        });
+
+        showRow = showRow && dateMatch;
+      }
+
+      row.style.display = showRow ? '' : 'none';
+    });
+  }
+
+  function applyFilters() {
+    const activeFilters = {};
+    const filterSelects = document.querySelectorAll('.filter-select');
+
+    filterSelects.forEach((select) => {
+      if (select.value) {
+        activeFilters[select.dataset.column] = select.value;
       }
     });
 
-    formEl.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const payload = {};
-      Array.from(formEl.elements).forEach((el) => {
-        if (!el.name) return;
-        if (el.type === "checkbox") {
-          payload[el.name] = el.checked;
-        } else {
-          payload[el.name] = el.value;
+    filterTableData(activeFilters);
+  }
+
+  function filterTableData(filters) {
+    const table = document.querySelector('.dynamic-data-table');
+    if (!table) {
+      return;
+    }
+
+    const rows = table.querySelectorAll('tbody tr');
+
+    rows.forEach((row) => {
+      let showRow = true;
+
+      Object.keys(filters).forEach((column) => {
+        const cell = row.querySelector(`[data-column="${column}"]`);
+        if (cell) {
+          const cellValue = cell.textContent.trim();
+          if (cellValue !== String(filters[column]).trim()) {
+            showRow = false;
+          }
         }
       });
 
-      const submitBtn = formEl.querySelector('[data-role="submit"]');
-      if (submitBtn) submitBtn.disabled = true;
-
-      google.script.run
-        .withFailureHandler((err) => {
-          console.error("submitDynamicForm failed", err);
-          if (submitBtn) submitBtn.disabled = false;
-        })
-        .withSuccessHandler((res) => {
-          if (submitBtn) submitBtn.disabled = false;
-          if (res && res.success) {
-            if (typeof onComplete === "function") onComplete(res);
-          }
-        })
-        .submitDynamicForm(formId, payload, { mode, record });
+      row.style.display = showRow ? '' : 'none';
     });
   }
 
-  function isFieldEditable(field, mode, userRole) {
-    if (!field) return false;
-    if (mode === "view") return false;
-    if (field.readOnly) return false;
-    if (!field.roleId) return true;
-    const roles = String(field.roleId)
-      .split(/[;,\s]+/)
-      .map((role) => role.trim())
-      .filter(Boolean)
-      .map((role) => role.toUpperCase());
-    if (!roles.length) return true;
-    return roles.includes(String(userRole || "").toUpperCase());
-  }
-
-  function refreshData(state) {
-    const subTabData = state.subTabData;
-    if (!subTabData || !subTabData.Source_Sheet) return;
-    const tableContainer = document.querySelector(
-      ".data-pad__table-inner"
-    );
-    if (!tableContainer) return;
-    google.script.run
-      .withFailureHandler((err) => console.error("refresh data failed", err))
-      .withSuccessHandler((response) => {
-        const rows = Array.isArray(response?.data) ? response.data : [];
-        const headers = Array.isArray(response?.headers) ? response.headers : [];
-        state.dataset = rows;
-        state.filtered = rows.slice();
-        state.headers = headers;
-        applyFilters(state);
-        renderTable(tableContainer, state);
-      })
-      .getViewData(subTabData.Source_Sheet, subTabData.Sub_ID);
-  }
-
-  function handleQuickAction(actionKey, state) {
-    if (!actionKey) return;
-    console.info("Quick action triggered", actionKey, {
-      selection: Array.from(state.selected || []),
-    });
-  }
-
-  function parseDate(value, endOfDay = false) {
-    if (!value) return null;
-    if (value instanceof Date) return value;
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return null;
-    if (endOfDay) {
-      parsed.setHours(23, 59, 59, 999);
+  function normalizeDateValue(value) {
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      return value.toISOString().split('T')[0];
     }
-    return parsed;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      const isoMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (isoMatch) {
+        return isoMatch[1];
+      }
+      const slashMatch = trimmed.match(/^(\d{4})[\/](\d{2})[\/](\d{2})/);
+      if (slashMatch) {
+        return `${slashMatch[1]}-${slashMatch[2]}-${slashMatch[3]}`;
+      }
+    }
+    return '';
   }
 
-  function normalizeValue(value) {
-    if (value === null || typeof value === "undefined") return "";
-    if (value instanceof Date) {
-      return value.toISOString().split("T")[0];
-    }
-    return String(value);
-  }
-
-  function isTruthy(value) {
-    if (value === true) return true;
-    if (value === false) return false;
-    const text = String(value || "").toLowerCase();
-    return ["true", "1", "yes", "y", "نعم", "نشط"].includes(text);
-  }
-
-  function hexToRgba(hex, alpha) {
-    const normalized = String(hex || "").replace("#", "");
-    if (normalized.length === 3) {
-      const r = parseInt(normalized[0] + normalized[0], 16);
-      const g = parseInt(normalized[1] + normalized[1], 16);
-      const b = parseInt(normalized[2] + normalized[2], 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-    if (normalized.length === 6) {
-      const r = parseInt(normalized.substring(0, 2), 16);
-      const g = parseInt(normalized.substring(2, 4), 16);
-      const b = parseInt(normalized.substring(4, 6), 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    }
-    return `rgba(212, 175, 55, ${alpha})`;
-  }
-})();
+  viewTab.buildDynamicViewPad = buildDynamicViewPad;
+  viewTab.performSearch = performSearch;
+  viewTab.applyFilters = applyFilters;
+  viewTab.filterTableData = filterTableData;
+})(window);
 </script>
