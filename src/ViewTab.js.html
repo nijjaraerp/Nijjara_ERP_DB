@@ -80,34 +80,79 @@
   }
 
   function performBulkAction(action, subTabConfig) {
-    const subId = subTabConfig?.subId;
-    const selector = subId
-      ? `.dynamic-view-pad[data-sub-tab-id="${
-          typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
-            ? CSS.escape(String(subId))
-            : String(subId).replace(/"/g, '\"')
-        }"]`
-      : null;
-    const container = selector ? document.querySelector(selector) : null;
-    const scope = container
-      ? container.querySelectorAll('.row-checkbox:checked')
-      : document.querySelectorAll('.row-checkbox:checked');
+    const selectedCheckboxes = document.querySelectorAll('.row-checkbox:checked');
 
-    if (scope.length === 0) {
-      if (typeof showToast === 'function') {
-        showToast('يرجى تحديد عنصر واحد على الأقل', 'warning');
-      }
+    if (selectedCheckboxes.length === 0) {
+      window.showToast?.('⚠️ يرجى تحديد عنصر واحد على الأقل', 'warning');
       return;
     }
 
-    const selectedRows = Array.from(scope)
-      .map((cb) => parseInt(cb.value, 10))
-      .filter((value) => Number.isFinite(value));
-    console.log(`Performing ${action} on rows:`, selectedRows);
+    const selectedRows = Array.from(selectedCheckboxes).map((cb) => {
+      const rowIndex = parseInt(cb.value, 10);
+      const row = document.querySelector(`tr[data-row-index="${rowIndex}"]`);
+      return {
+        index: rowIndex,
+        id: row?.dataset?.rowId,
+        element: row,
+      };
+    });
 
-    if (typeof showToast === 'function') {
-      showToast(`تم تطبيق الإجراء على ${selectedRows.length} عنصر`, 'success');
+    console.log(`🔄 Performing ${action} on ${selectedRows.length} rows:`, selectedRows);
+
+    switch (action) {
+      case 'activate':
+        activateSelectedRows(selectedRows, subTabConfig);
+        break;
+      case 'deactivate':
+        deactivateSelectedRows(selectedRows, subTabConfig);
+        break;
+      case 'delete':
+        deleteSelectedRows(selectedRows, subTabConfig);
+        break;
+      case 'export':
+        exportSelectedRows(selectedRows, subTabConfig);
+        break;
+      default:
+        window.showToast?.('❌ الإجراء غير معروف', 'error');
     }
+  }
+
+  function activateSelectedRows(selectedRows, subTabConfig) {
+    const rowIds = selectedRows.map((row) => row.id);
+
+    const scriptRunner = google?.script?.run;
+    if (!scriptRunner) {
+      window.showToast?.('خدمة التفعيل غير متاحة حالياً', 'error');
+      return;
+    }
+
+    scriptRunner
+      .withSuccessHandler((response) => {
+        if (response.success) {
+          window.showToast?.(`✅ تم تفعيل ${response.updated} عنصر`, 'success');
+          loadSubTabContent(subTabConfig);
+        } else {
+          window.showToast?.('❌ فشل التفعيل', 'error');
+        }
+      })
+      .withFailureHandler((error) => {
+        window.showToast?.(`❌ خطأ في التفعيل: ${error.message}`, 'error');
+      })
+      .bulkUpdateMaterialStatus(rowIds, true);
+  }
+
+  function deactivateSelectedRows(selectedRows, subTabConfig) {
+    window.showToast?.(`🔒 تعطيل ${selectedRows.length} عنصر`, 'info');
+  }
+
+  function deleteSelectedRows(selectedRows, subTabConfig) {
+    if (confirm(`⚠️ هل أنت متأكد من حذف ${selectedRows.length} عنصر؟`)) {
+      window.showToast?.(`🗑️ جاري حذف ${selectedRows.length} عنصر`, 'info');
+    }
+  }
+
+  function exportSelectedRows(selectedRows, subTabConfig) {
+    window.showToast?.(`📤 تصدير ${selectedRows.length} عنصر`, 'info');
   }
 
   function buildDataTable(data, subTabConfig) {
@@ -136,41 +181,39 @@
     const headerRow = document.createElement('tr');
 
     const checkboxTh = document.createElement('th');
-    checkboxTh.style.width = '40px';
-    checkboxTh.innerHTML = '<input type="checkbox" class="select-all-checkbox">';
+    checkboxTh.innerHTML = '<input type="checkbox" id="selectAllCheckboxes" title="تحديد الكل">';
+    checkboxTh.style.width = '50px';
+    checkboxTh.style.textAlign = 'center';
     headerRow.appendChild(checkboxTh);
 
     headers.forEach((header) => {
       const th = document.createElement('th');
-      th.textContent = header || '';
-      th.dataset.column = header || '';
+      th.textContent = header;
       headerRow.appendChild(th);
     });
 
     const actionsTh = document.createElement('th');
-    actionsTh.className = 'row-actions-header';
     actionsTh.textContent = 'الإجراءات';
-    actionsTh.style.width = '100px';
-    actionsTh.dataset.column = 'actions';
+    actionsTh.style.width = '120px';
     headerRow.appendChild(actionsTh);
 
     thead.appendChild(headerRow);
 
+    if (subTabConfig?.subId) {
+      thead.dataset.subTabId = subTabConfig.subId;
+    }
+
     const selectAllCheckbox = checkboxTh.querySelector('input[type="checkbox"]');
     if (selectAllCheckbox) {
-      selectAllCheckbox.addEventListener('change', function onToggleAll() {
+      selectAllCheckbox.addEventListener('change', function () {
         const table = thead.closest('table');
-        const scope = table
+        const rowCheckboxes = table
           ? table.querySelectorAll('.row-checkbox')
           : document.querySelectorAll('.row-checkbox');
-        scope.forEach((checkbox) => {
+        rowCheckboxes.forEach((checkbox) => {
           checkbox.checked = this.checked;
         });
       });
-    }
-
-    if (subTabConfig?.subId) {
-      thead.dataset.subTabId = subTabConfig.subId;
     }
 
     return thead;
@@ -179,67 +222,70 @@
   function buildTableRow(row, headers, subTabConfig, rowIndex) {
     const tr = document.createElement('tr');
     tr.className = 'clickable-row';
-    tr.dataset.rowIndex = String(rowIndex);
+    tr.dataset.rowIndex = rowIndex;
+
     const record = coerceRowToRecord(row, headers);
+    const recordId =
+      (record && (record.ID || record.User_Id || record.Employee_ID)) ??
+      rowIndex;
+    tr.dataset.rowId = recordId;
 
     const checkboxTd = document.createElement('td');
+    checkboxTd.style.textAlign = 'center';
     const rowCheckbox = document.createElement('input');
     rowCheckbox.type = 'checkbox';
     rowCheckbox.className = 'row-checkbox';
-    rowCheckbox.value = String(rowIndex);
-    rowCheckbox.addEventListener('click', (event) => event.stopPropagation());
+    rowCheckbox.value = rowIndex;
     checkboxTd.appendChild(rowCheckbox);
     tr.appendChild(checkboxTd);
 
     headers.forEach((header) => {
       const td = document.createElement('td');
-      td.dataset.column = header || '';
-      const cellValue =
-        record && Object.prototype.hasOwnProperty.call(record, header)
-          ? record[header]
-          : undefined;
-      td.textContent =
-        cellValue !== undefined && cellValue !== null ? String(cellValue) : '';
+      const cellValue = record ? record[header] : undefined;
+      td.textContent = cellValue || '';
+      td.setAttribute('data-column', header);
 
-      const normalizedDate = normalizeDateValue(cellValue);
-      if (normalizedDate) {
-        td.dataset.date = normalizedDate;
+      if (header.includes('Date') || header.includes('تاريخ')) {
+        td.setAttribute('data-date', cellValue);
       }
 
       tr.appendChild(td);
     });
 
-    const actionsCell = document.createElement('td');
-    actionsCell.className = 'row-actions';
-    actionsCell.dataset.column = 'actions';
+    const actionsTd = document.createElement('td');
+    actionsTd.className = 'row-actions';
+    actionsTd.dataset.column = 'actions';
 
     const editBtn = document.createElement('button');
-    editBtn.type = 'button';
     editBtn.className = 'edit-btn';
     editBtn.innerHTML = '<i class="fas fa-edit"></i> تعديل';
-    editBtn.onclick = (event) => {
-      event.stopPropagation();
-      openEditFormForRow(record, subTabConfig);
+    editBtn.onclick = (e) => {
+      e.stopPropagation();
+      openEditFormForRow(row, headers, subTabConfig);
     };
 
-    actionsCell.appendChild(editBtn);
-    tr.appendChild(actionsCell);
+    actionsTd.appendChild(editBtn);
+    tr.appendChild(actionsTd);
 
-    tr.addEventListener('click', (event) => {
-      const target = event.target;
-      if (
-        target instanceof Element &&
-        (target.closest('.row-actions') || target.closest('input[type="checkbox"]'))
-      ) {
-        return;
+    tr.onclick = (e) => {
+      if (!e.target.matches('input[type="checkbox"]') && !e.target.closest('.row-actions')) {
+        openEditFormForRow(row, headers, subTabConfig);
       }
-      openEditFormForRow(record, subTabConfig);
-    });
+    };
 
     return tr;
   }
 
-  function openEditFormForRow(record, subTabConfig) {
+  function openEditFormForRow(rowOrRecord, headersOrSubTabConfig, maybeSubTabConfig) {
+    const headers = Array.isArray(headersOrSubTabConfig)
+      ? headersOrSubTabConfig
+      : [];
+    const subTabConfig = Array.isArray(headersOrSubTabConfig)
+      ? maybeSubTabConfig
+      : headersOrSubTabConfig;
+
+    const record = coerceRowToRecord(rowOrRecord, headers);
+
     const formConfig =
       subTabConfig?.formConfig ||
       window.bootstrapData?.forms?.[subTabConfig?.subId];
