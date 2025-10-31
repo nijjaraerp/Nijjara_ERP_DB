@@ -3655,61 +3655,69 @@
           subTabId,
           isEditMode = false
         ) {
-          console.log("Opening form modal:", {
-            formId,
-            subTabId,
-            isEditMode,
-          });
+          console.log("🎯 Opening form modal:", { formId, subTabId, isEditMode });
+          window.currentFormId = formId;
 
           const modal = document.getElementById("globalFormModal");
           if (!modal) {
-            if (typeof showToast === "function") {
-              showToast("نظام النماذج غير متاح", "error");
-            }
+            window.showToast?.("نظام النماذج غير متاح حالياً", "error");
             return;
           }
 
-          modal.style.display = "block";
+          const modalTitle = modal.querySelector(".modal-title");
+          const formConfig = window.bootstrapData?.forms?.[subTabId];
 
-          if (!(window.google && google.script && google.script.run)) {
-            if (typeof showToast === "function") {
-              showToast("خدمة النماذج غير متاحة", "error");
+          if (modalTitle) {
+            if (isEditMode) {
+              modalTitle.textContent = `تعديل ${formConfig?.titleAr || "سجل"}`;
+            } else {
+              modalTitle.textContent = `${formConfig?.titleAr || "إضافة جديد"}`;
             }
+          }
+
+          const modalContent = modal.querySelector(".vertical-tabs-content");
+          if (modalContent) {
+            modalContent.innerHTML = '<div class="modal-loading">جاري تحميل النموذج...</div>';
+          }
+
+          modal.classList.add("is-loading");
+          modal.style.display = "flex";
+
+          const scriptRunner = google?.script?.run;
+          if (!scriptRunner) {
+            window.showToast?.("خدمة النماذج غير متاحة", "error");
             return;
           }
 
-          google.script.run
+          scriptRunner
             .withSuccessHandler((response) => {
-              if (response?.success) {
-                renderFormInModal(
-                  response.formStructure,
-                  response.recordData,
-                  isEditMode,
-                  subTabId
-                );
+              modal.classList.remove("is-loading");
+              if (response.success) {
+                console.log("✅ Form data loaded, calling renderFormInModal");
+                if (typeof renderFormInModal === "function") {
+                  renderFormInModal(
+                    response.formStructure,
+                    response.recordData,
+                    isEditMode,
+                    subTabId
+                  );
+                } else {
+                  console.error("❌ renderFormInModal function not found!");
+                  window.showToast?.("دالة عرض النموذج غير متاحة", "error");
+                }
               } else {
-                const message =
-                  response?.message || "فشل تحميل النموذج من الخادم.";
-                if (typeof showToast === "function") {
-                  showToast(`فشل تحميل النموذج: ${message}`, "error");
-                }
-                if (typeof window.closeModal === "function") {
-                  window.closeModal();
-                }
+                window.showToast?.('فشل تحميل النموذج: ' + response.message, "error");
+                window.closeModal?.();
               }
             })
             .withFailureHandler((error) => {
-              const message = error?.message || String(error) || "";
-              if (typeof showToast === "function") {
-                showToast(`خطأ في تحميل النموذج: ${message}`, "error");
-              }
-              if (typeof window.closeModal === "function") {
-                window.closeModal();
-              }
+              modal.classList.remove("is-loading");
+              window.showToast?.('خطأ في تحميل النموذج: ' + error.message, "error");
+              window.closeModal?.();
             })
             .getFormWithRecordData(
               formId,
-              recordData?.ID || recordData?.User_Id,
+              recordData?.ID || recordData?.User_Id || recordData?.Employee_ID,
               subTabId
             );
         };
@@ -3726,10 +3734,15 @@
             return;
           }
 
+          modal.classList.remove("is-loading");
           modal.style.display = "none";
           const content = modal.querySelector(".vertical-tabs-content");
+          const nav = modal.querySelector(".vertical-tabs-nav");
           if (content) {
             content.innerHTML = "";
+          }
+          if (nav) {
+            nav.innerHTML = "";
           }
         };
       }

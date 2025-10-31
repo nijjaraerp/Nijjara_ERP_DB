@@ -327,11 +327,15 @@
 .vertical-tabs-container {
   display: grid;
   grid-template-columns: 220px 1fr;
-  height: 100%;
+  border: 1px solid #e3e6eb;
+  border-radius: 12px;
+  background: #fff;
+  min-height: 420px;
+  overflow: hidden;
 }
 
 .vertical-tabs-nav {
-  background: #f5f7fa;
+  background: #f8f9fb;
   border-inline-end: 1px solid #e3e6eb;
   padding: 16px;
   display: flex;
@@ -344,17 +348,23 @@
   border: none;
   background: none;
   text-align: right;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: 8px;
   color: #4b5563;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  border-inline-start: 3px solid transparent;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.vertical-tab-btn:hover {
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .vertical-tab-btn.is-active {
   background: rgba(37, 99, 235, 0.16);
   color: #1d4ed8;
+  border-inline-start-color: #1d4ed8;
 }
 
 .vertical-tabs-content {
@@ -365,6 +375,7 @@
 
 .vertical-tab-panel {
   display: block;
+  height: 100%;
 }
 
 .form-fields-container {

@@ -109,7 +109,8 @@
 
       const sectionFields = fieldsBySection[sectionId];
       sectionFields.forEach((field) => {
-        if (field.show === false) {
+        const shouldShow = field.show !== false && field.show !== 'false' && field.show !== 'FALSE';
+        if (!shouldShow) {
           return;
         }
 
@@ -219,25 +220,32 @@
 
     const tabsNav = modal.querySelector('.vertical-tabs-nav');
     const tabsContent = modal.querySelector('.vertical-tabs-content');
-    if (tabsNav) tabsNav.innerHTML = '';
-    if (tabsContent) tabsContent.innerHTML = '';
+    const built = buildModalContent(tabsNav, tabsContent, formStructure, recordData, modalState.isEditMode);
+    if (!built && tabsContent) {
+      tabsContent.innerHTML = '<p class="muted">لم يتم العثور على حقول لهذا النموذج.</p>';
+    }
+  }
+
+  function buildModalContent(tabsNav, tabsContent, formStructure, recordData, isEditMode) {
+    if (!tabsNav || !tabsContent) {
+      return false;
+    }
+
+    tabsNav.innerHTML = '';
+    tabsContent.innerHTML = '';
 
     if (!Array.isArray(formStructure) || !formStructure.length) {
-      if (tabsContent) {
-        tabsContent.innerHTML = '<p class="muted">لم يتم العثور على حقول لهذا النموذج.</p>';
-      }
-      return;
+      return false;
     }
 
-    const fieldsContainer = buildFormFields(formStructure, recordData, modalState.isEditMode);
+    const fieldsContainer = buildFormFields(formStructure, recordData, isEditMode);
     const sections = Array.from(fieldsContainer.querySelectorAll('.form-section'));
-
     if (!sections.length) {
-      if (tabsContent) {
-        tabsContent.innerHTML = '<p class="muted">لم يتم العثور على حقول لهذا النموذج.</p>';
-      }
-      return;
+      return false;
     }
+
+    const navFragment = document.createDocumentFragment();
+    const panelsFragment = document.createDocumentFragment();
 
     sections.forEach((section, index) => {
       const sectionId = section.dataset.sectionId || `section-${index}`;
@@ -254,20 +262,12 @@
       tabButton.className = 'vertical-tab-btn';
       tabButton.dataset.sectionId = sectionId;
       tabButton.textContent = label;
+      tabButton.addEventListener('click', () => setActiveSection(sectionId));
 
       const panel = document.createElement('div');
       panel.className = 'vertical-tab-panel';
       panel.dataset.sectionId = sectionId;
       panel.appendChild(section);
-
-      if (tabsNav) {
-        tabsNav.appendChild(tabButton);
-      }
-      if (tabsContent) {
-        tabsContent.appendChild(panel);
-      }
-
-      tabButton.addEventListener('click', () => setActiveSection(sectionId));
 
       if (index === 0) {
         tabButton.classList.add('is-active');
@@ -275,7 +275,14 @@
       } else {
         panel.style.display = 'none';
       }
+
+      navFragment.appendChild(tabButton);
+      panelsFragment.appendChild(panel);
     });
+
+    tabsNav.appendChild(navFragment);
+    tabsContent.appendChild(panelsFragment);
+    return true;
   }
 
   function createFormField(field, recordData, isEditMode) {
@@ -668,7 +675,8 @@
     if (!modal) {
       return;
     }
-    if (event.key === 'Escape' && modal.style.display === 'block') {
+    const isVisible = modal.style.display && modal.style.display !== 'none';
+    if (event.key === 'Escape' && isVisible) {
       closeModal();
     }
   });
