@@ -3645,6 +3645,124 @@
 
     <?!= include('FormModal.js'); ?>
     <?!= include('ViewTab.js'); ?>
+
+    <script>
+      // Global modal handler - fallback implementation if FormModal module is unavailable
+      if (typeof window.openFormModal !== "function") {
+        window.openFormModal = function openFormModal(
+          formId,
+          recordData,
+          subTabId,
+          isEditMode = false
+        ) {
+          console.log("Opening form modal:", {
+            formId,
+            subTabId,
+            isEditMode,
+          });
+
+          const modal = document.getElementById("globalFormModal");
+          if (!modal) {
+            if (typeof showToast === "function") {
+              showToast("نظام النماذج غير متاح", "error");
+            }
+            return;
+          }
+
+          modal.style.display = "block";
+
+          if (!(window.google && google.script && google.script.run)) {
+            if (typeof showToast === "function") {
+              showToast("خدمة النماذج غير متاحة", "error");
+            }
+            return;
+          }
+
+          google.script.run
+            .withSuccessHandler((response) => {
+              if (response?.success) {
+                renderFormInModal(
+                  response.formStructure,
+                  response.recordData,
+                  isEditMode,
+                  subTabId
+                );
+              } else {
+                const message =
+                  response?.message || "فشل تحميل النموذج من الخادم.";
+                if (typeof showToast === "function") {
+                  showToast(`فشل تحميل النموذج: ${message}`, "error");
+                }
+                if (typeof window.closeModal === "function") {
+                  window.closeModal();
+                }
+              }
+            })
+            .withFailureHandler((error) => {
+              const message = error?.message || String(error) || "";
+              if (typeof showToast === "function") {
+                showToast(`خطأ في تحميل النموذج: ${message}`, "error");
+              }
+              if (typeof window.closeModal === "function") {
+                window.closeModal();
+              }
+            })
+            .getFormWithRecordData(
+              formId,
+              recordData?.ID || recordData?.User_Id,
+              subTabId
+            );
+        };
+      }
+
+      if (typeof window.closeModal !== "function") {
+        window.closeModal = function closeModal() {
+          if (typeof window.closeFormModal === "function") {
+            window.closeFormModal();
+            return;
+          }
+          const modal = document.getElementById("globalFormModal");
+          if (!modal) {
+            return;
+          }
+
+          modal.style.display = "none";
+          const content = modal.querySelector(".vertical-tabs-content");
+          if (content) {
+            content.innerHTML = "";
+          }
+        };
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const modal = document.getElementById("globalFormModal");
+        if (!modal) {
+          return;
+        }
+
+        const closeBtn = modal.querySelector(".close-modal");
+        const cancelBtn = modal.querySelector(".cancel-btn");
+        const backdrop = modal.querySelector(".modal-backdrop");
+
+        const handleClose = () => {
+          if (typeof window.closeModal === "function") {
+            window.closeModal();
+          } else if (typeof window.closeFormModal === "function") {
+            window.closeFormModal();
+          }
+        };
+
+        if (closeBtn) {
+          closeBtn.addEventListener("click", handleClose);
+        }
+        if (cancelBtn) {
+          cancelBtn.addEventListener("click", handleClose);
+        }
+        if (backdrop) {
+          backdrop.addEventListener("click", handleClose);
+        }
+      });
+    </script>
     <script>
       (function () {
         const views = Array.from(document.querySelectorAll(".view"));
@@ -5306,6 +5424,83 @@
           return true;
         }
 
+        function loadSubTabContent(subTabConfig) {
+          const contentContainer = document.getElementById(
+            "main-content-wrapper"
+          );
+          if (!contentContainer) {
+            console.warn(
+              "loadSubTabContent: 'main-content-wrapper' container not found."
+            );
+            return;
+          }
+
+          const targetSubId =
+            subTabConfig?.subId ||
+            subTabConfig?.Sub_ID ||
+            subTabConfig?.subTabId ||
+            subTabConfig?.sub_id;
+          if (!targetSubId) {
+            contentContainer.innerHTML =
+              '<p class="error">معرف التبويب الفرعي غير صالح.</p>';
+            return;
+          }
+
+          contentContainer.innerHTML = '<p>جاري التحميل...</p>';
+
+          console.log("Loading sub-tab with new system:", subTabConfig);
+
+          if (!(window.google && google.script && google.script.run)) {
+            contentContainer.innerHTML =
+              '<p class="error">خدمة Google Apps Script غير متاحة حالياً.</p>';
+            return;
+          }
+
+          google.script.run
+            .withSuccessHandler((response) => {
+              contentContainer.innerHTML = "";
+
+              if (response?.success) {
+                const builder =
+                  (window.viewTab &&
+                    typeof window.viewTab.buildDynamicViewPad ===
+                      "function" &&
+                    window.viewTab.buildDynamicViewPad) ||
+                  (typeof window.buildDynamicViewPad === "function"
+                    ? window.buildDynamicViewPad
+                    : null);
+
+                if (builder) {
+                  try {
+                    const viewPad = builder(
+                      response.subTabConfig || subTabConfig,
+                      response.viewData
+                    );
+                    if (viewPad) {
+                      contentContainer.appendChild(viewPad);
+                      return;
+                    }
+                  } catch (renderErr) {
+                    console.error("Failed to render dynamic view pad", renderErr);
+                  }
+                }
+
+                contentContainer.innerHTML =
+                  '<p class="error">تعذر إنشاء واجهة العرض الديناميكية.</p>';
+              } else {
+                const message =
+                  response?.message || "حدث خطأ أثناء تحميل بيانات التبويب.";
+                contentContainer.innerHTML = `<p class="error">Error: ${message}</p>`;
+              }
+            })
+            .withFailureHandler((error) => {
+              const message = error?.message || String(error) || "غير معروف";
+              contentContainer.innerHTML = `<p class="error">فشل التحميل: ${message}</p>`;
+              console.error("Failed to load sub-tab:", error);
+            })
+            .getSubTabViewData(targetSubId);
+        }
+
         /**
          * @function renderSubTabContent
          * @description Central router for rendering the main content of a sub-tab.
@@ -5365,16 +5560,15 @@
               if (typeof log.debug === "function") {
                 log.debug(FNAME, "Mode: 'ViewAdd'. Rendering dynamic data pad...");
               }
-              if (window.DataPad && typeof window.DataPad.render === "function") {
-                window.DataPad.render(subTabData, contentWrapper);
-              } else {
-                contentWrapper.innerHTML = `
-                  <div class="p-4">
-                    <h2>Dynamic Pad</h2>
-                    <p>لم يتم تحميل محرك الواجهات الديناميكية.</p>
-                  </div>
-                `;
-              }
+              const normalizedConfig = Object.assign({}, subTabData, {
+                subId:
+                  subTabData?.subId ||
+                  subTabData?.Sub_ID ||
+                  subTabData?.subTabId ||
+                  subTabData?.sub_id ||
+                  "",
+              });
+              loadSubTabContent(normalizedConfig);
               break;
             }
 
