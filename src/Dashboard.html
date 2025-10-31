@@ -4318,6 +4318,25 @@
           audit: false,
         };
         const paneStateCache = new Map();
+        if (!document.__paneRefreshListenerBound) {
+          document.__paneRefreshListenerBound = true;
+          document.addEventListener("formModal:submitted", (event) => {
+            const detail = event?.detail || {};
+            const subTabId = detail.subTabId || detail.paneId;
+            if (!subTabId) return;
+            const key = String(subTabId).trim();
+            if (!key) return;
+            const paneState = paneStateCache.get(key);
+            if (!paneState || typeof paneState.fetchData !== "function") {
+              return;
+            }
+            try {
+              paneState.fetchData();
+            } catch (err) {
+              console.error("Failed to refresh view data for", key, err);
+            }
+          });
+        }
         let currentSysPane = "overview";
         let lastLoginIdentity = null;
         let loginSuccessToastShown = false;
@@ -4424,6 +4443,10 @@
               formAvailable: false,
               formMeta: null,
               sourceSheet: "",
+              dynamicRows: [],
+              rawRows: [],
+              resolvedFormId: "",
+              subTabConfig: null,
             };
           }
 
@@ -4440,6 +4463,10 @@
               formAvailable: false,
               formMeta: null,
               sourceSheet: "",
+              dynamicRows: [],
+              rawRows: [],
+              resolvedFormId: "",
+              subTabConfig: null,
             });
           }
           return paneStateCache.get(key);
@@ -5908,6 +5935,7 @@
             paneElement = document.createElement("div");
             paneElement.className = "generic-pane";
             paneElement.dataset.genericPane = paneId;
+            paneElement.dataset.subTabId = paneId;
             contentElement.appendChild(paneElement);
           }
 
@@ -5920,6 +5948,7 @@
               child.classList.remove("active");
             }
           });
+          paneElement.dataset.subTabId = paneId;
 
           paneElement.classList.remove("direct-expense-pane");
           paneElement.classList.remove("materials-catalog-pane");
@@ -5982,7 +6011,16 @@
           }
           paneState.sourceSheet = trimmedSource;
           paneState.formMeta = formMeta || null;
-          paneState.formAvailable = Boolean(formMeta?.formId);
+          const baseFormId =
+            (formMeta &&
+              (formMeta.formId ||
+                formMeta.Form_ID ||
+                formMeta.addFormId ||
+                formMeta.Add_Form_ID)) ||
+            paneState.resolvedFormId ||
+            "";
+          paneState.resolvedFormId = baseFormId;
+          paneState.formAvailable = Boolean(baseFormId);
           paneState.apiConfig = paneApiConfig;
           if (typeof paneState.searchColumnIndex !== "number") {
             paneState.searchColumnIndex = -1;
@@ -6012,6 +6050,20 @@
           }
 
           const entityKey = resolveEntityKeyForPane(paneId);
+          const dynamicRowsFromArrays = (rows, headers) => {
+            if (!Array.isArray(rows) || !rows.length) return [];
+            if (!Array.isArray(headers) || !headers.length) return [];
+            return rows.map((row) => {
+              if (row && typeof row === "object" && !Array.isArray(row)) {
+                return row;
+              }
+              const record = {};
+              headers.forEach((header, index) => {
+                record[header] = Array.isArray(row) ? row[index] : row?.[index];
+              });
+              return record;
+            });
+          };
 
           const sanitizeSelection = () => {
             const headers = Array.isArray(paneState.headers)
@@ -6035,32 +6087,66 @@
           };
 
           const renderData = () => {
-            paneState.filteredRows = applyPaneFilters(paneState);
-            const selection = {
-              ids: paneState.selectedIds,
-              onUpdate: () => updatePaneSelectionSummary(scaffold, paneState),
-            };
-            renderGenericTable(
-              viewContainer,
-              {
-                headers: Array.isArray(paneState.headers)
-                  ? paneState.headers
-                  : [],
-                rows: Array.isArray(paneState.filteredRows)
-                  ? paneState.filteredRows
-                  : [],
-              },
-              {
-                paneId,
-                entityKey,
-                formMeta,
-                selection,
-                onViewRecord: (record) =>
-                  openGenericRecordModal({ paneId, entityKey, record }),
+            const headers = Array.isArray(paneState.headers)
+              ? paneState.headers
+              : [];
+            const dynamicRows = Array.isArray(paneState.dynamicRows)
+              ? paneState.dynamicRows
+              : [];
+            const hasDynamicView =
+              window.viewTab &&
+              typeof window.viewTab.buildDynamicViewPad === "function" &&
+              paneState.subTabConfig &&
+              headers.length;
+
+            if (hasDynamicView) {
+              try {
+                viewContainer.innerHTML = "";
+                const pad = window.viewTab.buildDynamicViewPad(
+                  paneState.subTabConfig,
+                  {
+                    headers,
+                    rows: dynamicRows.length
+                      ? dynamicRows
+                      : dynamicRowsFromArrays(paneState.rawRows, headers),
+                  }
+                );
+                viewContainer.appendChild(pad);
+              } catch (viewErr) {
+                console.error("Dynamic view pad render failed", viewErr);
+                fallbackRender();
               }
-            );
-            updatePaneSearchOptions(scaffold, paneState);
-            updatePaneSelectionSummary(scaffold, paneState);
+              return;
+            }
+
+            fallbackRender();
+
+            function fallbackRender() {
+              paneState.filteredRows = applyPaneFilters(paneState);
+              const selection = {
+                ids: paneState.selectedIds,
+                onUpdate: () => updatePaneSelectionSummary(scaffold, paneState),
+              };
+              renderGenericTable(
+                viewContainer,
+                {
+                  headers,
+                  rows: Array.isArray(paneState.filteredRows)
+                    ? paneState.filteredRows
+                    : [],
+                },
+                {
+                  paneId,
+                  entityKey,
+                  formMeta: paneState.formMeta || formMeta,
+                  selection,
+                  onViewRecord: (record) =>
+                    openGenericRecordModal({ paneId, entityKey, record }),
+                }
+              );
+              updatePaneSearchOptions(scaffold, paneState);
+              updatePaneSelectionSummary(scaffold, paneState);
+            }
           };
 
           function fetchData() {
@@ -6073,11 +6159,60 @@
               fetchAction &&
               hasGoogleRunner &&
               typeof google.script.run[fetchAction] === "function";
+            const normalizeRows = (rows, headers) => {
+              if (!Array.isArray(rows) || !rows.length) return [];
+              return rows.map((row) => {
+                if (Array.isArray(row)) {
+                  return row;
+                }
+                if (row && typeof row === "object") {
+                  return headers.map((header) =>
+                    row[header] == null ? "" : row[header]
+                  );
+                }
+                return headers.map(() => (row == null ? "" : row));
+              });
+            };
+            const handleLegacyResult = (legacyResult) => {
+              if (legacyResult && legacyResult.success === false) {
+                const message =
+                  legacyResult.message || "تعذّر تحميل البيانات.";
+                viewContainer.innerHTML = `<p class="error-text">${message}</p>`;
+                paneState.headers = [];
+                paneState.rows = [];
+                paneState.filteredRows = [];
+                updatePaneSearchOptions(scaffold, paneState);
+                updatePaneSelectionSummary(scaffold, paneState);
+                return;
+              }
+              paneState.headers = Array.isArray(legacyResult?.headers)
+                ? legacyResult.headers
+                : [];
+              paneState.rows = Array.isArray(legacyResult?.rows)
+                ? legacyResult.rows
+                : [];
+              paneState.filteredRows = [];
+              paneState.rawRows = Array.isArray(paneState.rows)
+                ? paneState.rows.slice()
+                : [];
+              paneState.dynamicRows = [];
+              paneState.viewData = null;
+              paneState.resolvedFormId = "";
+              paneState.formAvailable = false;
+              paneState.subTabConfig = null;
+              if (addButton) {
+                addButton.disabled = true;
+              }
+              sanitizeSelection();
+              renderData();
+            };
 
             if (!trimmedSource && !hasCustomFetch) {
               paneState.headers = [];
               paneState.rows = [];
               paneState.filteredRows = [];
+              paneState.rawRows = [];
+              paneState.dynamicRows = [];
               viewContainer.innerHTML =
                 '<p class="error-text">لا يوجد مصدر بيانات معرف لهذا التبويب.</p>';
               updatePaneSearchOptions(scaffold, paneState);
@@ -6088,6 +6223,8 @@
             if (!hasGoogleRunner) {
               viewContainer.innerHTML =
                 '<p class="error-text">خدمة Google Apps Script غير متاحة حاليًا.</p>';
+              paneState.rawRows = [];
+              paneState.dynamicRows = [];
               return;
             }
 
@@ -6099,18 +6236,115 @@
                 console.error("loadGenericTab failed", err);
                 viewContainer.innerHTML =
                   '<p class="error-text">تعذّر تحميل البيانات.</p>';
+                paneState.rawRows = [];
+                paneState.dynamicRows = [];
               })
               .withSuccessHandler((result) => {
-                paneState.headers = Array.isArray(result?.headers)
-                  ? result.headers
-                  : [];
-                paneState.rows = Array.isArray(result?.rows) ? result.rows : [];
-                sanitizeSelection();
-                renderData();
+                try {
+                  if (result && typeof result === "object" && "viewData" in result) {
+                    if (result.success === false) {
+                      const message =
+                        result.message || "تعذّر تحميل البيانات.";
+                      viewContainer.innerHTML = `<p class="error-text">${message}</p>`;
+                      paneState.headers = [];
+                      paneState.rows = [];
+                      paneState.filteredRows = [];
+                      paneState.rawRows = [];
+                      paneState.dynamicRows = [];
+                      updatePaneSearchOptions(scaffold, paneState);
+                      updatePaneSelectionSummary(scaffold, paneState);
+                      return;
+                    }
+                    const subTabConfig = result.subTabConfig || null;
+                    const formConfig = result.formConfig || null;
+                    const viewData = result.viewData || {};
+                    if (viewData && viewData.success === false) {
+                      const message =
+                        viewData.message || "تعذّر تحميل البيانات.";
+                      viewContainer.innerHTML = `<p class="error-text">${message}</p>`;
+                      paneState.headers = [];
+                      paneState.rows = [];
+                      paneState.filteredRows = [];
+                      paneState.rawRows = [];
+                      paneState.dynamicRows = [];
+                      updatePaneSearchOptions(scaffold, paneState);
+                      updatePaneSelectionSummary(scaffold, paneState);
+                      return;
+                    }
+                    const headers = Array.isArray(viewData?.headers)
+                      ? viewData.headers
+                      : [];
+                    const rawRows = Array.isArray(viewData?.rows)
+                      ? viewData.rows
+                      : Array.isArray(viewData?.data)
+                        ? viewData.data
+                        : [];
+                    paneState.headers = headers;
+                    paneState.rows = normalizeRows(rawRows, headers);
+                    paneState.rawRows = rawRows;
+                    paneState.dynamicRows = Array.isArray(viewData?.data)
+                      ? viewData.data
+                      : dynamicRowsFromArrays(rawRows, headers);
+                    paneState.viewData = viewData;
+                    if (subTabConfig || formConfig) {
+                      const mergedSubTabConfig = Object.assign(
+                        {},
+                        subTabConfig || {},
+                        formConfig ? { formConfig } : {}
+                      );
+                      paneState.subTabConfig = mergedSubTabConfig;
+                    }
+                    if (formConfig) {
+                      paneState.formMeta = Object.assign(
+                        {},
+                        paneState.formMeta || {},
+                        formConfig
+                      );
+                      if (window.bootstrapData) {
+                        if (!window.bootstrapData.forms) {
+                          window.bootstrapData.forms = {};
+                        }
+                        window.bootstrapData.forms[paneId] = Object.assign(
+                          {},
+                          window.bootstrapData.forms[paneId] || {},
+                          formConfig
+                        );
+                      }
+                    }
+                    const resolvedFormId =
+                      (paneState.formMeta &&
+                        (paneState.formMeta.formId ||
+                          paneState.formMeta.Form_ID ||
+                          paneState.formMeta.addFormId ||
+                          paneState.formMeta.Add_Form_ID)) ||
+                      (paneState.subTabConfig?.formConfig &&
+                        (paneState.subTabConfig.formConfig.formId ||
+                          paneState.subTabConfig.formConfig.Form_ID ||
+                          paneState.subTabConfig.formConfig.addFormId ||
+                          paneState.subTabConfig.formConfig.Add_Form_ID)) ||
+                      "";
+                    paneState.resolvedFormId = resolvedFormId;
+                    paneState.formAvailable = Boolean(resolvedFormId);
+                    if (addButton) {
+                      addButton.disabled = !paneState.formAvailable;
+                    }
+                    sanitizeSelection();
+                    renderData();
+                    return;
+                  }
+                } catch (normalizationError) {
+                  console.error(
+                    "loadGenericTab result normalization failed",
+                    normalizationError
+                  );
+                }
+                handleLegacyResult(result);
               });
 
             if (hasCustomFetch) {
               runner[fetchAction]();
+            } else if (paneId) {
+              runner.getSubTabViewData(paneId);
             } else {
               runner.getSheetData(trimmedSource);
             }
@@ -6128,13 +6362,24 @@
             if (!addButton.dataset.bound) {
               addButton.dataset.bound = "true";
               addButton.addEventListener("click", () => {
-                if (paneId === "Sub_PRJ_Main") {
-                  console.log(
-                    "Button 'إضافة قائمة المشاريع' clicked, attempting to open dynamic Projects tab..."
-                  );
-                }
-                if (!paneState.formAvailable) {
+                const effectiveFormMeta =
+                  paneState.formMeta ||
+                  formMeta ||
+                  paneState.subTabConfig?.formConfig ||
+                  {};
+                const candidateFormId =
+                  paneState.resolvedFormId ||
+                  effectiveFormMeta.addFormId ||
+                  effectiveFormMeta.Add_Form_ID ||
+                  effectiveFormMeta.formId ||
+                  effectiveFormMeta.Form_ID ||
+                  "";
+                if (!candidateFormId) {
                   showToast("لا يوجد نموذج إدخال متاح لهذا التبويب.", "info");
+                  return;
+                }
+                if (typeof window.openFormModal === "function") {
+                  window.openFormModal(candidateFormId, null, paneId, false);
                   return;
                 }
                 setPaneMode(paneElement, paneState, "form");
@@ -6250,6 +6495,7 @@
 
           setPaneMode(paneElement, paneState, paneState.mode);
 
+          paneState.fetchData = fetchData;
           fetchData();
         }
 

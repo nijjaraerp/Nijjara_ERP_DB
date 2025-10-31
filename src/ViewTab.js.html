@@ -19,13 +19,13 @@
       container.appendChild(searchFilters);
     }
 
-    const table = buildDataTable(
-      {
-        headers: Array.isArray(data?.headers) ? data.headers : [],
-        rows: Array.isArray(data?.rows) ? data.rows : [],
-      },
-      subTabConfig
-    );
+    const headers = Array.isArray(data?.headers) ? data.headers : [];
+    const rows = Array.isArray(data?.rows)
+      ? data.rows
+      : Array.isArray(data?.data)
+        ? data.data
+        : [];
+    const table = buildDataTable({ headers, rows }, subTabConfig);
     container.appendChild(table);
 
     return container;
@@ -35,7 +35,9 @@
     const header = document.createElement('div');
     header.className = 'view-pad-header';
 
-    const formConfig = window.bootstrapData?.forms?.[subTabConfig?.subId];
+    const formConfig =
+      subTabConfig?.formConfig ||
+      window.bootstrapData?.forms?.[subTabConfig?.subId];
     if (formConfig?.formId) {
       const addButton = document.createElement('button');
       addButton.type = 'button';
@@ -53,12 +55,15 @@
     table.className = 'dynamic-data-table';
     table.dataset.subTabId = subTabConfig?.subId || '';
 
-    const headerRow = buildTableHeaders(data.headers);
+    const headers = Array.isArray(data?.headers) ? data.headers : [];
+    const rows = Array.isArray(data?.rows) ? data.rows : [];
+
+    const headerRow = buildTableHeaders(headers);
     table.appendChild(headerRow);
 
     const tbody = document.createElement('tbody');
-    data.rows.forEach((row, index) => {
-      const tr = buildTableRow(row, data.headers, subTabConfig, index);
+    rows.forEach((row, index) => {
+      const tr = buildTableRow(row, headers, subTabConfig, index);
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);
@@ -91,18 +96,21 @@
     const tr = document.createElement('tr');
     tr.className = 'clickable-row';
     tr.dataset.rowIndex = String(rowIndex);
+    const record = coerceRowToRecord(row, headers);
 
     tr.onclick = (event) => {
       if (event.target.closest('.row-actions')) {
         return;
       }
-      openEditFormForRow(row, headers, subTabConfig);
+      openEditFormForRow(record, subTabConfig);
     };
 
     headers.forEach((header) => {
-      const cellValue = row?.[header];
       const td = document.createElement('td');
       td.dataset.column = header || '';
+      const cellValue = record && Object.prototype.hasOwnProperty.call(record, header)
+        ? record[header]
+        : undefined;
       td.textContent = cellValue !== undefined && cellValue !== null ? String(cellValue) : '';
 
       const normalizedDate = normalizeDateValue(cellValue);
@@ -123,7 +131,7 @@
     editBtn.innerHTML = '<i class="fas fa-edit"></i>';
     editBtn.onclick = (event) => {
       event.stopPropagation();
-      openEditFormForRow(row, headers, subTabConfig);
+      openEditFormForRow(record, subTabConfig);
     };
 
     actionsCell.appendChild(editBtn);
@@ -132,12 +140,14 @@
     return tr;
   }
 
-  function openEditFormForRow(row, headers, subTabConfig) {
-    const formConfig = window.bootstrapData?.forms?.[subTabConfig?.subId];
+  function openEditFormForRow(record, subTabConfig) {
+    const formConfig =
+      subTabConfig?.formConfig ||
+      window.bootstrapData?.forms?.[subTabConfig?.subId];
     const editFormId = formConfig?.editFormId || formConfig?.formId;
 
     if (editFormId) {
-      openFormModal(editFormId, row, subTabConfig?.subId, true);
+      openFormModal(editFormId, record, subTabConfig?.subId, true);
     } else if (typeof window.showToast === 'function') {
       window.showToast('تعذر فتح نموذج التعديل', 'error');
     }
@@ -317,6 +327,17 @@
 
       row.style.display = showRow ? '' : 'none';
     });
+  }
+
+  function coerceRowToRecord(row, headers) {
+    if (row && typeof row === 'object' && !Array.isArray(row)) {
+      return row;
+    }
+    const record = {};
+    headers.forEach((header, index) => {
+      record[header] = Array.isArray(row) ? row[index] : undefined;
+    });
+    return record;
   }
 
   function normalizeDateValue(value) {
