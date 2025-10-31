@@ -725,6 +725,33 @@
       .workspace-title {
         font-size: 1.6rem;
       }
+      .workspace-shell {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 1.25rem;
+        height: 100%;
+      }
+      .workspace-main {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        min-height: 0;
+      }
+      .workspace-main .data-pad-host {
+        flex: 1;
+        min-height: 0;
+      }
+      .sys-overview-kpis {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .sys-overview-kpis[hidden] {
+        display: none !important;
+      }
+      .sys-overview-note {
+        margin: 0;
+      }
       .workspace-content {
         grid-area: content;
         border: 1px solid var(--glassy-border);
@@ -2990,336 +3017,6 @@
     </style>
     <?!= include('ViewTab.css'); ?>
 
-    <style>
-      /* --- View/Add Tab Styles --- */
-      .view-add-container {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-        height: 100%;
-        padding: 1.5rem;
-        border-radius: 28px;
-        background:
-          linear-gradient(155deg, rgba(255, 255, 255, 0.08), rgba(10, 10, 18, 0.82)),
-          var(--glassy-surface-bg);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        box-shadow: var(--glassy-shadow);
-        backdrop-filter: blur(var(--glassy-blur));
-        overflow: hidden;
-        isolation: isolate;
-      }
-
-      .view-add-container::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-          circle at top,
-          rgba(255, 255, 255, 0.22),
-          transparent 55%
-        );
-        opacity: 0.6;
-        pointer-events: none;
-        mix-blend-mode: screen;
-      }
-
-      .view-add-tabs {
-        position: relative;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        align-items: stretch;
-        padding: 0.75rem;
-        border-radius: 20px;
-        background: linear-gradient(
-            135deg,
-            rgba(255, 255, 255, 0.18),
-            rgba(255, 255, 255, 0.05)
-          ),
-          var(--parent-color-surface, rgba(255, 255, 255, 0.04));
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.6),
-          0 15px 35px rgba(0, 0, 0, 0.45);
-        z-index: 1;
-      }
-
-      .view-add-tab-btn {
-        position: relative;
-        flex: 1 1 180px;
-        min-width: 160px;
-        padding: 0.9rem 1.8rem;
-        border-radius: 16px;
-        border: 1px solid rgba(255, 255, 255, 0.24);
-        background: linear-gradient(
-          140deg,
-          rgba(255, 255, 255, 0.28),
-          rgba(255, 255, 255, 0.05)
-        );
-        color: #f5f7fa;
-        font-size: 1.05rem;
-        font-weight: 700;
-        text-shadow: 0 3px 6px rgba(0, 0, 0, 0.45);
-        letter-spacing: 0.02em;
-        transition: transform 0.25s ease, box-shadow 0.25s ease,
-          background 0.3s ease, border-color 0.25s ease;
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.35),
-          0 10px 22px rgba(0, 0, 0, 0.4);
-        backdrop-filter: blur(16px);
-      }
-
-      .view-add-tab-btn::after {
-        content: "";
-        position: absolute;
-        inset: 0;
-        border-radius: inherit;
-        background: linear-gradient(
-          135deg,
-          rgba(255, 255, 255, 0.55),
-          rgba(255, 255, 255, 0)
-        );
-        opacity: 0.0;
-        transition: opacity 0.25s ease;
-        pointer-events: none;
-      }
-
-      .view-add-tab-btn:hover {
-        transform: translateY(-3px);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.5),
-          0 18px 32px rgba(0, 0, 0, 0.5);
-      }
-
-      .view-add-tab-btn:hover::after {
-        opacity: 0.45;
-      }
-
-      .view-add-tab-btn.active {
-        border-color: var(--parent-color-edge, rgba(255, 255, 255, 0.5));
-        background: linear-gradient(
-            145deg,
-            var(--parent-color, #0d6efd),
-            rgba(255, 255, 255, 0.18)
-          ),
-          rgba(0, 0, 0, 0.32);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.5),
-          0 22px 44px var(--parent-color-glow, rgba(0, 0, 0, 0.45));
-      }
-
-      .view-add-tab-btn.active::after {
-        opacity: 0.6;
-      }
-
-      .view-add-body {
-        position: relative;
-        flex: 1;
-        display: flex;
-      }
-
-      .view-add-content {
-        position: relative;
-        flex: 1;
-        border-radius: 24px;
-        background: linear-gradient(
-            160deg,
-            rgba(255, 255, 255, 0.12),
-            rgba(8, 8, 12, 0.78)
-          ),
-          rgba(0, 0, 0, 0.25);
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.25),
-          0 16px 34px rgba(0, 0, 0, 0.48);
-        padding: 1.5rem;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .view-add-loader {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-        padding: 2.5rem 1rem;
-        color: rgba(255, 255, 255, 0.82);
-        letter-spacing: 0.03em;
-      }
-
-      .view-add-loader__spinner {
-        width: 52px;
-        height: 52px;
-        border-radius: 50%;
-        border: 4px solid rgba(255, 255, 255, 0.25);
-        border-top-color: var(--parent-color, #0d6efd);
-        animation: spin 1.1s linear infinite;
-      }
-
-      .view-add-loader__text {
-        font-size: 1rem;
-        font-weight: 600;
-        opacity: 0.85;
-      }
-
-      .view-add-alert {
-        margin: auto;
-        padding: 2rem;
-        border-radius: 18px;
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        background: linear-gradient(
-            150deg,
-            rgba(255, 255, 255, 0.16),
-            rgba(0, 0, 0, 0.45)
-          ),
-          rgba(0, 0, 0, 0.35);
-        box-shadow:
-          inset 0 1px 0 rgba(255, 255, 255, 0.25),
-          0 18px 36px rgba(0, 0, 0, 0.45);
-        text-align: center;
-        color: rgba(255, 255, 255, 0.92);
-        font-weight: 600;
-        letter-spacing: 0.03em;
-      }
-
-      .view-add-alert--warning {
-        border-color: rgba(255, 190, 92, 0.55);
-        background: linear-gradient(
-            150deg,
-            rgba(255, 215, 130, 0.35),
-            rgba(80, 45, 0, 0.65)
-          ),
-          rgba(0, 0, 0, 0.45);
-      }
-
-      .view-add-alert--error {
-        border-color: rgba(255, 110, 110, 0.6);
-        background: linear-gradient(
-            150deg,
-            rgba(255, 120, 120, 0.4),
-            rgba(60, 0, 0, 0.7)
-          ),
-          rgba(0, 0, 0, 0.45);
-      }
-
-      /* --- Compact pills for tabs (Direct Expense + Materials) --- */
-      .dyn-tabs.direct-expense__tabs .nav-item,
-      .dyn-tabs.materials-module__tabs .nav-item {
-        padding: 0.35rem 0.7rem;
-        line-height: 1.1;
-        border-radius: 999px;
-        flex: 0 0 auto;
-        white-space: nowrap;
-      }
-
-      /* Place tabs side-by-side tightly */
-      .dyn-tabs.direct-expense__tabs,
-      .dyn-tabs.materials-module__tabs {
-        gap: 0.4rem;
-      }
-
-      /* --- Readable selects (fix white-on-white) --- */
-      select,
-      select option {
-        background-color: var(--color-surface-light) !important;
-        color: var(--color-text-primary) !important;
-      }
-      select:focus {
-        outline: 2px solid var(--theme-accent-24);
-      }
-
-      /* --- Direct Expense: header/meta layout --- */
-      .direct-expense__header {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 0.75rem 1rem;
-        align-items: end;
-      }
-      .direct-expense__meta {
-        display: grid !important;
-        grid-template-columns: minmax(260px, 2fr) minmax(200px, 1fr);
-        gap: 0.75rem 1rem;
-        align-items: stretch;
-      }
-      @media (max-width: 900px) {
-        .direct-expense__meta {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      /* Add spacing before Notes and between sections */
-      .direct-expense__field--wide {
-        margin-top: 0.25rem;
-      }
-      .direct-expense__main {
-        margin-top: 0.5rem;
-      }
-
-      /* --- Cart table fixes: middle-align + no overflow --- */
-      .direct-expense__cart-items {
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        background: rgba(0, 0, 0, 0.2);
-        overflow-x: auto;
-        overflow-y: hidden;
-      }
-      .direct-expense__cart {
-        overflow: hidden;
-      }
-      .direct-expense__cart-table {
-        width: 100%;
-        min-width: 580px;
-        border-collapse: separate;
-        border-spacing: 0;
-      }
-      .direct-expense__cart-table th,
-      .direct-expense__cart-table td {
-        vertical-align: middle;
-        white-space: nowrap;
-        padding: 0.5rem;
-      }
-      .direct-expense__cart-table th:last-child,
-      .direct-expense__cart-table td:last-child {
-        width: 1%;
-        text-align: center;
-      }
-      .direct-expense__cart-input {
-        width: 110px;
-        text-align: center;
-      }
-
-      .direct-expense__field--attachments .direct-expense__attachments {
-        align-items: flex-start;
-        gap: 0.5rem;
-      }
-      .direct-expense__field--attachments .direct-expense__attachment-list {
-        margin-top: 0.5rem;
-      }
-
-      /* Align Delete button inside cell */
-      .direct-expense__remove-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        max-width: 100%;
-        white-space: nowrap;
-      }
-
-      /* --- Materials module compact tabs (match Direct Expense) --- */
-      .materials-module__tabs .nav-item {
-        padding: 0.35rem 0.7rem;
-      }
-
-      /* Avoid overlapping highlight appearance */
-      .materials-module__tabs .nav-item.active,
-      .direct-expense__tabs .nav-item.active {
-        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2) inset;
-      }
-    </style>
   </head>
   <body>
     <!-- Login -->
@@ -3455,523 +3152,66 @@
         </header>
 
         <section class="workspace-content">
-          <section
-            id="sys-overview-pane"
-            class="sys-pane sys-pane--overview active"
-            data-pane="overview"
-          >
-            <div class="sys-pane__header">
-              <h3 class="pane-heading">نظرة عامة على النظام</h3>
-              <p class="muted">
-                تلخيص للحالة الحالية، يتم سحب بياناته من ‎SYS_Profile_View‎ عند
-                توفرها.
-              </p>
-            </div>
-            <div class="sys-overview__summary">
-              <div class="overview-cards">
-                <div class="overview-card">
-                  <div class="muted">إجمالي المستخدمين</div>
-                  <div id="kpi-total-users" class="kpi-value">—</div>
+          <div class="workspace-shell">
+            <aside
+              class="workspace-nav"
+              id="sys-side-nav"
+              aria-label="تبويبات إدارة النظام"
+            >
+              <!-- Tabs will be rendered dynamically -->
+            </aside>
+            <main class="workspace-main">
+              <section class="sys-overview-kpis" data-role="sys-overview" hidden>
+                <div class="overview-cards">
+                  <div class="overview-card">
+                    <div class="muted">إجمالي المستخدمين</div>
+                    <div id="kpi-total-users" class="kpi-value">—</div>
+                  </div>
+                  <div class="overview-card">
+                    <div class="muted">المستخدمون النشطون</div>
+                    <div id="kpi-active-users" class="kpi-value">—</div>
+                  </div>
+                  <div class="overview-card">
+                    <div class="muted">المستخدمون المعطلون</div>
+                    <div id="kpi-inactive-users" class="kpi-value">—</div>
+                  </div>
+                  <div class="overview-card">
+                    <div class="muted">عدد الأدوار</div>
+                    <div id="kpi-role-count" class="kpi-value">—</div>
+                  </div>
+                  <div class="overview-card">
+                    <div class="muted">عدد الأذونات</div>
+                    <div id="kpi-permission-count" class="kpi-value">—</div>
+                  </div>
+                  <div class="overview-card">
+                    <div class="muted">طلبات إعادة التعيين</div>
+                    <div id="kpi-pending-resets" class="kpi-value">—</div>
+                  </div>
                 </div>
-                <div class="overview-card">
-                  <div class="muted">المستخدمون النشطون</div>
-                  <div id="kpi-active-users" class="kpi-value">—</div>
-                </div>
-                <div class="overview-card">
-                  <div class="muted">المستخدمون المعطلون</div>
-                  <div id="kpi-inactive-users" class="kpi-value">—</div>
-                </div>
-                <div class="overview-card">
-                  <div class="muted">عدد الأدوار</div>
-                  <div id="kpi-role-count" class="kpi-value">—</div>
-                </div>
-                <div class="overview-card">
-                  <div class="muted">عدد الأذونات</div>
-                  <div id="kpi-permission-count" class="kpi-value">—</div>
-                </div>
-                <div class="overview-card">
-                  <div class="muted">طلبات إعادة التعيين</div>
-                  <div id="kpi-pending-resets" class="kpi-value">—</div>
-                </div>
-              </div>
-              <p class="muted" style="margin: 0">
-                استعرض الأرقام المجمّعة هنا، ثم انتقل إلى تبويب
-                <strong>المستخدمون</strong> لإدارة دليل المستخدمين بالكامل طبقًا
-                لـ PV_SYS_Users_Table.
-              </p>
-            </div>
-          </section>
-
-          <section id="sys-users-pane" class="sys-pane" data-pane="users">
-            <div class="sys-pane__header">
-              <h3 class="pane-heading">دليل المستخدمين</h3>
-              <p class="muted">
-                أدوات بحث وإجراءات مجمّعة لإدارة المستخدمين بجميع حالاتهم.
-              </p>
-            </div>
-            <div class="module-controls sys-users__controls">
-              <div class="module-controls__row module-controls__primary">
-                <div class="pane-mode-switch">
-                  <button
-                    type="button"
-                    id="sys-users-view-btn"
-                    class="pane-mode-button is-active"
-                    data-mode="list"
-                  >
-                    عرض المستخدمين
-                  </button>
-                  <button
-                    type="button"
-                    id="btn-new-user"
-                    class="pane-mode-button"
-                    data-mode="form"
-                  >
-                    إضافة مستخدم
-                  </button>
+                <p class="muted sys-overview-note">
+                  يتم تحديث المؤشرات تلقائيًا من ‎SYS_Profile_View‎. استخدم تبويب
+                  "المستخدمون" لإدارة دليل النظام وتشغيل الإجراءات المجمّعة.
+                </p>
+              </section>
+              <div
+                id="main-content-wrapper"
+                class="data-pad-host"
+                tabindex="-1"
+              >
+                <div class="data-pad-placeholder" data-role="datapad-placeholder">
+                  <h3>اختر تبويبًا لعرض بياناته</h3>
+                  <p class="muted">
+                    يتم بناء الجداول والنماذج ديناميكيًا من تعريفات ‎SYS_Dynamic_Forms‎
+                    و ‎SYS_Profile_View‎. اضغط على أي تبويب من القائمة اليمنى لبدء
+                    الاستعراض أو إضافة بيانات جديدة.
+                  </p>
                 </div>
               </div>
-              <div class="module-controls__row module-controls__secondary">
-                <div class="sys-users__filters">
-                  <input
-                    type="search"
-                    id="users-search"
-                    placeholder="بحث سريع..."
-                  />
-                  <select id="department-filter">
-                    <option value="">كل الأقسام</option>
-                  </select>
-                  <select id="role-filter">
-                    <option value="">كل الأدوار</option>
-                  </select>
-                  <select id="status-filter">
-                    <option value="">كل الحالات</option>
-                    <option value="true">نشط</option>
-                    <option value="false">غير نشط</option>
-                  </select>
-                  <input
-                    type="date"
-                    id="updated-from"
-                    aria-label="تاريخ التحديث من"
-                  />
-                  <input
-                    type="date"
-                    id="updated-to"
-                    aria-label="تاريخ التحديث إلى"
-                  />
-                </div>
-                <div class="sys-users__bulk-actions">
-                  <button id="bulk-export" class="ghost-button" disabled>
-                    تصدير
-                  </button>
-                  <button id="bulk-activate" class="ghost-button" disabled>
-                    تفعيل
-                  </button>
-                  <button id="bulk-deactivate" class="ghost-button" disabled>
-                    تعطيل
-                  </button>
-                  <select id="bulk-role-select" disabled>
-                    <option value="">اختر دورًا</option>
-                  </select>
-                  <button id="bulk-assign-role" class="ghost-button" disabled>
-                    تعيين الدور
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="table-wrapper">
-              <table id="users-table">
-                <thead>
-                  <tr>
-                    <th class="select-cell">
-                      <input type="checkbox" id="select-all-users" />
-                    </th>
-                    <th>معرّف المستخدم</th>
-                    <th>الاسم الكامل</th>
-                    <th>اسم المستخدم</th>
-                    <th>البريد الإلكتروني</th>
-                    <th>القسم</th>
-                    <th>الدور</th>
-                    <th>الحالة</th>
-                    <th>آخر تسجيل دخول</th>
-                    <th>آخر تحديث</th>
-                    <th>إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody id="users-tbody">
-                  <tr>
-                    <td colspan="11" class="muted">جاري التحميل…</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section id="sys-roles-pane" class="sys-pane" data-pane="roles">
-            <div class="sys-pane__header">
-              <h3 class="pane-heading">سجل الأدوار</h3>
-              <p class="muted">
-                متابعة الأدوار المعرّفة في ‎SYS_Roles‎ وتحديد الأدوار النظامية.
-              </p>
-            </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>معرّف الدور</th>
-                    <th>المسمى</th>
-                    <th>الوصف</th>
-                    <th>دور نظامي؟</th>
-                    <th>آخر تحديث</th>
-                  </tr>
-                </thead>
-                <tbody id="roles-tbody">
-                  <tr>
-                    <td colspan="5" class="muted">
-                      لم يتم تحميل البيانات بعد.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section
-            id="sys-permissions-pane"
-            class="sys-pane"
-            data-pane="permissions"
-          >
-            <div class="sys-pane__header">
-              <h3 class="pane-heading">سجل الأذونات</h3>
-              <p class="muted">
-                يعرض ‎SYS_Permissions‎ للتدقيق السريع والتصنيف حسب الفئات.
-              </p>
-            </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>مفتاح الإذن</th>
-                    <th>البيان</th>
-                    <th>الفئة</th>
-                    <th>الوصف</th>
-                    <th>آخر تحديث</th>
-                  </tr>
-                </thead>
-                <tbody id="permissions-tbody">
-                  <tr>
-                    <td colspan="5" class="muted">
-                      لم يتم تحميل البيانات بعد.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section
-            id="sys-role-perms-pane"
-            class="sys-pane"
-            data-pane="rolePerms"
-          >
-            <div class="sys-pane__header">
-              <h3 class="pane-heading">تعيين أذونات الأدوار</h3>
-              <p class="muted">
-                خريطة الأذونات مع النطاق والحالة للمساعدة في مراجعة الصلاحيات.
-              </p>
-            </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>الدور</th>
-                    <th>الإذن</th>
-                    <th>النطاق</th>
-                    <th>مسموح؟</th>
-                    <th>آخر تحديث</th>
-                  </tr>
-                </thead>
-                <tbody id="role-perms-tbody">
-                  <tr>
-                    <td colspan="5" class="muted">
-                      لم يتم تحميل البيانات بعد.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section
-            id="sys-properties-pane"
-            class="sys-pane"
-            data-pane="properties"
-          >
-            <div class="sys-pane__header">
-              <h3 class="pane-heading">خصائص المستخدم</h3>
-              <p class="muted">
-                يعرض جدول ‎SYS_User_Properties‎ لتتبع السمات المخصصة.
-              </p>
-            </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>المستخدم</th>
-                    <th>المفتاح</th>
-                    <th>القيمة</th>
-                    <th>آخر تحديث</th>
-                    <th>المحدّث</th>
-                  </tr>
-                </thead>
-                <tbody id="properties-tbody">
-                  <tr>
-                    <td colspan="5" class="muted">
-                      لم يتم تحميل البيانات بعد.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section id="sys-sessions-pane" class="sys-pane" data-pane="sessions">
-            <div class="sys-pane__header">
-              <h3 class="pane-heading">الجلسات النشطة والمغلقة</h3>
-              <p class="muted">
-                مراقبة سجلات ‎SYS_Sessions‎ بما في ذلك جلسات الانتحال.
-              </p>
-            </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>المعرّف</th>
-                    <th>المستخدم</th>
-                    <th>الممثل</th>
-                    <th>النوع</th>
-                    <th>الحالة</th>
-                    <th>البداية</th>
-                    <th>النهاية</th>
-                  </tr>
-                </thead>
-                <tbody id="sessions-tbody">
-                  <tr>
-                    <td colspan="7" class="muted">
-                      لم يتم تحميل البيانات بعد.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          <section id="sys-audit-pane" class="sys-pane" data-pane="audit">
-            <div class="sys-pane__header">
-              <h3 class="pane-heading">سجل التدقيق</h3>
-              <p class="muted">
-                أحدث إجراءات النظام من ‎SYS_Audit_Log‎ أو ‎SYS_Audit_Report‎.
-              </p>
-            </div>
-            <div class="table-wrapper">
-              <table>
-                <thead>
-                  <tr>
-                    <th>الوقت</th>
-                    <th>المستخدم</th>
-                    <th>الإجراء</th>
-                    <th>التفاصيل</th>
-                  </tr>
-                </thead>
-                <tbody id="audit-tbody">
-                  <tr>
-                    <td colspan="4" class="muted">
-                      لم يتم تحميل البيانات بعد.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
+            </main>
+          </div>
         </section>
-
-        <aside class="workspace-nav" id="sys-side-nav">
-          <!-- Tabs will be rendered dynamically -->
-        </aside>
       </div>
     </div>
-
-    <!-- إنشاء مستخدم (ديناميكي إن توفرت الجداول؛ وإلا نموذج مبسّط) -->
-    <dialog id="dlg-new-user">
-      <h3 style="margin-bottom: 0.6rem">إنشاء مستخدم جديد</h3>
-      <form method="dialog" id="new-user-form">
-        <div id="new-user-fields" class="dialog-body"></div>
-        <div class="actions">
-          <button type="submit" class="action-button save-button">حفظ</button>
-          <button
-            type="button"
-            id="btn-cancel-new"
-            class="action-button cancel-button"
-          >
-            إلغاء
-          </button>
-        </div>
-      </form>
-    </dialog>
-
-    <!-- ملف المستخدم -->
-    <dialog id="dlg-user-profile">
-      <div class="profile-dialog__header">
-        <h3 id="profile-title">ملف المستخدم</h3>
-        <div id="profile-username" class="profile-dialog__username"></div>
-      </div>
-      <div class="profile-tabs" id="profile-tabs">
-        <button type="button" class="nav-item active" data-tab="profile">
-          الملف
-        </button>
-        <button type="button" class="nav-item" data-tab="properties">
-          الخصائص
-        </button>
-        <button type="button" class="nav-item" data-tab="documents">
-          المستندات
-        </button>
-        <button type="button" class="nav-item" data-tab="sessions">
-          الجلسات
-        </button>
-        <button type="button" class="nav-item" data-tab="audit">التدقيق</button>
-      </div>
-      <div class="profile-panels" id="profile-panels">
-        <section class="profile-panel active" data-tab="profile">
-          <dl class="profile-dl" id="profile-overview-list"></dl>
-        </section>
-        <section class="profile-panel" data-tab="properties">
-          <table class="profile-table">
-            <thead>
-              <tr>
-                <th>المفتاح</th>
-                <th>القيمة</th>
-                <th>آخر تحديث</th>
-                <th>المحدّث</th>
-              </tr>
-            </thead>
-            <tbody id="profile-properties-body"></tbody>
-          </table>
-        </section>
-        <section class="profile-panel" data-tab="documents">
-          <table class="profile-table">
-            <thead>
-              <tr>
-                <th>المستند</th>
-                <th>المرفوع بواسطة</th>
-                <th>التاريخ</th>
-                <th>رابط</th>
-              </tr>
-            </thead>
-            <tbody id="profile-documents-body"></tbody>
-          </table>
-        </section>
-        <section class="profile-panel" data-tab="sessions">
-          <table class="profile-table">
-            <thead>
-              <tr>
-                <th>Session</th>
-                <th>المنتحل</th>
-                <th>النوع</th>
-                <th>الحالة</th>
-                <th>البداية</th>
-                <th>النهاية</th>
-              </tr>
-            </thead>
-            <tbody id="profile-sessions-body"></tbody>
-          </table>
-        </section>
-        <section class="profile-panel" data-tab="audit">
-          <table class="profile-table">
-            <thead>
-              <tr>
-                <th>الوقت</th>
-                <th>المستخدم</th>
-                <th>الإجراء</th>
-                <th>التفاصيل</th>
-              </tr>
-            </thead>
-            <tbody id="profile-audit-body"></tbody>
-          </table>
-        </section>
-      </div>
-      <div class="actions">
-        <button
-          type="button"
-          id="btn-close-profile"
-          class="action-button cancel-button"
-        >
-          إغلاق
-        </button>
-      </div>
-    </dialog>
-
-    <!-- تعيين دور -->
-    <dialog id="dlg-assign-role">
-      <h3 style="margin-bottom: 0.6rem">تعيين دور للمستخدم</h3>
-      <form method="dialog" id="form-assign-role">
-        <input type="hidden" id="assign-role-user" name="userId" />
-        <div class="form-grid">
-          <div class="span-2">
-            <label for="assign-role-select">اختر الدور</label>
-            <select id="assign-role-select" name="roleId" required></select>
-          </div>
-          <div class="span-2 muted" id="assign-role-user-label"></div>
-        </div>
-        <div class="actions">
-          <button type="submit" class="action-button save-button">حفظ</button>
-          <button
-            type="button"
-            id="btn-cancel-assign"
-            class="action-button cancel-button"
-          >
-            إلغاء
-          </button>
-        </div>
-      </form>
-    </dialog>
-
-    <!-- إعادة تعيين كلمة المرور -->
-    <dialog id="dlg-reset-pass">
-      <h3 style="margin-bottom: 0.6rem">إعادة تعيين كلمة المرور</h3>
-      <form method="dialog" id="form-reset-pass">
-        <div class="form-grid">
-          <div class="span-2">
-            <label for="reset_pass">كلمة المرور الجديدة</label
-            ><input
-              type="password"
-              id="reset_pass"
-              name="password"
-              autocomplete="new-password"
-              required
-            />
-          </div>
-          <div class="span-2">
-            <label for="reset_confirm">تأكيد كلمة المرور</label
-            ><input
-              type="password"
-              id="reset_confirm"
-              name="confirm"
-              autocomplete="new-password"
-              required
-            />
-          </div>
-        </div>
-        <div class="actions">
-          <button type="submit" class="action-button edit-button">تحديث</button>
-          <button
-            type="button"
-            id="btn-cancel-reset"
-            class="action-button cancel-button"
-          >
-            إلغاء
-          </button>
-        </div>
-      </form>
-    </dialog>
 
     <?!= include('ViewTab.js'); ?>
     <script>
@@ -4037,6 +3277,7 @@
         const btnCancelAssign = document.getElementById("btn-cancel-assign");
         const sysView = document.getElementById("system-management-view");
         const sysNav = document.getElementById("sys-side-nav");
+        const sysOverviewSection = document.querySelector('[data-role="sys-overview"]');
         const sysPanes = sysView
           ? Array.from(sysView.querySelectorAll(".sys-pane"))
           : [];
@@ -4403,6 +3644,8 @@
             labelEn: "Overview",
             route: "/sys",
             sortOrder: 1,
+            searchBar: false,
+            filterOptions: [],
           },
           {
             tabId: "Tab_SYS_Management",
@@ -4412,6 +3655,8 @@
             labelEn: "Users",
             route: "/sys/users",
             sortOrder: 2,
+            searchBar: true,
+            filterOptions: [],
           },
           {
             tabId: "Tab_SYS_Management",
@@ -4421,6 +3666,8 @@
             labelEn: "Roles",
             route: "/sys/roles",
             sortOrder: 3,
+            searchBar: true,
+            filterOptions: [],
           },
           {
             tabId: "Tab_SYS_Management",
@@ -4430,6 +3677,8 @@
             labelEn: "Permissions",
             route: "/sys/permissions",
             sortOrder: 4,
+            searchBar: true,
+            filterOptions: [],
           },
           {
             tabId: "Tab_SYS_Management",
@@ -4439,6 +3688,8 @@
             labelEn: "Role Permissions",
             route: "/sys/role-perms",
             sortOrder: 5,
+            searchBar: true,
+            filterOptions: [],
           },
           {
             tabId: "Tab_SYS_Management",
@@ -4448,6 +3699,8 @@
             labelEn: "User Properties",
             route: "/sys/properties",
             sortOrder: 6,
+            searchBar: true,
+            filterOptions: [],
           },
           {
             tabId: "Tab_SYS_Management",
@@ -4457,6 +3710,8 @@
             labelEn: "Sessions",
             route: "/sys/sessions",
             sortOrder: 7,
+            searchBar: true,
+            filterOptions: [],
           },
           {
             tabId: "Tab_SYS_Management",
@@ -4466,6 +3721,8 @@
             labelEn: "Audit",
             route: "/sys/audit",
             sortOrder: 8,
+            searchBar: true,
+            filterOptions: [],
           },
         ];
         const CLIENT_FORM_FALLBACKS = Object.freeze({
@@ -5294,10 +4551,13 @@
               Add_Label: entry.addLabel || "",
               Add_Form_ID: entry.addFormId || "",
               Add_Form_Type: entry.addFormType || "",
+              Edit_Form_ID: entry.editFormId || "",
               Source_Sheet: entry.sourceSheet || "",
               Route: entry.route || "",
               Tab_Color: entry.tabColor || grouped.Tab_Color || "",
               Pane: entry.pane || "",
+              Search_Bar: entry.searchBar || false,
+              Filter_Options: entry.filterOptions || [],
             };
 
             const alreadyPresent = grouped.subTabs.some(
@@ -5430,10 +4690,13 @@
             Add_Label: entry.addLabel || entry.Add_Label || "",
             Add_Form_ID: entry.addFormId || entry.Add_Form_ID || "",
             Add_Form_Type: entry.addFormType || entry.Add_Form_Type || "",
+            Edit_Form_ID: entry.editFormId || entry.Edit_Form_ID || "",
             Source_Sheet: entry.sourceSheet || entry.Source_Sheet || "",
             Route: entry.route || entry.Route || "",
             Tab_Color: entry.tabColor || entry.Tab_Color || "",
             Pane: entry.pane || entry.Pane || "",
+            Search_Bar: entry.searchBar || entry.Search_Bar || false,
+            Filter_Options: entry.filterOptions || entry.Filter_Options || [],
           };
 
           const parentRecord =
@@ -5465,6 +4728,10 @@
               mapped.Add_Form_ID =
                 parentRecord.sub.Add_Form_ID || parentRecord.sub.addFormId || "";
             }
+            if (!mapped.Edit_Form_ID && parentRecord.sub) {
+              mapped.Edit_Form_ID =
+                parentRecord.sub.Edit_Form_ID || parentRecord.sub.editFormId || "";
+            }
             if (!mapped.Add_Form_Type && parentRecord.sub) {
               mapped.Add_Form_Type =
                 parentRecord.sub.Add_Form_Type ||
@@ -5479,6 +4746,21 @@
             }
             if (!mapped.Route && parentRecord.sub) {
               mapped.Route = parentRecord.sub.Route || parentRecord.sub.route || "";
+            }
+            if (!mapped.Search_Bar && parentRecord.sub) {
+              mapped.Search_Bar =
+                parentRecord.sub.Search_Bar || parentRecord.sub.searchBar || false;
+            }
+            if (
+              (!mapped.Filter_Options ||
+                (Array.isArray(mapped.Filter_Options) &&
+                  !mapped.Filter_Options.length)) &&
+              parentRecord.sub
+            ) {
+              mapped.Filter_Options =
+                parentRecord.sub.Filter_Options ||
+                parentRecord.sub.filterOptions ||
+                [];
             }
           }
 
@@ -5620,17 +4902,21 @@
 
           switch (mode) {
             case "ViewAdd":
-            case "viewadd": {
+            case "viewadd":
+            case "DataPad":
+            case "datapad": {
               if (typeof log.debug === "function") {
-                log.debug(FNAME, "Mode: 'ViewAdd'. Calling buildViewAddUI...");
+                log.debug(FNAME, "Mode: 'ViewAdd'. Rendering dynamic data pad...");
               }
-              contentWrapper.innerHTML = buildViewAddUI(subTabData, parentColor);
-              attachViewAddTabListeners(subTabData);
-              const viewTrigger = document.getElementById(
-                `va-tab-view-${subTabData.Sub_ID}`
-              );
-              if (viewTrigger) {
-                viewTrigger.click();
+              if (window.DataPad && typeof window.DataPad.render === "function") {
+                window.DataPad.render(subTabData, contentWrapper);
+              } else {
+                contentWrapper.innerHTML = `
+                  <div class="p-4">
+                    <h2>Dynamic Pad</h2>
+                    <p>لم يتم تحميل محرك الواجهات الديناميكية.</p>
+                  </div>
+                `;
               }
               break;
             }
@@ -5730,257 +5016,6 @@
           }
 
           return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-        }
-
-        /**
-         * @function buildViewAddUI
-         * @description Generates the HTML string for the "View/Add" tabbed interface shell.
-         * @param {object} subTabData The data object for the sub-tab.
-         * @param {string} parentColor The hex color inherited from the parent module.
-         * @returns {string} The HTML string for the UI shell.
-         */
-        function buildViewAddUI(subTabData, parentColor) {
-          const FNAME = "buildViewAddUI";
-          if (typeof log.debug === "function") {
-            log.debug(FNAME, `Building 'ViewAdd' UI for ${subTabData.Sub_ID}`);
-          }
-
-          const viewLabel =
-            subTabData.View_Label ||
-            `View ${subTabData.Sub_Label_EN || "Items"}`;
-          const addLabel =
-            subTabData.Add_Label ||
-            `Add ${subTabData.Sub_Label_EN || "Item"}`;
-          const canAdd =
-            subTabData.Add_Form_ID && subTabData.Add_Form_ID.trim() !== "";
-          if (!canAdd && typeof log.warn === "function") {
-            log.warn(
-              FNAME,
-              `No 'Add_Form_ID' found for ${subTabData.Sub_ID}. 'Add' tab will be hidden.`
-            );
-          }
-
-          const accentColor = parentColor || "#3a1b5c";
-          const accentGlow = colorHexToRgba(accentColor, 0.45, "rgba(0, 0, 0, 0.45)");
-          const accentSurface = colorHexToRgba(
-            accentColor,
-            0.16,
-            "rgba(255, 255, 255, 0.08)"
-          );
-          const accentEdge = colorHexToRgba(accentColor, 0.65, "rgba(255, 255, 255, 0.45)");
-
-          return `
-            <div
-              class="view-add-container"
-              style="--parent-color: ${accentColor}; --parent-color-glow: ${accentGlow}; --parent-color-surface: ${accentSurface}; --parent-color-edge: ${accentEdge};"
-            >
-              <div class="view-add-tabs">
-                <button class="view-add-tab-btn active"
-                        id="va-tab-view-${subTabData.Sub_ID}"
-                        data-sub-id="${subTabData.Sub_ID}"
-                        data-mode="view">
-                  ${viewLabel}
-                </button>
-                ${
-                  canAdd
-                    ? `
-                <button class="view-add-tab-btn"
-                        id="va-tab-add-${subTabData.Sub_ID}"
-                        data-sub-id="${subTabData.Sub_ID}"
-                        data-mode="add">
-                  ${addLabel}
-                </button>
-                `
-                    : ""
-                }
-              </div>
-              <div class="view-add-body">
-                <div class="view-add-content" id="view-add-content-${subTabData.Sub_ID}">
-                  <div class="view-add-loader" role="status" aria-live="polite">
-                    <span class="view-add-loader__spinner" aria-hidden="true"></span>
-                    <span class="view-add-loader__text">... جارٍ التحميل</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-        }
-
-        /**
-         * @function attachViewAddTabListeners
-         * @description Attaches click listeners to the dynamically created View/Add tabs.
-         * @param {object} subTabData The data object for the sub-tab.
-         */
-        function attachViewAddTabListeners(subTabData) {
-          const FNAME = "attachViewAddTabListeners";
-          if (typeof log.debug === "function") {
-            log.debug(FNAME, `Attaching listeners for ${subTabData.Sub_ID}`);
-          }
-
-          const contentContainer = document.getElementById(
-            `view-add-content-${subTabData.Sub_ID}`
-          );
-          if (!contentContainer) {
-            if (typeof log.error === "function") {
-              log.error(
-                FNAME,
-                `Content container not found: #view-add-content-${subTabData.Sub_ID}`
-              );
-            }
-            return;
-          }
-
-          document
-            .querySelectorAll(
-              `.view-add-tab-btn[data-sub-id="${subTabData.Sub_ID}"]`
-            )
-            .forEach((btn) => {
-              btn.addEventListener("click", (event) => {
-                const FNAME_CLICK = "ViewAddTab.click";
-                const clickedBtn = event.currentTarget;
-                const mode = clickedBtn.dataset.mode;
-
-                if (typeof log.debug === "function") {
-                  log.debug(
-                    FNAME_CLICK,
-                    `Clicked '${mode}' for ${subTabData.Sub_ID}`
-                  );
-                }
-
-                document
-                  .querySelectorAll(
-                    `.view-add-tab-btn[data-sub-id="${subTabData.Sub_ID}"]`
-                  )
-                  .forEach((b) => b.classList.remove("active"));
-                clickedBtn.classList.add("active");
-
-                contentContainer.innerHTML = `
-                  <div class="view-add-loader" role="status" aria-live="polite">
-                    <span class="view-add-loader__spinner" aria-hidden="true"></span>
-                    <span class="view-add-loader__text">... جارٍ التحميل</span>
-                  </div>`;
-
-                if (mode === "view") {
-                  loadViewTabContent(subTabData, contentContainer);
-                } else if (mode === "add") {
-                  loadAddTabContent(subTabData, contentContainer);
-                }
-              });
-            });
-        }
-
-        /**
-         * @function loadViewTabContent
-         * @description Loads and renders the content for the "View" tab (dynamic table).
-         * @param {object} subTabData The data object for the sub-tab.
-         * @param {HTMLElement} contentContainer The container element to render into.
-         */
-        function loadViewTabContent(subTabData, contentContainer) {
-          const FNAME = "loadViewTabContent";
-          log.debug(
-            FNAME,
-            `Loading 'View' content for ${subTabData.Sub_ID} from sheet ${subTabData.Source_Sheet}`
-          );
-
-          // Show a simple spinner while data is fetched
-          showSpinner('Loading view data...');
-
-          google.script.run
-            .withSuccessHandler((response) => {
-              hideSpinner();
-              log.debug(
-                FNAME,
-                `Successfully fetched data for ${subTabData.Source_Sheet}`,
-                response
-              );
-
-              if (response && response.success) {
-                // --- THIS IS THE NEW LOGIC ---
-                // Call the main function from ViewTab.js to build the UI
-                buildDynamicTableView(subTabData, response, contentContainer);
-              } else {
-                // Handle error response from server
-                let errorMsg = (response && response.message)
-                  ? response.message
-                  : "Received an unsuccessful response from server.";
-                log.error(FNAME, errorMsg, response);
-                contentContainer.innerHTML = `
-                  <div class="view-add-alert view-add-alert--error">
-                    حدث خطأ أثناء تحميل بيانات العرض: ${errorMsg}
-                  </div>`;
-              }
-            })
-            .withFailureHandler((err) => {
-              hideSpinner();
-              log.error(FNAME, `Failed to get data for ${subTabData.Source_Sheet}`, err);
-              contentContainer.innerHTML = `
-                <div class="view-add-alert view-add-alert--error">
-                  حدث خطأ أثناء تحميل بيانات العرض: ${err.message}
-                </div>`;
-            })
-            .getViewData(subTabData.Source_Sheet, subTabData.Sub_ID); // Calls the function in Code.js
-        }
-
-        /**
-         * @function loadAddTabContent
-         * @description Loads and renders the content for the "Add" tab (dynamic form).
-         * @param {object} subTabData The data object for the sub-tab.
-         * @param {HTMLElement} contentContainer The container element to render into.
-         */
-        function loadAddTabContent(subTabData, contentContainer) {
-          const FNAME = "loadAddTabContent";
-          const formId = subTabData.Add_Form_ID;
-          if (typeof log.debug === "function") {
-            log.debug(
-              FNAME,
-              `Loading 'Add' content for ${subTabData.Sub_ID} using Form_ID: ${formId}`
-            );
-          }
-
-          if (!formId) {
-            if (typeof log.error === "function") {
-              log.error(FNAME, "Cannot load 'Add' tab: 'Add_Form_ID' is missing.");
-            }
-            contentContainer.innerHTML = `
-              <div class="view-add-alert view-add-alert--warning">
-                لم يتم تعريف معرف النموذج (Form ID) لهذا التبويب.
-              </div>`;
-            return;
-          }
-
-          try {
-            const renderFormHandler =
-              (typeof window !== "undefined" &&
-                typeof window.renderForm === "function" &&
-                window.renderForm) ||
-              (window.app &&
-                typeof window.app.renderForm === "function" &&
-                window.app.renderForm) ||
-              (window.forms &&
-                typeof window.forms.renderForm === "function" &&
-                window.forms.renderForm) ||
-              null;
-
-            if (typeof renderFormHandler === "function") {
-              renderFormHandler.call(window.app || window, formId, contentContainer.id);
-              if (typeof log.debug === "function") {
-                log.debug(
-                  FNAME,
-                  `Successfully called renderForm('${formId}', '${contentContainer.id}')`
-                );
-              }
-            } else {
-              throw new Error("renderForm handler is not available.");
-            }
-          } catch (err) {
-            if (typeof log.error === "function") {
-              log.error(FNAME, `Error calling renderForm: ${err.message}`, err);
-            }
-            contentContainer.innerHTML = `
-              <div class="view-add-alert view-add-alert--error">
-                تعذر تحميل نموذج الإضافة: ${err.message}
-              </div>`;
-          }
         }
 
         function loadTab(identifier, options = {}) {
@@ -11901,17 +10936,19 @@
 
         function currentFilters() {
           return {
-            search: (txtSearch.value || "").trim(),
-            department: selDept.value || "",
-            role: selRole.value || "",
-            status: selStatus.value || "",
-            updatedFrom: dtUpdatedFrom.value || "",
-            updatedTo: dtUpdatedTo.value || "",
+            search: ((txtSearch && txtSearch.value) || "").trim(),
+            department: (selDept && selDept.value) || "",
+            role: (selRole && selRole.value) || "",
+            status: (selStatus && selStatus.value) || "",
+            updatedFrom: (dtUpdatedFrom && dtUpdatedFrom.value) || "",
+            updatedTo: (dtUpdatedTo && dtUpdatedTo.value) || "",
           };
         }
 
         let usersReqTimer = null;
         function loadUsers({ force } = {}) {
+
+          if (!usersTable || !usersTbody) return;
           console.log("[CLIENT] loadUsers called with force:", force);
           if (!(window.google && google.script && google.script.run)) {
             console.error("[CLIENT] Apps Script runtime not available");
@@ -12046,38 +11083,40 @@
           );
         }
 
-        selectAllUsers.addEventListener("change", (e) => {
-          const checked = e.target.checked;
-          usersTbody
-            .querySelectorAll('input.row-select[type="checkbox"]')
-            .forEach((cb) => {
-              cb.checked = checked;
-              const id = cb.dataset.id;
-              if (!id) return;
-              if (checked) {
-                selectedUsers.add(id);
-              } else {
-                selectedUsers.delete(id);
-              }
-              const row = cb.closest("tr");
-              if (row) {
-                row.classList.toggle(
-                  "generic-table__row--selected",
-                  cb.checked
-                );
-              }
-            });
-          syncSelectAllState();
-          syncBulkActionsState();
-        });
+        if (selectAllUsers && usersTbody) {
+          selectAllUsers.addEventListener("change", (e) => {
+            const checked = e.target.checked;
+            usersTbody
+              .querySelectorAll('input.row-select[type="checkbox"]')
+              .forEach((cb) => {
+                cb.checked = checked;
+                const id = cb.dataset.id;
+                if (!id) return;
+                if (checked) {
+                  selectedUsers.add(id);
+                } else {
+                  selectedUsers.delete(id);
+                }
+                const row = cb.closest("tr");
+                if (row) {
+                  row.classList.toggle(
+                    "generic-table__row--selected",
+                    cb.checked
+                  );
+                }
+              });
+            syncSelectAllState();
+            syncBulkActionsState();
+          });
+        }
 
         ["input", "change"].forEach((evt) => {
-          txtSearch.addEventListener(evt, loadUsers);
-          selDept.addEventListener(evt, loadUsers);
-          selRole.addEventListener(evt, loadUsers);
-          selStatus.addEventListener(evt, loadUsers);
-          dtUpdatedFrom.addEventListener(evt, loadUsers);
-          dtUpdatedTo.addEventListener(evt, loadUsers);
+          if (txtSearch) txtSearch.addEventListener(evt, loadUsers);
+          if (selDept) selDept.addEventListener(evt, loadUsers);
+          if (selRole) selRole.addEventListener(evt, loadUsers);
+          if (selStatus) selStatus.addEventListener(evt, loadUsers);
+          if (dtUpdatedFrom) dtUpdatedFrom.addEventListener(evt, loadUsers);
+          if (dtUpdatedTo) dtUpdatedTo.addEventListener(evt, loadUsers);
         });
 
         if (bulkExportBtn)
@@ -12097,35 +11136,37 @@
             syncBulkActionsState();
           });
 
-        // Reset password dialog is already initialized above
-        document
-          .getElementById("btn-cancel-reset")
-          .addEventListener("click", () => dlgReset.close());
-        formReset.addEventListener("submit", (e) => {
-          e.preventDefault();
-          const fd = new FormData(formReset);
-          const p = fd.get("password") || "",
-            c = fd.get("confirm") || "";
-          if (p !== c) {
-            showToast("التأكيد غير مطابق.", "error");
-            return;
+        if (dlgReset && formReset) {
+          const cancelResetBtn = document.getElementById("btn-cancel-reset");
+          if (cancelResetBtn) {
+            cancelResetBtn.addEventListener("click", () => dlgReset.close());
           }
-          if (!(window.google && google.script && google.script.run)) {
-            showToast("غير متصل بالخادم.", "error");
-            return;
-          }
-          google.script.run
-            .withFailureHandler((err) => {
-              console.error(err);
-              showToast("تعذّر إعادة كلمة المرور.", "error");
-            })
-            .withSuccessHandler((res) => {
-              console.log("Reset password response:", res);
-              showToast("تم تحديث كلمة المرور (مشفّرة).", "success");
-              dlgReset.close();
-            })
-            .updateUserPassword(resetUserId, p);
-        });
+          formReset.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const fd = new FormData(formReset);
+            const p = fd.get("password") || "",
+              c = fd.get("confirm") || "";
+            if (p !== c) {
+              showToast("التأكيد غير مطابق.", "error");
+              return;
+            }
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("غير متصل بالخادم.", "error");
+              return;
+            }
+            google.script.run
+              .withFailureHandler((err) => {
+                console.error(err);
+                showToast("تعذّر إعادة كلمة المرور.", "error");
+              })
+              .withSuccessHandler((res) => {
+                console.log("Reset password response:", res);
+                showToast("تم تحديث كلمة المرور (مشفّرة).", "success");
+                dlgReset.close();
+              })
+              .updateUserPassword(resetUserId, p);
+          });
+        }
 
         const DATE_OPTS = {
           year: "numeric",
@@ -12334,6 +11375,7 @@
         }
 
         function renderUsers(list) {
+          if (!usersTbody) return;
           usersTbody.innerHTML = "";
           if (!Array.isArray(list) || list.length === 0) {
             usersTbody.innerHTML =
@@ -12740,7 +11782,17 @@
         }
 
         function setActiveSysPane(paneName, options = {}) {
-          if (!paneName || !sysPanes.length) return;
+          if (!paneName) return;
+          const normalized = String(paneName).toLowerCase();
+          const isOverview = normalized.includes("overview");
+          if (sysOverviewSection) {
+            sysOverviewSection.hidden = !isOverview;
+          }
+          if (!sysPanes.length) {
+            updateSysNavActive(paneName);
+            runPaneLoaders(paneName, options);
+            return;
+          }
           if (paneName === currentSysPane && !options.force) {
             updateSysNavActive(paneName);
             runPaneLoaders(paneName, options);
@@ -12772,7 +11824,7 @@
         }
 
         function syncSelectAllState() {
-          if (!selectAllUsers) return;
+          if (!selectAllUsers || !usersTbody) return;
           const checkboxes = Array.from(
             usersTbody.querySelectorAll('input.row-select[type="checkbox"]')
           ).filter((cb) => !cb.disabled);
@@ -13397,10 +12449,13 @@
         }
 
         function openAssignRoleDialog(userId) {
+          if (!dlgAssign || !assignRoleUserInput || !assignRoleSelect) return;
           assignRoleUserInput.value = userId;
-          assignRoleUserLabel.textContent = `المستخدم: ${describeUserForLabel(
-            userId
-          )}`;
+          if (assignRoleUserLabel) {
+            assignRoleUserLabel.textContent = `المستخدم: ${describeUserForLabel(
+              userId
+            )}`;
+          }
           ensureRoleOptionsLoaded((options) => {
             assignRoleSelect.innerHTML = '<option value="">اختر دورًا</option>';
             fillSelect(assignRoleSelect, options);
@@ -13428,9 +12483,9 @@
           });
         });
 
-        if (btnCloseProfile)
+        if (btnCloseProfile && dlgProfile)
           btnCloseProfile.addEventListener("click", () => dlgProfile.close());
-        if (btnCancelAssign)
+        if (btnCancelAssign && dlgAssign)
           btnCancelAssign.addEventListener("click", () => dlgAssign.close());
         if (dlgProfile)
           dlgProfile.addEventListener("close", () => {
@@ -13438,7 +12493,7 @@
             profileDataCache = null;
           });
 
-        if (formAssignRole)
+        if (formAssignRole && dlgAssign && assignRoleUserInput && assignRoleSelect)
           formAssignRole.addEventListener("submit", (e) => {
             e.preventDefault();
             const userId = assignRoleUserInput.value;
@@ -13540,7 +12595,7 @@
         }
 
         function renderUserProfileDialog(payload, defaultTab = "profile") {
-          if (!payload) return;
+          if (!payload || !dlgProfile || !profileTitle || !profileUsername) return;
           const user = payload.user || {};
           profileTitle.textContent =
             user.Full_Name || user.Username || user.User_Id || "مستخدم";
