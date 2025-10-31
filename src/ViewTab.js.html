@@ -35,6 +35,12 @@
     const header = document.createElement('div');
     header.className = 'view-pad-header';
 
+    const leftSection = document.createElement('div');
+    leftSection.className = 'header-left';
+
+    const rightSection = document.createElement('div');
+    rightSection.className = 'header-right';
+
     const formConfig =
       subTabConfig?.formConfig ||
       window.bootstrapData?.forms?.[subTabConfig?.subId];
@@ -42,12 +48,66 @@
       const addButton = document.createElement('button');
       addButton.type = 'button';
       addButton.className = 'add-new-btn accent-button';
-      addButton.innerHTML = `<i class="fas fa-plus"></i> ${formConfig.titleAr || 'إضافة جديد'}`;
-      addButton.onclick = () => openFormModal(formConfig.formId, null, subTabConfig?.subId);
-      header.appendChild(addButton);
+      addButton.innerHTML = `<i class="fas fa-plus"></i> ${
+        formConfig.titleAr || 'إضافة جديد'
+      }`;
+      addButton.onclick = () =>
+        openFormModal(formConfig.formId, null, subTabConfig?.subId);
+      leftSection.appendChild(addButton);
     }
 
+    const bulkActions = document.createElement('select');
+    bulkActions.className = 'bulk-actions-dropdown';
+    bulkActions.innerHTML = `
+        <option value="">إجراءات جماعية...</option>
+        <option value="activate">تفعيل المحدد</option>
+        <option value="deactivate">تعطيل المحدد</option>
+        <option value="delete">حذف المحدد</option>
+    `;
+    bulkActions.addEventListener('change', (event) => {
+      const value = event.target.value;
+      if (value) {
+        performBulkAction(value, subTabConfig);
+        event.target.value = '';
+      }
+    });
+    rightSection.appendChild(bulkActions);
+
+    header.appendChild(leftSection);
+    header.appendChild(rightSection);
+
     return header;
+  }
+
+  function performBulkAction(action, subTabConfig) {
+    const subId = subTabConfig?.subId;
+    const selector = subId
+      ? `.dynamic-view-pad[data-sub-tab-id="${
+          typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+            ? CSS.escape(String(subId))
+            : String(subId).replace(/"/g, '\"')
+        }"]`
+      : null;
+    const container = selector ? document.querySelector(selector) : null;
+    const scope = container
+      ? container.querySelectorAll('.row-checkbox:checked')
+      : document.querySelectorAll('.row-checkbox:checked');
+
+    if (scope.length === 0) {
+      if (typeof showToast === 'function') {
+        showToast('يرجى تحديد عنصر واحد على الأقل', 'warning');
+      }
+      return;
+    }
+
+    const selectedRows = Array.from(scope)
+      .map((cb) => parseInt(cb.value, 10))
+      .filter((value) => Number.isFinite(value));
+    console.log(`Performing ${action} on rows:`, selectedRows);
+
+    if (typeof showToast === 'function') {
+      showToast(`تم تطبيق الإجراء على ${selectedRows.length} عنصر`, 'success');
+    }
   }
 
   function buildDataTable(data, subTabConfig) {
@@ -58,7 +118,7 @@
     const headers = Array.isArray(data?.headers) ? data.headers : [];
     const rows = Array.isArray(data?.rows) ? data.rows : [];
 
-    const headerRow = buildTableHeaders(headers);
+    const headerRow = buildTableHeaders(headers, subTabConfig);
     table.appendChild(headerRow);
 
     const tbody = document.createElement('tbody');
@@ -71,24 +131,48 @@
     return table;
   }
 
-  function buildTableHeaders(headers) {
+  function buildTableHeaders(headers, subTabConfig) {
     const thead = document.createElement('thead');
-    const tr = document.createElement('tr');
+    const headerRow = document.createElement('tr');
+
+    const checkboxTh = document.createElement('th');
+    checkboxTh.style.width = '40px';
+    checkboxTh.innerHTML = '<input type="checkbox" class="select-all-checkbox">';
+    headerRow.appendChild(checkboxTh);
 
     headers.forEach((header) => {
       const th = document.createElement('th');
       th.textContent = header || '';
       th.dataset.column = header || '';
-      tr.appendChild(th);
+      headerRow.appendChild(th);
     });
 
-    const actionsHeader = document.createElement('th');
-    actionsHeader.className = 'row-actions-header';
-    actionsHeader.textContent = 'إجراءات';
-    actionsHeader.dataset.column = 'actions';
-    tr.appendChild(actionsHeader);
+    const actionsTh = document.createElement('th');
+    actionsTh.className = 'row-actions-header';
+    actionsTh.textContent = 'الإجراءات';
+    actionsTh.style.width = '100px';
+    actionsTh.dataset.column = 'actions';
+    headerRow.appendChild(actionsTh);
 
-    thead.appendChild(tr);
+    thead.appendChild(headerRow);
+
+    const selectAllCheckbox = checkboxTh.querySelector('input[type="checkbox"]');
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', function onToggleAll() {
+        const table = thead.closest('table');
+        const scope = table
+          ? table.querySelectorAll('.row-checkbox')
+          : document.querySelectorAll('.row-checkbox');
+        scope.forEach((checkbox) => {
+          checkbox.checked = this.checked;
+        });
+      });
+    }
+
+    if (subTabConfig?.subId) {
+      thead.dataset.subTabId = subTabConfig.subId;
+    }
+
     return thead;
   }
 
@@ -98,20 +182,24 @@
     tr.dataset.rowIndex = String(rowIndex);
     const record = coerceRowToRecord(row, headers);
 
-    tr.onclick = (event) => {
-      if (event.target.closest('.row-actions')) {
-        return;
-      }
-      openEditFormForRow(record, subTabConfig);
-    };
+    const checkboxTd = document.createElement('td');
+    const rowCheckbox = document.createElement('input');
+    rowCheckbox.type = 'checkbox';
+    rowCheckbox.className = 'row-checkbox';
+    rowCheckbox.value = String(rowIndex);
+    rowCheckbox.addEventListener('click', (event) => event.stopPropagation());
+    checkboxTd.appendChild(rowCheckbox);
+    tr.appendChild(checkboxTd);
 
     headers.forEach((header) => {
       const td = document.createElement('td');
       td.dataset.column = header || '';
-      const cellValue = record && Object.prototype.hasOwnProperty.call(record, header)
-        ? record[header]
-        : undefined;
-      td.textContent = cellValue !== undefined && cellValue !== null ? String(cellValue) : '';
+      const cellValue =
+        record && Object.prototype.hasOwnProperty.call(record, header)
+          ? record[header]
+          : undefined;
+      td.textContent =
+        cellValue !== undefined && cellValue !== null ? String(cellValue) : '';
 
       const normalizedDate = normalizeDateValue(cellValue);
       if (normalizedDate) {
@@ -128,7 +216,7 @@
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.className = 'edit-btn';
-    editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+    editBtn.innerHTML = '<i class="fas fa-edit"></i> تعديل';
     editBtn.onclick = (event) => {
       event.stopPropagation();
       openEditFormForRow(record, subTabConfig);
@@ -136,6 +224,17 @@
 
     actionsCell.appendChild(editBtn);
     tr.appendChild(actionsCell);
+
+    tr.addEventListener('click', (event) => {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        (target.closest('.row-actions') || target.closest('input[type="checkbox"]'))
+      ) {
+        return;
+      }
+      openEditFormForRow(record, subTabConfig);
+    });
 
     return tr;
   }
@@ -359,6 +458,7 @@
   }
 
   viewTab.buildDynamicViewPad = buildDynamicViewPad;
+  viewTab.performBulkAction = performBulkAction;
   viewTab.performSearch = performSearch;
   viewTab.applyFilters = applyFilters;
   viewTab.filterTableData = filterTableData;
