@@ -1047,18 +1047,30 @@ function loadDynamicFormsRegisterSafe_() {
       if (!key) return;
       const entry = register[key];
       if (!entry || typeof entry !== "object") return;
-      const formId =
+
+      const baseFormId =
         entry.formId ||
         entry.formID ||
         entry.Form_Id ||
         entry.FormID ||
         entry.id ||
         entry.Id;
-      if (!formId) return;
+      const editFormId =
+        entry.editFormId ||
+        entry.Edit_Form_ID ||
+        entry.editFormID ||
+        entry.EditFormId ||
+        "";
+
+      if (!baseFormId && !editFormId) return;
 
       safeRegister[key] = {
         ...entry,
-        formId: String(formId).trim(),
+        formId: baseFormId ? String(baseFormId).trim() : "",
+        editFormId: editFormId ? String(editFormId).trim() : "",
+        quickActions: Array.isArray(entry.quickActions)
+          ? entry.quickActions
+          : [],
       };
     });
 
@@ -1081,12 +1093,119 @@ function cloneDynamicFormsFallback_() {
     if (!key) return;
     const entry = source[key] || {};
     const formId = entry.formId ? String(entry.formId).trim() : "";
+    const editFormId = entry.editFormId ? String(entry.editFormId).trim() : "";
     clone[key] = {
       ...entry,
       formId,
+      editFormId,
+      quickActions: Array.isArray(entry.quickActions)
+        ? entry.quickActions.slice()
+        : [],
     };
   });
   return clone;
+}
+
+function parseQuickActions_(rawValue) {
+  if (!rawValue) return [];
+  if (Array.isArray(rawValue)) {
+    return rawValue
+      .map((entry) => normalizeQuickAction_(entry))
+      .filter(Boolean);
+  }
+
+  const text = String(rawValue || "").trim();
+  if (!text) return [];
+
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((entry) => normalizeQuickAction_(entry))
+        .filter(Boolean);
+    }
+  } catch (err) {
+    // Fallback to manual parsing
+  }
+
+  const tokens = text
+    .split(/[,;\n]+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!tokens.length) return [];
+
+  return tokens
+    .map((token) => {
+      const [labelPart, actionPart] = token.split(/[:|]/).map((t) => t.trim());
+      const label = labelPart || actionPart || token;
+      const action = actionPart || labelPart || token;
+      return normalizeQuickAction_({
+        label,
+        action,
+      });
+    })
+    .filter(Boolean);
+}
+
+function normalizeQuickAction_(entry) {
+  if (!entry) return null;
+  if (typeof entry === "string") {
+    const clean = entry.trim();
+    if (!clean) return null;
+    const slug = clean
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return {
+      label: clean,
+      action: slug || clean,
+    };
+  }
+
+  const label =
+    entry.label ||
+    entry.Label ||
+    entry.title ||
+    entry.Title ||
+    entry.name ||
+    entry.Name;
+  const action =
+    entry.action ||
+    entry.Action ||
+    entry.key ||
+    entry.Key ||
+    entry.id ||
+    entry.Id;
+
+  const normalizedLabel = String(label || action || "").trim();
+  if (!normalizedLabel) return null;
+
+  const normalizedAction = (action || normalizedLabel)
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return {
+    label: normalizedLabel,
+    action: normalizedAction || normalizedLabel,
+  };
+}
+
+function mergeQuickActions_(existing, next) {
+  const dedupe = new Map();
+  (Array.isArray(existing) ? existing : []).forEach((item) => {
+    if (!item || !item.action) return;
+    dedupe.set(item.action, item);
+  });
+  (Array.isArray(next) ? next : []).forEach((item) => {
+    if (!item || !item.action) return;
+    if (!dedupe.has(item.action)) {
+      dedupe.set(item.action, item);
+    }
+  });
+  return Array.from(dedupe.values());
 }
 
 function getDynamicFormsRegister_() {
@@ -1156,6 +1275,13 @@ function getDynamicFormsRegister_() {
         "Enabled",
         "Is_Active"
       ),
+      quickActions: findHeaderIndex_(
+        headers,
+        "Quick_Actions",
+        "QuickActions",
+        "Bulk_Actions",
+        "BulkActions"
+      ),
     };
 
     const readString = (row, index) => {
@@ -1178,13 +1304,44 @@ function getDynamicFormsRegister_() {
       const formId = readString(row, idx.formId);
       if (!paneKey || !formId) return;
 
-      register[paneKey] = {
-        formId,
-        titleEn: readString(row, idx.titleEn),
-        titleAr: readString(row, idx.titleAr),
-        permission: readString(row, idx.permission),
-        type: readString(row, idx.type) || "FORM",
+      const entry = register[paneKey] || {
+        formId: "",
+        editFormId: "",
+        titleEn: "",
+        titleAr: "",
+        permission: "",
+        type: "FORM",
+        quickActions: [],
       };
+
+      const rawType = readString(row, idx.type) || "FORM";
+      const normalizedType = rawType.toUpperCase();
+
+      if (!entry.titleEn) entry.titleEn = readString(row, idx.titleEn);
+      if (!entry.titleAr) entry.titleAr = readString(row, idx.titleAr);
+      if (!entry.permission) entry.permission = readString(row, idx.permission);
+      entry.type = entry.type || normalizedType;
+
+      const quickActions =
+        idx.quickActions >= 0 ? parseQuickActions_(row[idx.quickActions]) : [];
+      if (quickActions.length) {
+        entry.quickActions = mergeQuickActions_(entry.quickActions, quickActions);
+      }
+
+      if (
+        !entry.formId ||
+        normalizedType === "FORM" ||
+        normalizedType === "ADD" ||
+        normalizedType === "CREATE"
+      ) {
+        entry.formId = formId;
+      }
+
+      if (normalizedType === "EDIT" || normalizedType === "UPDATE") {
+        entry.editFormId = formId;
+      }
+
+      register[paneKey] = entry;
     });
 
     const keys = Object.keys(register);
@@ -3902,6 +4059,8 @@ function getDynamicFormStructure(formId = "FORM_SYS_AddUser") {
       Target_Sheet: h.indexOf("Target_Sheet"),
       Target_Column: h.indexOf("Target_Column"),
       Role_ID: h.indexOf("Role_ID"),
+      Show: h.indexOf("Show"),
+      Quick_Actions: h.indexOf("Quick_Actions"),
     };
 
     const fields = data
@@ -3929,6 +4088,16 @@ function getDynamicFormStructure(formId = "FORM_SYS_AddUser") {
         targetSheet: r[idx.Target_Sheet] || "",
         targetColumn: r[idx.Target_Column] || "",
         roleId: r[idx.Role_ID] || "",
+        show:
+          idx.Show >= 0
+            ? r[idx.Show] === "" || r[idx.Show] == null
+              ? true
+              : isTruthyFlag_(r[idx.Show])
+            : true,
+        quickActions:
+          idx.Quick_Actions >= 0
+            ? parseQuickActions_(r[idx.Quick_Actions])
+            : [],
       }));
     debugLog("getDynamicFormStructure", "loaded", {
       formId,
@@ -3979,6 +4148,84 @@ function getDropdownOptions(key) {
     debugError("getDropdownOptions", err, { key });
     throw err;
   }
+}
+
+function normalizeSearchFlag_(value) {
+  if (value === true || value === false) return !!value;
+  const text = String(value ?? "").trim();
+  if (!text) return false;
+  return isTruthyFlag_(text);
+}
+
+function parseFilterOptionsDefinition_(rawValue) {
+  if (!rawValue) return [];
+  if (Array.isArray(rawValue)) {
+    return rawValue
+      .map((entry) => normalizeFilterOptionDefinition_(entry))
+      .filter(Boolean);
+  }
+
+  const text = String(rawValue || "").trim();
+  if (!text) return [];
+
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((entry) => normalizeFilterOptionDefinition_(entry))
+        .filter(Boolean);
+    }
+  } catch (err) {
+    // fall through
+  }
+
+  const tokens = text
+    .split(/;+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+  if (!tokens.length) return [];
+
+  return tokens
+    .map((token) => {
+      const [columnPart, settingPart, labelPart] = token
+        .split(/[:|]/)
+        .map((part) => part.trim());
+      return normalizeFilterOptionDefinition_({
+        column: columnPart,
+        settingKey: settingPart,
+        label: labelPart,
+      });
+    })
+    .filter(Boolean);
+}
+
+function normalizeFilterOptionDefinition_(entry) {
+  if (!entry) return null;
+  if (typeof entry === "string") {
+    const trimmed = entry.trim();
+    if (!trimmed) return null;
+    return {
+      column: trimmed,
+      settingKey: trimmed,
+      label: trimmed,
+    };
+  }
+
+  const column =
+    entry.column || entry.Column || entry.field || entry.Field || entry.target;
+  const settingKey =
+    entry.settingKey || entry.Setting_Key || entry.setting || entry.Setting;
+  const label = entry.label || entry.Label || column || settingKey;
+
+  const normalizedColumn = String(column || label || settingKey || "").trim();
+  const normalizedSetting = String(settingKey || normalizedColumn || "").trim();
+  if (!normalizedColumn || !normalizedSetting) return null;
+
+  return {
+    column: normalizedColumn,
+    settingKey: normalizedSetting,
+    label: String(label || normalizedColumn).trim() || normalizedColumn,
+  };
 }
 
 function getTabRegister() {
@@ -4048,6 +4295,25 @@ function getTabRegister() {
       "Permission",
       "Permission_Key"
     ),
+    renderMode: findHeaderIndex_(
+      headers,
+      "Render_Mode",
+      "RenderMode",
+      "Mode",
+      "View_Mode"
+    ),
+    addFormId: findHeaderIndex_(headers, "Add_Form_ID", "AddFormId", "Form_ID"),
+    editFormId: findHeaderIndex_(headers, "Edit_Form_ID", "EditFormId"),
+    viewLabel: findHeaderIndex_(headers, "View_Label", "ViewLabel"),
+    addLabel: findHeaderIndex_(headers, "Add_Label", "AddLabel"),
+    tabColor: findHeaderIndex_(headers, "Tab_Color", "TabColor", "Color"),
+    searchBar: findHeaderIndex_(headers, "Search_Bar", "SearchBar", "Search"),
+    filterOptions: findHeaderIndex_(
+      headers,
+      "Filter_Options",
+      "FilterOptions",
+      "Filters"
+    ),
   };
 
   const readString = (row, index) => {
@@ -4084,6 +4350,10 @@ function getTabRegister() {
         sortOrder: rowSortOrder,
         sourceSheet: readString(row, idx.sourceSheet),
         permissions: readString(row, idx.permissions),
+        renderMode: readString(row, idx.renderMode),
+        tabColor: readString(row, idx.tabColor),
+        searchBar: readString(row, idx.searchBar),
+        filterOptions: readString(row, idx.filterOptions),
         subTabs: [],
         _subMap: new Map(),
       };
@@ -4094,6 +4364,11 @@ function getTabRegister() {
       if (!tab.route) tab.route = readString(row, idx.route);
       if (!tab.sourceSheet) tab.sourceSheet = readString(row, idx.sourceSheet);
       if (!tab.permissions) tab.permissions = readString(row, idx.permissions);
+      if (!tab.tabColor) tab.tabColor = readString(row, idx.tabColor);
+      if (!tab.renderMode) tab.renderMode = readString(row, idx.renderMode);
+      if (!tab.searchBar) tab.searchBar = readString(row, idx.searchBar);
+      if (!tab.filterOptions)
+        tab.filterOptions = readString(row, idx.filterOptions);
       if (
         (tab.sortOrder == null || !Number.isFinite(tab.sortOrder)) &&
         rowSortOrder != null
@@ -4117,6 +4392,14 @@ function getTabRegister() {
       route: readString(row, idx.route),
       sortOrder: rowSortOrder,
       sourceSheet: readString(row, idx.sourceSheet),
+      renderMode: readString(row, idx.renderMode),
+      addFormId: readString(row, idx.addFormId),
+      editFormId: readString(row, idx.editFormId),
+      viewLabel: readString(row, idx.viewLabel),
+      addLabel: readString(row, idx.addLabel),
+      tabColor: readString(row, idx.tabColor),
+      searchBar: readString(row, idx.searchBar),
+      filterOptions: readString(row, idx.filterOptions),
     };
 
     if (!targetMap.has(subKey)) {
@@ -4128,6 +4411,15 @@ function getTabRegister() {
       if (!existing.subLabelAr) existing.subLabelAr = payload.subLabelAr;
       if (!existing.route) existing.route = payload.route;
       if (!existing.sourceSheet) existing.sourceSheet = payload.sourceSheet;
+      if (!existing.renderMode) existing.renderMode = payload.renderMode;
+      if (!existing.addFormId) existing.addFormId = payload.addFormId;
+      if (!existing.editFormId) existing.editFormId = payload.editFormId;
+      if (!existing.viewLabel) existing.viewLabel = payload.viewLabel;
+      if (!existing.addLabel) existing.addLabel = payload.addLabel;
+      if (!existing.tabColor) existing.tabColor = payload.tabColor;
+      if (!existing.searchBar) existing.searchBar = payload.searchBar;
+      if (!existing.filterOptions)
+        existing.filterOptions = payload.filterOptions;
       if (
         (existing.sortOrder == null || !Number.isFinite(existing.sortOrder)) &&
         payload.sortOrder != null
@@ -4149,6 +4441,14 @@ function getTabRegister() {
             ? sub.sortOrder
             : null,
           sourceSheet: sub.sourceSheet || "",
+          renderMode: sub.renderMode || "",
+          addFormId: sub.addFormId || "",
+          editFormId: sub.editFormId || "",
+          viewLabel: sub.viewLabel || "",
+          addLabel: sub.addLabel || "",
+          tabColor: sub.tabColor || "",
+          searchBar: normalizeSearchFlag_(sub.searchBar),
+          filterOptions: parseFilterOptionsDefinition_(sub.filterOptions),
         }))
         .sort((a, b) => {
           const aOrder =
@@ -4176,6 +4476,10 @@ function getTabRegister() {
         sortOrder: tab.sortOrder,
         sourceSheet: tab.sourceSheet || "",
         permissions: tab.permissions || "",
+        tabColor: tab.tabColor || "",
+        renderMode: tab.renderMode || "",
+        searchBar: normalizeSearchFlag_(tab.searchBar),
+        filterOptions: parseFilterOptionsDefinition_(tab.filterOptions),
         subTabs: tab.subTabs,
       };
     })
@@ -4204,6 +4508,141 @@ function getTabRegister() {
   });
 
   return result;
+}
+
+function loadSettingsMap_() {
+  const FNAME = "loadSettingsMap_";
+  try {
+    const { headers, rows } = loadSheetData_(CONFIG.SHEETS.SETTINGS);
+    if (!rows.length) return new Map();
+    const idx = {
+      key: headers.indexOf("Setting_Key"),
+      value: headers.indexOf("Setting_Value"),
+      options: headers.indexOf("Filter_Options"),
+      description: headers.indexOf("Description_EN"),
+    };
+
+    const map = new Map();
+    rows.forEach((row) => {
+      const key = idx.key >= 0 ? getValueAt_(row, idx.key) : "";
+      if (!key) return;
+      map.set(String(key).trim(), {
+        key: String(key).trim(),
+        value: idx.value >= 0 ? getValueAt_(row, idx.value) : "",
+        options: idx.options >= 0 ? getValueAt_(row, idx.options) : "",
+        description: idx.description >= 0 ? getValueAt_(row, idx.description) : "",
+      });
+    });
+
+    return map;
+  } catch (err) {
+    debugError(FNAME, err);
+    return new Map();
+  }
+}
+
+function parseSettingOptions_(rawValue) {
+  if (!rawValue) return [];
+  if (Array.isArray(rawValue)) {
+    return rawValue
+      .map((entry) => normalizeSettingOption_(entry))
+      .filter(Boolean);
+  }
+
+  const text = String(rawValue || "").trim();
+  if (!text) return [];
+
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((entry) => normalizeSettingOption_(entry))
+        .filter(Boolean);
+    }
+  } catch (err) {
+    // continue to manual parsing
+  }
+
+  return text
+    .split(/[,;\n]+/)
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .map((token) => normalizeSettingOption_(token))
+    .filter(Boolean);
+}
+
+function normalizeSettingOption_(entry) {
+  if (!entry) return null;
+  if (typeof entry === "string") {
+    const trimmed = entry.trim();
+    if (!trimmed) return null;
+    return { label: trimmed, value: trimmed };
+  }
+  const label = entry.label || entry.Label || entry.text || entry.Text;
+  const value = entry.value || entry.Value || entry.id || entry.Id;
+  const normalizedLabel = String(label || value || "").trim();
+  const normalizedValue = String(value || normalizedLabel).trim();
+  if (!normalizedLabel) return null;
+  return { label: normalizedLabel, value: normalizedValue || normalizedLabel };
+}
+
+function getFilterOptionsForSubTab(subTabId) {
+  const FNAME = "getFilterOptionsForSubTab";
+  debugLog(FNAME, "start", { subTabId });
+  if (!subTabId) {
+    return sanitizeForClientResponse_({ success: true, definitions: [] });
+  }
+
+  try {
+    const register = getTabRegister();
+    const normalized = String(subTabId).trim().toLowerCase();
+    const entry = register
+      .flatMap((tab) => tab.subTabs || [])
+      .find((sub) => {
+        if (!sub) return false;
+        const candidates = new Set([
+          sub.subId,
+          sub.subId ? sub.subId.toLowerCase() : "",
+          sub.route,
+          sub.route ? sub.route.toLowerCase() : "",
+        ]);
+        return Array.from(candidates).some((candidate) =>
+          candidate ? candidate === normalized : false
+        );
+      });
+
+    const defs = Array.isArray(entry?.filterOptions)
+      ? entry.filterOptions
+      : [];
+    if (!defs.length) {
+      return sanitizeForClientResponse_({ success: true, definitions: [] });
+    }
+
+    const settingsMap = loadSettingsMap_();
+    const response = defs.map((def) => {
+      const setting = settingsMap.get(def.settingKey) || {};
+      const raw = setting.options || setting.value;
+      const options = parseSettingOptions_(raw);
+      return {
+        column: def.column,
+        label: def.label,
+        settingKey: def.settingKey,
+        options,
+      };
+    });
+
+    return sanitizeForClientResponse_({
+      success: true,
+      definitions: response,
+    });
+  } catch (err) {
+    debugError(FNAME, err, { subTabId });
+    return sanitizeForClientResponse_({
+      success: false,
+      message: err && err.message ? String(err.message) : "unknown",
+      definitions: [],
+    });
+  }
 }
 
 function logAction(userId, actionType, entityType, recordId, details = {}) {

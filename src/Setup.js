@@ -334,6 +334,7 @@ function getSheetSchemas() {
       "Updated_By",
       "Updated_At",
       "Created_At",
+      "Filter_Options",
     ],
     SYS_Audit_Report: [
       "Audit_Id",
@@ -387,6 +388,10 @@ function getSheetSchemas() {
       "View_Label",
       "Add_Label",
       "Permissions",
+      "Tab_Color",
+      "Search_Bar",
+      "Filter_Options",
+      "Edit_Form_ID",
     ],
     SYS_Dropdowns: [
       "Key",
@@ -412,6 +417,8 @@ function getSheetSchemas() {
       "Target_Sheet",
       "Target_Column",
       "Role_ID",
+      "Show",
+      "Quick_Actions",
     ],
     SYS_Users: [
       "User_Id",
