@@ -61,6 +61,143 @@ const CONFIG = {
   },
 };
 
+const DYNAMIC_FORMS_FALLBACK = Object.freeze({
+  Sub_SYS_Users: {
+    formId: "FORM_SYS_AddUser",
+    titleEn: "Add User",
+    titleAr: "إضافة مستخدم جديد",
+  },
+  Sub_SYS_Roles: {
+    formId: "FORM_SYS_AddRole",
+    titleEn: "Add Role",
+    titleAr: "إضافة دور",
+  },
+  Sub_SYS_Permissions: {
+    formId: "FORM_SYS_AddPermission",
+    titleEn: "Add Permission",
+    titleAr: "إضافة إذن",
+  },
+  Sub_SYS_RolePerms: {
+    formId: "FORM_SYS_MapRolePermission",
+    titleEn: "Map Role Permission",
+    titleAr: "ربط إذن بدور",
+  },
+  Sub_SYS_Properties: {
+    formId: "FORM_SYS_AddUserProperty",
+    titleEn: "Add User Property",
+    titleAr: "إضافة خاصية مستخدم",
+  },
+  Sub_PRJ_Main: {
+    formId: "FORM_PRJ_AddProject",
+    titleEn: "Add Project",
+    titleAr: "إضافة مشروع جديد",
+  },
+  Sub_PRJ_Tasks: {
+    formId: "FORM_PRJ_AddTask",
+    titleEn: "Add Project Task",
+    titleAr: "إضافة مهمة مشروع",
+  },
+  Sub_PRJ_Costs: {
+    formId: "FORM_PRJ_AddCost",
+    titleEn: "Log Project Cost",
+    titleAr: "تسجيل تكلفة مشروع",
+  },
+  Sub_PRJ_Materials: {
+    formId: "FORM_PRJ_AddMaterial",
+    titleEn: "Add Material",
+    titleAr: "إضافة مادة جديدة",
+  },
+  Sub_PRJ_Revenue: {
+    formId: "FORM_PRJ_AddRevenue",
+    titleEn: "Log Project Revenue",
+    titleAr: "تسجيل إيراد مشروع",
+  },
+  Sub_PRJ_Clients: {
+    formId: "FORM_PRJ_AddClient",
+    titleEn: "Add Client",
+    titleAr: "إضافة عميل",
+  },
+  Sub_HR_Employees: {
+    formId: "FORM_HR_AddEmployee",
+    titleEn: "Add Employee",
+    titleAr: "إضافة موظف",
+  },
+  Sub_HR_Attendance: {
+    formId: "FORM_HR_AddAttendance",
+    titleEn: "Log Attendance",
+    titleAr: "تسجيل الحضور",
+  },
+  Sub_HR_Leave_Requests: {
+    formId: "FORM_HR_AddLeaveRequest",
+    titleEn: "Submit Leave Request",
+    titleAr: "تقديم طلب إجازة",
+  },
+  Sub_HR_Leave: {
+    formId: "FORM_HR_AddLeave",
+    titleEn: "Record Leave",
+    titleAr: "تسجيل إجازة",
+  },
+  Sub_HR_Advances: {
+    formId: "FORM_HR_AddAdvance",
+    titleEn: "Log Advance",
+    titleAr: "تسجيل سلفة",
+  },
+  Sub_HR_Deductions: {
+    formId: "FORM_HR_AddDeduction",
+    titleEn: "Log Deduction",
+    titleAr: "تسجيل خصم",
+  },
+  Sub_HR_Payroll: {
+    formId: "FORM_HR_AddPayroll",
+    titleEn: "Create Payroll Entry",
+    titleAr: "إنشاء بيان راتب",
+  },
+});
+
+const HR_PANE_CONFIG = Object.freeze({
+  Sub_HR_Employees: {
+    sheetName: CONFIG.SHEETS.PV_HR_Employees, // Corrected from HR_Employees
+    idColumn: "Employee_ID",
+    entity: "HR_Employees",
+    idPrefix: "EMP",
+  },
+  Sub_HR_Attendance: {
+    sheetName: CONFIG.SHEETS.HR_ATTENDANCE,
+    idColumn: "Attendance_ID",
+    entity: "HR_Attendance",
+    idPrefix: "ATT",
+  },
+  Sub_HR_Leave_Requests: {
+    sheetName: CONFIG.SHEETS.HR_LEAVE_REQUESTS,
+    idColumn: "Leave_ID",
+    entity: "HR_Leave_Requests",
+    idPrefix: "LRQ",
+  },
+  Sub_HR_Leave: {
+    sheetName: CONFIG.SHEETS.HR_LEAVE,
+    idColumn: "Leave_ID",
+    entity: "HR_Leave",
+    idPrefix: "LVE",
+  },
+  Sub_HR_Advances: {
+    sheetName: CONFIG.SHEETS.HR_ADVANCES,
+    idColumn: "Advance_ID",
+    entity: "HR_Advances",
+    idPrefix: "ADV",
+  },
+  Sub_HR_Deductions: {
+    sheetName: CONFIG.SHEETS.HR_DEDUCTIONS,
+    idColumn: "Deduction_ID",
+    entity: "HR_Deductions",
+    idPrefix: "DED",
+  },
+  Sub_HR_Payroll: {
+    sheetName: CONFIG.SHEETS.HR_PAYROLL,
+    idColumn: "Payroll_ID",
+    entity: "HR_Payroll",
+    idPrefix: "PAY",
+  },
+});
 
 /** ---- DEBUGGING UTILITIES ---- */
 function debugLog(context, message, data) {
@@ -348,7 +485,9 @@ function getSheetByName_(name) {
   try {
     return getSheet_(name);
   } catch (error) {
-    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    console.error(
+      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
+    );
     debugError(FNAME, error, { name });
     throw error;
   }
@@ -389,7 +528,9 @@ function appendRow_(sheet, rowObject, headers) {
   } catch (error) {
     const sheetName =
       sheet && typeof sheet.getName === "function" ? sheet.getName() : null;
-    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    console.error(
+      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
+    );
     debugError(FNAME, error, { sheet: sheetName });
     throw error;
   }
@@ -639,19 +780,19 @@ function setRowValue_(headers, row, value, ...candidates) {
 
 /** ---- ENTRY POINT ---- */
 function doGet(e) {
-  const FNAME = 'doGet';
-  debugLog(FNAME, 'doGet request received', { params: e.parameter });
+  const FNAME = "doGet";
+  debugLog(FNAME, "doGet request received", { params: e.parameter });
   try {
-    const html = HtmlService.createTemplateFromFile('Dashboard');
+    const html = HtmlService.createTemplateFromFile("Dashboard");
     // We don't pass any data to the template here;
     // all data is fetched by the client-side JS after load.
     const output = html.evaluate();
     output
-      .setTitle('Nijjara ERP')
+      .setTitle("Nijjara ERP")
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT)
       .addMetaTag(
-        'viewport',
-        'width=device-width, initial-scale=1, shrink-to-fit=no'
+        "viewport",
+        "width=device-width, initial-scale=1, shrink-to-fit=no"
       );
     return output;
   } catch (err) {
@@ -675,7 +816,7 @@ function doGet(e) {
  */
 function include(filename) {
   // We use .html extension because that's what Apps Script requires for HtmlService
-  return HtmlService.createHtmlOutputFromFile(filename + '.html').getContent();
+  return HtmlService.createHtmlOutputFromFile(filename + ".html").getContent();
 }
 
 /** ---- DATA ACCESS ---- */
@@ -746,9 +887,7 @@ function getViewData(sourceName, subTabId) {
 
   try {
     const sheetData = loadSheetData_(sourceName);
-    const headers = Array.isArray(sheetData?.headers)
-      ? sheetData.headers
-      : [];
+    const headers = Array.isArray(sheetData?.headers) ? sheetData.headers : [];
 
     const rowsArray = Array.isArray(sheetData?.rows) ? sheetData.rows : [];
     const data = rowsArray.map((row, index) => {
@@ -818,16 +957,12 @@ function getSubTabViewData(subTabId) {
 
     return sanitizeForClientResponse_({
       success: true,
-      subTabConfig: Object.assign(
-        {},
-        subTabConfig,
-        {
-          searchBar: !!subTabConfig.searchBar,
-          filterOptions: Array.isArray(subTabConfig.filterOptions)
-            ? subTabConfig.filterOptions
-            : [],
-        }
-      ),
+      subTabConfig: Object.assign({}, subTabConfig, {
+        searchBar: !!subTabConfig.searchBar,
+        filterOptions: Array.isArray(subTabConfig.filterOptions)
+          ? subTabConfig.filterOptions
+          : [],
+      }),
       formConfig,
       viewData,
     });
@@ -871,7 +1006,9 @@ function getFormWithRecordData(formId, recordId, subTabId) {
         const idColumn = findHeaderIndex_(headers, "ID", "Id", "Record_ID");
 
         if (idColumn >= 0) {
-          const recordRow = rows.find((row) => keysEqual_(row?.[idColumn], recordId));
+          const recordRow = rows.find((row) =>
+            keysEqual_(row?.[idColumn], recordId)
+          );
           if (Array.isArray(recordRow)) {
             recordData = {};
             headers.forEach((header, index) => {
@@ -983,17 +1120,29 @@ function buildGuestBootstrapPayload_() {
 
 function loadDynamicFormsRegisterSafe_() {
   const FNAME = "loadDynamicFormsRegisterSafe_";
+  const fallback = cloneDynamicFormsFallback_();
 
   try {
+    const features = CONFIG?.FEATURES || {};
+    if (features.enableDynamicForms === false) {
+      debugLog(FNAME, "disabledByConfig");
+      return fallback;
+    }
+
+    if (typeof getDynamicFormsRegister_ !== "function") {
+      debugLog(FNAME, "missingLoader");
+      return fallback;
+    }
+
     const register = getDynamicFormsRegister_();
     if (!register || typeof register !== "object") {
       debugLog(FNAME, "invalidRegister", {
         type: register == null ? "null" : typeof register,
       });
-      return Object.create(null);
+      return fallback;
     }
 
-    const safeRegister = Object.create(null);
+    const safeRegister = cloneDynamicFormsFallback_();
     Object.keys(register).forEach((key) => {
       if (!key) return;
       const entry = register[key];
@@ -1033,8 +1182,28 @@ function loadDynamicFormsRegisterSafe_() {
     return safeRegister;
   } catch (err) {
     debugError(FNAME, err);
-    return Object.create(null);
+    return fallback;
   }
+}
+
+function cloneDynamicFormsFallback_() {
+  const clone = Object.create(null);
+  const source = DYNAMIC_FORMS_FALLBACK || {};
+  Object.keys(source).forEach((key) => {
+    if (!key) return;
+    const entry = source[key] || {};
+    const formId = entry.formId ? String(entry.formId).trim() : "";
+    const editFormId = entry.editFormId ? String(entry.editFormId).trim() : "";
+    clone[key] = {
+      ...entry,
+      formId,
+      editFormId,
+      quickActions: Array.isArray(entry.quickActions)
+        ? entry.quickActions.slice()
+        : [],
+    };
+  });
+  return clone;
 }
 
 function parseQuickActions_(rawValue) {
@@ -1078,247 +1247,6 @@ function parseQuickActions_(rawValue) {
     .filter(Boolean);
 }
 
-function normalizeQuickActionExtras_(entry) {
-  if (!entry || typeof entry !== "object") {
-    return {};
-  }
-
-  const extras = {};
-  const readValue = (...keys) => {
-    for (let i = 0; i < keys.length; i++) {
-      const key = keys[i];
-      if (
-        Object.prototype.hasOwnProperty.call(entry, key) &&
-        entry[key] != null &&
-        entry[key] !== ""
-      ) {
-        return entry[key];
-      }
-    }
-    return undefined;
-  };
-
-  const scopeValue = readValue(
-    "scope",
-    "Scope",
-    "type",
-    "Type",
-    "level",
-    "Level",
-    "mode",
-    "Mode",
-    "target",
-    "Target"
-  );
-  if (scopeValue != null && scopeValue !== "") {
-    extras.scope = String(scopeValue).trim().toLowerCase();
-  }
-
-  const bulkFlag = readValue(
-    "bulk",
-    "Bulk",
-    "isBulk",
-    "IsBulk",
-    "multiple",
-    "Multiple",
-    "multi",
-    "Multi"
-  );
-  if (bulkFlag != null && bulkFlag !== "") {
-    extras.isBulk = isTruthyFlag_(bulkFlag);
-  }
-
-  const confirmFlag = readValue(
-    "confirm",
-    "Confirm",
-    "requiresConfirm",
-    "RequiresConfirm",
-    "needsConfirmation",
-    "NeedsConfirmation"
-  );
-  if (confirmFlag != null && confirmFlag !== "") {
-    extras.requiresConfirmation = isTruthyFlag_(confirmFlag);
-  }
-
-  const defaultFlag = readValue(
-    "default",
-    "Default",
-    "isDefault",
-    "IsDefault",
-    "primary",
-    "Primary"
-  );
-  if (defaultFlag != null && defaultFlag !== "") {
-    extras.isDefault = isTruthyFlag_(defaultFlag);
-  }
-
-  const requiresSelectionFlag = readValue(
-    "requiresSelection",
-    "RequiresSelection"
-  );
-  if (requiresSelectionFlag != null && requiresSelectionFlag !== "") {
-    extras.requiresSelection = isTruthyFlag_(requiresSelectionFlag);
-  }
-
-  const handlerName = readValue(
-    "handler",
-    "Handler",
-    "serverAction",
-    "ServerAction",
-    "serverFunction",
-    "ServerFunction",
-    "serverMethod",
-    "ServerMethod",
-    "function",
-    "Function",
-    "functionName",
-    "FunctionName",
-    "gsFunction",
-    "GsFunction",
-    "script",
-    "Script",
-    "onServer",
-    "OnServer"
-  );
-  if (handlerName) {
-    extras.handler = String(handlerName).trim();
-  }
-
-  const iconValue = readValue(
-    "icon",
-    "Icon",
-    "iconClass",
-    "IconClass",
-    "iconName",
-    "IconName"
-  );
-  if (iconValue) {
-    extras.icon = String(iconValue).trim();
-  }
-
-  const variantValue = readValue(
-    "variant",
-    "Variant",
-    "style",
-    "Style",
-    "appearance",
-    "Appearance",
-    "theme",
-    "Theme"
-  );
-  if (variantValue) {
-    extras.variant = String(variantValue).trim().toLowerCase();
-  }
-
-  const descriptionValue = readValue(
-    "description",
-    "Description",
-    "helpText",
-    "HelpText",
-    "hint",
-    "Hint"
-  );
-  if (descriptionValue) {
-    extras.description = String(descriptionValue).trim();
-  }
-
-  const labelArValue = readValue(
-    "labelAr",
-    "LabelAr",
-    "label_ar",
-    "label_AR",
-    "labelArabic",
-    "LabelArabic",
-    "titleAr",
-    "TitleAr"
-  );
-  if (labelArValue) {
-    extras.labelAr = String(labelArValue).trim();
-  }
-
-  const payloadValue = readValue(
-    "payload",
-    "Payload",
-    "params",
-    "Params",
-    "arguments",
-    "Arguments",
-    "data",
-    "Data"
-  );
-  if (payloadValue !== undefined) {
-    extras.payload = payloadValue;
-  }
-
-  const targetStateValue = readValue(
-    "targetState",
-    "TargetState",
-    "desiredState",
-    "DesiredState",
-    "state",
-    "State",
-    "value",
-    "Value",
-    "status",
-    "Status",
-    "setTo",
-    "SetTo",
-    "activate",
-    "Activate"
-  );
-  if (targetStateValue !== undefined) {
-    extras.targetState = targetStateValue;
-  }
-
-  const sortValue = readValue(
-    "sort",
-    "Sort",
-    "order",
-    "Order",
-    "priority",
-    "Priority"
-  );
-  if (sortValue !== undefined) {
-    const numericSort = Number(sortValue);
-    if (Number.isFinite(numericSort)) {
-      extras.sortOrder = numericSort;
-    }
-  }
-
-  return extras;
-}
-
-function inferQuickActionScope_(normalizedAction, extras) {
-  if (extras && typeof extras === "object") {
-    if (typeof extras.isBulk === "boolean") {
-      return extras.isBulk ? "bulk" : "row";
-    }
-    if (typeof extras.scope === "string" && extras.scope) {
-      const directScope = extras.scope.toLowerCase();
-      if (["bulk", "multi", "mass", "batch", "all", "selected"].includes(directScope)) {
-        return "bulk";
-      }
-      if (["row", "record", "single", "item", "per-row", "line"].includes(directScope)) {
-        return "row";
-      }
-    }
-  }
-
-  if (normalizedAction) {
-    const slug = normalizedAction.toLowerCase();
-    if (
-      slug.startsWith("bulk-") ||
-      slug.startsWith("multi-") ||
-      slug.endsWith("-bulk") ||
-      slug.endsWith("-all")
-    ) {
-      return "bulk";
-    }
-  }
-
-  return "row";
-}
-
 function normalizeQuickAction_(entry) {
   if (!entry) return null;
   if (typeof entry === "string") {
@@ -1328,13 +1256,10 @@ function normalizeQuickAction_(entry) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-    const normalized = {
+    return {
       label: clean,
       action: slug || clean,
     };
-    normalized.scope = inferQuickActionScope_(normalized.action, {});
-    normalized.isBulk = normalized.scope === "bulk";
-    return normalized;
   }
 
   const label =
@@ -1362,28 +1287,10 @@ function normalizeQuickAction_(entry) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  const extras = normalizeQuickActionExtras_(entry);
-  const originalScope = extras.scope;
-  const normalizedScope = inferQuickActionScope_(normalizedAction || normalizedLabel, extras);
-
-  const normalized = {
-    ...extras,
+  return {
     label: normalizedLabel,
     action: normalizedAction || normalizedLabel,
-    scope: normalizedScope,
-    isBulk:
-      typeof extras.isBulk === "boolean" ? extras.isBulk : normalizedScope === "bulk",
   };
-
-  if (originalScope && originalScope !== normalizedScope) {
-    normalized.scopeRaw = originalScope;
-  }
-
-  if (!Object.prototype.hasOwnProperty.call(normalized, "requiresSelection")) {
-    normalized.requiresSelection = normalized.scope === "row";
-  }
-
-  return normalized;
 }
 
 function mergeQuickActions_(existing, next) {
@@ -1518,7 +1425,10 @@ function getDynamicFormsRegister_() {
       const quickActions =
         idx.quickActions >= 0 ? parseQuickActions_(row[idx.quickActions]) : [];
       if (quickActions.length) {
-        entry.quickActions = mergeQuickActions_(entry.quickActions, quickActions);
+        entry.quickActions = mergeQuickActions_(
+          entry.quickActions,
+          quickActions
+        );
       }
 
       if (
@@ -1552,14 +1462,16 @@ function buildNavigationConfig_(role, permissions) {
   if (Array.isArray(permissions)) {
     permissions.forEach((p) => {
       const key =
-        (p &&
-          (p.Permission_Key || p.permissionKey || p.key || p.Permission)) ||
+        (p && (p.Permission_Key || p.permissionKey || p.key || p.Permission)) ||
         null;
       if (key) permissionSet.add(String(key).toUpperCase());
     });
   }
   const hasPermission = (requiredKeys) => {
-    if (!requiredKeys || (Array.isArray(requiredKeys) && !requiredKeys.length)) {
+    if (
+      !requiredKeys ||
+      (Array.isArray(requiredKeys) && !requiredKeys.length)
+    ) {
       return true;
     }
     if (!permissionSet.size) return false;
@@ -1567,6 +1479,17 @@ function buildNavigationConfig_(role, permissions) {
     return keys.some((key) =>
       permissionSet.has(String(key || "").toUpperCase())
     );
+  };
+
+  const FALLBACK_TAB_TARGETS = {
+    Tab_SYS_Management: "system-management-view",
+    Tab_PRJ_Management: "projects-workspace",
+    Tab_FIN_Management: "finance-workspace",
+    Tab_HR_Management: "hr-workspace",
+    TAB_SYS_MANAGEMENT: "system-management-view",
+    TAB_PRJ_MANAGEMENT: "projects-workspace",
+    TAB_FIN_MANAGEMENT: "finance-workspace",
+    TAB_HR_MANAGEMENT: "hr-workspace",
   };
 
   const tabRegister = getTabRegister();
@@ -1588,7 +1511,13 @@ function buildNavigationConfig_(role, permissions) {
       const key = tab?.tabId || tab?.tabID || tab?.key || "";
       const label =
         tab?.tabLabelAr || tab?.tabLabelEn || tab?.tabLabel || key || "";
-      const target = tab?.route || tab?.target || "";
+      const normalizedKey = String(key || "");
+      const fallbackTarget =
+        FALLBACK_TAB_TARGETS[normalizedKey] ||
+        FALLBACK_TAB_TARGETS[normalizedKey.toUpperCase()] ||
+        FALLBACK_TAB_TARGETS[normalizedKey.toLowerCase()] ||
+        null;
+      const target = tab?.route || tab?.target || fallbackTarget || "";
 
       if (!key || !target) {
         return null;
@@ -1612,10 +1541,13 @@ function buildNavigationConfig_(role, permissions) {
   if (!eligible.length) {
     const systemNav =
       NAV_ITEMS.find((item) =>
-        String(item.key || "").toUpperCase().includes("SYS")
+        String(item.key || "")
+          .toUpperCase()
+          .includes("SYS")
       ) ||
-      NAV_ITEMS.find((item) =>
-        String(item.target || "").toLowerCase() === "system-management-view"
+      NAV_ITEMS.find(
+        (item) =>
+          String(item.target || "").toLowerCase() === "system-management-view"
       );
     if (systemNav) {
       return [systemNav];
@@ -1798,8 +1730,7 @@ function getRecordDetail(paneId, recordId, entityKey, clientRecord) {
     }
 
     if (generalFields.length) {
-      const generalLabel =
-        configuration?.labels?.general || "البيانات العامة";
+      const generalLabel = configuration?.labels?.general || "البيانات العامة";
       detail.sections.push({
         id: "general",
         label: generalLabel,
@@ -1852,7 +1783,11 @@ function getRecordDetail(paneId, recordId, entityKey, clientRecord) {
       }
     }
 
-    if (!detail.sections.length && clientRecord && typeof clientRecord === "object") {
+    if (
+      !detail.sections.length &&
+      clientRecord &&
+      typeof clientRecord === "object"
+    ) {
       detail.sections.push({
         id: "general",
         label: "البيانات العامة",
@@ -1978,11 +1913,14 @@ function resolveDetailTitle_(config, headers, row, clientRecord, fallbackId) {
       "";
   }
   if (!candidate) {
-    return fallback || (config?.type === "project"
-      ? "مشروع"
-      : config?.type === "hr"
-      ? "موظف"
-      : "السجل");
+    return (
+      fallback ||
+      (config?.type === "project"
+        ? "مشروع"
+        : config?.type === "hr"
+        ? "موظف"
+        : "السجل")
+    );
   }
   if (config?.type === "project") {
     return "مشروع: " + candidate;
@@ -1999,7 +1937,12 @@ function getAttachmentsForDetail_(recordId, entityKey, fallbackEntity) {
   if (!headers.length || !rows.length) {
     return { headers: [], rows: [] };
   }
-  const idxEntityId = findHeaderIndex_(headers, "Entity_ID", "EntityId", "Record_ID");
+  const idxEntityId = findHeaderIndex_(
+    headers,
+    "Entity_ID",
+    "EntityId",
+    "Record_ID"
+  );
   if (idxEntityId < 0) {
     return { headers: [], rows: [] };
   }
@@ -2125,7 +2068,11 @@ function getMaterialsViewData() {
   debugLog(FNAME, "start");
 
   try {
-    const { headers = [], rows = [], sourceName } = loadSheetData_(
+    const {
+      headers = [],
+      rows = [],
+      sourceName,
+    } = loadSheetData_(
       CONFIG.SHEETS.PRJ_MATERIALS_VIEW,
       CONFIG.SHEETS.PRJ_MATERIALS
     );
@@ -2192,8 +2139,18 @@ function getMaterialSheetContext_() {
       "السعر",
       "سعر_افتراضي"
     ),
-    updatedAt: findHeaderIndex_(headers, "Updated_At", "UpdatedAt", "Last_Updated"),
-    updatedBy: findHeaderIndex_(headers, "Updated_By", "UpdatedBy", "Updated_By_User"),
+    updatedAt: findHeaderIndex_(
+      headers,
+      "Updated_At",
+      "UpdatedAt",
+      "Last_Updated"
+    ),
+    updatedBy: findHeaderIndex_(
+      headers,
+      "Updated_By",
+      "UpdatedBy",
+      "Updated_By_User"
+    ),
   };
 
   if (indexes.id < 0) {
@@ -2274,7 +2231,9 @@ function toggleMaterialActiveStatus(materialId) {
 
   try {
     const mutation = mutateMaterialActiveState_([normalizedId]);
-    const result = mutation.results.find((entry) => entry.materialId === normalizedId);
+    const result = mutation.results.find(
+      (entry) => entry.materialId === normalizedId
+    );
     if (!result || !result.updated) {
       return sanitizeForClientResponse_({
         success: false,
@@ -2283,7 +2242,10 @@ function toggleMaterialActiveStatus(materialId) {
       });
     }
 
-    debugLog(FNAME, "updated", { materialId: normalizedId, isActive: result.isActive });
+    debugLog(FNAME, "updated", {
+      materialId: normalizedId,
+      isActive: result.isActive,
+    });
     return sanitizeForClientResponse_({
       success: true,
       materialId: normalizedId,
@@ -2306,7 +2268,9 @@ function archiveMaterial(materialId) {
 
   try {
     const mutation = mutateMaterialActiveState_([normalizedId], false);
-    const result = mutation.results.find((entry) => entry.materialId === normalizedId);
+    const result = mutation.results.find(
+      (entry) => entry.materialId === normalizedId
+    );
     const success = Boolean(result && result.updated);
     debugLog(FNAME, "complete", { materialId: normalizedId, success });
     return sanitizeForClientResponse_({
@@ -2343,933 +2307,8 @@ function bulkUpdateMaterialStatus(materialIds = [], status = true) {
       desiredState,
     });
   } catch (err) {
-    debugError(FNAME, err, { count: Array.isArray(materialIds) ? materialIds.length : 0 });
-    throw err;
-  }
-}
-
-function invokeNamedServerFunction_(functionName, ids, context) {
-  if (!functionName) return null;
-  const trimmed = String(functionName).trim();
-  if (!trimmed) return null;
-
-  const globalScope =
-    typeof globalThis === "object" && globalThis
-      ? globalThis
-      : typeof self === "object" && self
-      ? self
-      : this;
-
-  const candidate =
-    globalScope && typeof globalScope[trimmed] === "function"
-      ? globalScope[trimmed]
-      : null;
-
-  if (!candidate) {
-    debugLog("invokeNamedServerFunction_", "missingHandler", { functionName: trimmed });
-    return null;
-  }
-
-  return candidate(ids, context);
-}
-
-function executeDefaultBulkAction_(actionKey, ids, context) {
-  if (!actionKey) {
-    return {
-      success: false,
-      message: "لم يتم تحديد إجراء للتنفيذ.",
-      updated: 0,
-      results: [],
-    };
-  }
-
-  const normalizedKey = String(actionKey || "")
-    .trim()
-    .toLowerCase();
-  const hasBulkUpdate =
-    typeof bulkUpdateMaterialStatus === "function";
-
-  const supportsBulkToggle =
-    hasBulkUpdate &&
-    Array.isArray(ids) &&
-    ids.length > 0;
-
-  if (supportsBulkToggle) {
-    if (
-      ["activate", "activate-selected", "set-active", "enable", "make-active", "mark-active"].includes(
-        normalizedKey
-      )
-    ) {
-      return bulkUpdateMaterialStatus(ids, true);
-    }
-    if (
-      [
-        "deactivate",
-        "deactivate-selected",
-        "set-inactive",
-        "archive",
-        "disable",
-        "make-inactive",
-        "mark-inactive",
-      ].includes(normalizedKey)
-    ) {
-      return bulkUpdateMaterialStatus(ids, false);
-    }
-  }
-
-  return {
-    success: false,
-    message: `الإجراء '${context?.actionName || normalizedKey}' غير مدعوم حالياً.`,
-    updated: 0,
-    results: [],
-  };
-}
-
-function coerceBulkDesiredState_(value) {
-  if (value === null || value === undefined) return null;
-  if (typeof value === "boolean") return value;
-  if (typeof value === "number") {
-    if (value === 1) return true;
-    if (value === 0) return false;
-  }
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    if (!normalized) return null;
-    if (
-      ["1", "true", "yes", "y", "active", "enable", "enabled", "activate", "set-active"].includes(
-        normalized
-      )
-    ) {
-      return true;
-    }
-    if (
-      [
-        "0",
-        "false",
-        "no",
-        "n",
-        "inactive",
-        "disable",
-        "disabled",
-        "deactivate",
-        "set-inactive",
-        "archive",
-        "archived",
-      ].includes(normalized)
-    ) {
-      return false;
-    }
-  }
-  if (typeof value === "object" && value != null) {
-    if (Object.prototype.hasOwnProperty.call(value, "desiredState")) {
-      return coerceBulkDesiredState_(value.desiredState);
-    }
-    if (Object.prototype.hasOwnProperty.call(value, "state")) {
-      return coerceBulkDesiredState_(value.state);
-    }
-    if (Object.prototype.hasOwnProperty.call(value, "value")) {
-      return coerceBulkDesiredState_(value.value);
-    }
-  }
-  return null;
-}
-
-function resolveBulkActionTabContext_(tabId) {
-  const register = getTabRegister();
-  if (!Array.isArray(register) || !register.length) {
-    return {
-      tab: null,
-      subTab: null,
-      sourceSheet: "",
-      candidatePaneKeys: [],
-    };
-  }
-
-  const normalizedTarget = normalizeKeyValue_(tabId);
-  let resolvedTab = null;
-  let resolvedSubTab = null;
-
-  register.some((tab) => {
-    if (!tab) return false;
-    const tabKey = normalizeKeyValue_(tab.tabId || tab.tabID || tab.key);
-    const subTabs = Array.isArray(tab.subTabs) ? tab.subTabs : [];
-
-    if (tabKey && tabKey === normalizedTarget) {
-      resolvedTab = tab;
-      return true;
-    }
-
-    const matchedSubTab = subTabs.find((sub) => {
-      const subKey = normalizeKeyValue_(sub.subId || sub.subID || sub.Sub_ID || sub.key);
-      return subKey && subKey === normalizedTarget;
-    });
-
-    if (matchedSubTab) {
-      resolvedTab = tab;
-      resolvedSubTab = matchedSubTab;
-      return true;
-    }
-
-    return false;
-  });
-
-  const candidatePaneKeys = [];
-  const pushKey = (value) => {
-    if (!value) return;
-    const trimmed = String(value).trim();
-    if (!trimmed) return;
-    if (!candidatePaneKeys.includes(trimmed)) {
-      candidatePaneKeys.push(trimmed);
-    }
-  };
-
-  pushKey(tabId);
-  pushKey(resolvedSubTab ? resolvedSubTab.subId || resolvedSubTab.Sub_ID || resolvedSubTab.key : "");
-  pushKey(resolvedTab ? resolvedTab.tabId || resolvedTab.tabID || resolvedTab.key : "");
-
-  const sourceSheet =
-    (resolvedSubTab && resolvedSubTab.sourceSheet) ||
-    (resolvedTab && resolvedTab.sourceSheet) ||
-    "";
-
-  return {
-    tab: resolvedTab,
-    subTab: resolvedSubTab,
-    sourceSheet,
-    candidatePaneKeys,
-  };
-}
-
-function resolveQuickActionForBulk_(
-  formsRegister,
-  candidatePaneKeys,
-  normalizedAction,
-  rawActionName
-) {
-  if (!formsRegister || typeof formsRegister !== "object") {
-    return { quickAction: null, formConfig: null, paneKey: null };
-  }
-
-  const lowerLabel = String(rawActionName || "").trim().toLowerCase();
-  const seen = new Set();
-
-  const tryResolve = (paneKey) => {
-    if (!paneKey) return null;
-    const trimmed = String(paneKey).trim();
-    if (!trimmed || seen.has(trimmed)) return null;
-    seen.add(trimmed);
-
-    const formConfig = formsRegister[trimmed];
-    if (!formConfig || typeof formConfig !== "object") {
-      return null;
-    }
-
-    const quickActions = Array.isArray(formConfig.quickActions)
-      ? formConfig.quickActions
-      : [];
-
-    if (!quickActions.length) return null;
-
-    const match = quickActions.find((item) => {
-      if (!item) return false;
-      const actionKey = String(item.action || "").trim().toLowerCase();
-      if (actionKey && actionKey === normalizedAction) return true;
-      const label = String(item.label || "").trim().toLowerCase();
-      if (label && label === lowerLabel) return true;
-      if (actionKey && actionKey.replace(/[^a-z0-9]+/g, "-") === normalizedAction) return true;
-      return false;
-    });
-
-    if (match) {
-      return { quickAction: match, formConfig, paneKey: trimmed };
-    }
-    return null;
-  };
-
-  for (let i = 0; i < candidatePaneKeys.length; i++) {
-    const resolved = tryResolve(candidatePaneKeys[i]);
-    if (resolved) return resolved;
-  }
-
-  const allKeys = Object.keys(formsRegister);
-  for (let i = 0; i < allKeys.length; i++) {
-    const resolved = tryResolve(allKeys[i]);
-    if (resolved) return resolved;
-  }
-
-  return { quickAction: null, formConfig: null, paneKey: null };
-}
-
-function buildBulkActionPlan_(quickAction, context, tabContext) {
-  if (!quickAction || typeof quickAction !== "object") return null;
-
-  const payload =
-    quickAction.payload && typeof quickAction.payload === "object"
-      ? quickAction.payload
-      : {};
-
-  const updates = [];
-
-  const addUpdate = (column, value, valueType) => {
-    if (!column) return;
-    const normalizedColumn = String(column).trim();
-    if (!normalizedColumn) return;
-    updates.push({
-      column: normalizedColumn,
-      value,
-      valueType: valueType || payload.valueType || null,
-    });
-  };
-
-  const ensureUpdatesFromObject = (obj, valueType) => {
-    if (!obj || typeof obj !== "object") return;
-    Object.keys(obj).forEach((key) => {
-      addUpdate(key, obj[key], valueType);
-    });
-  };
-
-  if (Array.isArray(payload.updates)) {
-    payload.updates.forEach((entry) => {
-      if (!entry || typeof entry !== "object") return;
-      const column =
-        entry.column ||
-        entry.targetColumn ||
-        entry.field ||
-        entry.key ||
-        entry.columnName ||
-        entry.name;
-      const value =
-        entry.value ??
-        entry.set ??
-        entry.setTo ??
-        entry.targetValue ??
-        entry.desiredState ??
-        entry.state ??
-        entry.use;
-      addUpdate(column, value, entry.valueType || entry.type || null);
-    });
-  }
-
-  if (Array.isArray(payload.set)) {
-    payload.set.forEach((entry) => {
-      if (!entry || typeof entry !== "object") return;
-      const column =
-        entry.column ||
-        entry.targetColumn ||
-        entry.field ||
-        entry.key ||
-        entry.columnName ||
-        entry.name;
-      addUpdate(column, entry.value ?? entry.valueTo ?? entry.setTo ?? entry.set ?? "");
-    });
-  }
-
-  ensureUpdatesFromObject(payload.sets, payload.valueType);
-  ensureUpdatesFromObject(payload.columns, payload.valueType);
-  ensureUpdatesFromObject(payload.assign, payload.valueType);
-
-  if (Array.isArray(payload.clear)) {
-    payload.clear.forEach((column) => addUpdate(column, ""));
-  }
-  if (Array.isArray(payload.clearColumns)) {
-    payload.clearColumns.forEach((column) => addUpdate(column, ""));
-  }
-
-  const singleColumn =
-    payload.column ||
-    payload.targetColumn ||
-    payload.field ||
-    payload.key ||
-    payload.columnName;
-  if (singleColumn && !updates.length) {
-    const value =
-      payload.value ??
-      payload.set ??
-      payload.setTo ??
-      payload.targetValue ??
-      payload.desiredState ??
-      payload.state ??
-      payload.use;
-    addUpdate(singleColumn, value);
-  }
-
-  if (!updates.length && quickAction.targetState !== undefined) {
-    const stateColumn =
-      payload.stateColumn ||
-      payload.statusColumn ||
-      payload.targetColumn ||
-      payload.column ||
-      "IsActive";
-    const desiredState = coerceBulkDesiredState_(quickAction.targetState);
-    if (desiredState != null) {
-      addUpdate(stateColumn, desiredState, "boolean");
-    }
-  }
-
-  if (!updates.length) {
-    return null;
-  }
-
-  const sheetCandidates = [];
-  const pushSheet = (value) => {
-    if (!value) return;
-    const trimmed = String(value).trim();
-    if (!trimmed) return;
-    if (!sheetCandidates.includes(trimmed)) {
-      sheetCandidates.push(trimmed);
-    }
-  };
-
-  pushSheet(payload.targetSheet);
-  pushSheet(payload.sourceSheet);
-  pushSheet(context?.formConfig?.targetSheet);
-  pushSheet(context?.formConfig?.sourceSheet);
-  if (tabContext) {
-    pushSheet(tabContext.subTab ? tabContext.subTab.sourceSheet : "");
-    pushSheet(tabContext.tab ? tabContext.tab.sourceSheet : "");
-  }
-
-  const idCandidates = [];
-  const pushIdCandidate = (value) => {
-    if (!value) return;
-    const trimmed = String(value).trim();
-    if (!trimmed) return;
-    if (!idCandidates.includes(trimmed)) {
-      idCandidates.push(trimmed);
-    }
-  };
-
-  const idSources = [
-    payload.idColumn,
-    payload.idField,
-    payload.primaryKey,
-    payload.keyColumn,
-    payload.recordIdColumn,
-    payload.identifier,
-    payload.lookupColumn,
-    payload.lookupKey,
-    quickAction.idColumn,
-    quickAction.primaryKey,
-    context?.formConfig?.primaryKey,
-    context?.formConfig?.keyColumn,
-  ];
-  idSources.forEach((candidate) => pushIdCandidate(candidate));
-  if (Array.isArray(payload.idColumns)) {
-    payload.idColumns.forEach((candidate) => pushIdCandidate(candidate));
-  }
-
-  const timestampColumns = [];
-  const pushTimestamp = (value) => {
-    if (!value) return;
-    const trimmed = String(value).trim();
-    if (!trimmed) return;
-    if (!timestampColumns.includes(trimmed)) {
-      timestampColumns.push(trimmed);
-    }
-  };
-
-  const actorColumns = [];
-  const pushActor = (value) => {
-    if (!value) return;
-    const trimmed = String(value).trim();
-    if (!trimmed) return;
-    if (!actorColumns.includes(trimmed)) {
-      actorColumns.push(trimmed);
-    }
-  };
-
-  const payloadTimestampSources = [].concat(
-    payload.timestampColumn || [],
-    payload.timestampColumns || [],
-    payload.updatedAtColumn || []
-  );
-  payloadTimestampSources.forEach((value) => pushTimestamp(value));
-
-  const payloadActorSources = [].concat(
-    payload.actorColumn || [],
-    payload.actorColumns || [],
-    payload.updatedByColumn || []
-  );
-  payloadActorSources.forEach((value) => pushActor(value));
-
-  return {
-    sheetName: sheetCandidates.length ? sheetCandidates[0] : "",
-    updates,
-    idColumnCandidates: idCandidates,
-    timestampColumns,
-    actorColumns,
-    autoTimestamp:
-      payload.autoTimestamp !== false &&
-      payload.updateTimestamp !== false &&
-      payload.skipTimestamp !== true,
-    autoActor:
-      payload.autoActor !== false &&
-      payload.updateActor !== false &&
-      payload.skipActor !== true,
-    successMessage:
-      payload.successMessage ||
-      quickAction.successMessage ||
-      quickAction.message ||
-      "",
-    noChangeMessage:
-      payload.noChangeMessage ||
-      payload.emptyMessage ||
-      quickAction.emptyMessage ||
-      "",
-    failOnMissingColumns:
-      payload.failOnMissingColumns !== false &&
-      payload.allowMissingColumns !== true,
-    onMissingRecord:
-      payload.onMissingRecord === "skip" || payload.onMissingRecord === "ignore"
-        ? "skip"
-        : "report",
-  };
-}
-
-function resolveBulkActionIdColumnIndex_(ids, headers, rows, candidates) {
-  if (!headers || !headers.length) {
-    return { index: -1, candidate: null, matches: 0 };
-  }
-
-  const normalizedIds = Array.isArray(ids)
-    ? ids.map((value) => normalizeKeyValue_(value)).filter(Boolean)
-    : [];
-  const idSet = new Set(normalizedIds);
-
-  const evaluateIndex = (index, candidate) => {
-    if (index == null || index < 0) return { matches: 0, index: -1, candidate: null };
-    let matches = 0;
-    if (rows && rows.length && idSet.size) {
-      for (let i = 0; i < rows.length; i++) {
-        const value = normalizeKeyValue_(getValueAt_(rows[i], index));
-        if (value && idSet.has(value)) {
-          matches += 1;
-        }
-      }
-    }
-    return { matches, index, candidate };
-  };
-
-  const evaluated = [];
-  const candidateList = Array.isArray(candidates) ? candidates : [];
-  candidateList.forEach((candidate) => {
-    const index = findHeaderIndex_(headers, candidate);
-    const result = evaluateIndex(index, candidate);
-    if (result.index >= 0) evaluated.push(result);
-  });
-
-  if (!evaluated.length) {
-    headers.forEach((header, idx) => {
-      const normalizedHeader = normalizeHeaderKey_(header);
-      if (!normalizedHeader) return;
-      if (/(^|_)(id|identifier)$/.test(normalizedHeader) || normalizedHeader.endsWith("id")) {
-        const result = evaluateIndex(idx, header);
-        if (result.index >= 0) evaluated.push(result);
-      }
-    });
-  }
-
-  if (!evaluated.length) {
-    headers.forEach((header, idx) => {
-      const normalizedHeader = normalizeHeaderKey_(header);
-      if (!normalizedHeader) return;
-      if (normalizedHeader.includes("id")) {
-        const result = evaluateIndex(idx, header);
-        if (result.index >= 0) evaluated.push(result);
-      }
-    });
-  }
-
-  if (!evaluated.length) {
-    return { index: -1, candidate: null, matches: 0 };
-  }
-
-  evaluated.sort((a, b) => {
-    if (b.matches !== a.matches) return b.matches - a.matches;
-    if (a.index !== b.index) return a.index - b.index;
-    return 0;
-  });
-
-  return evaluated[0];
-}
-
-function coerceBulkActionValue_(rawValue, context, valueType) {
-  if (rawValue === undefined) {
-    return "";
-  }
-  if (rawValue === null) {
-    return "";
-  }
-  if (rawValue instanceof Date) {
-    return rawValue;
-  }
-
-  const resolveFromToken = (token) => {
-    switch (token) {
-      case "@now":
-      case "{{now}}":
-      case "@timestamp":
-      case "{{timestamp}}":
-      case "now":
-      case "now()":
-        return context.now;
-      case "@today":
-      case "{{today}}": {
-        const today = new Date(context.now);
-        today.setHours(0, 0, 0, 0);
-        return today;
-      }
-      case "@user":
-      case "{{user}}":
-      case "@actor":
-      case "{{actor}}":
-        return context.actor;
-      case "@id":
-      case "{{id}}":
-      case "@record":
-      case "{{record}}":
-        return context.currentId;
-      default:
-        return null;
-    }
-  };
-
-  if (typeof rawValue === "string") {
-    const trimmed = rawValue.trim();
-    const lower = trimmed.toLowerCase();
-    const tokenValue = resolveFromToken(lower);
-    if (tokenValue !== null) {
-      return tokenValue;
-    }
-    if (valueType === "boolean") {
-      return isTruthyFlag_(trimmed);
-    }
-    if (valueType === "number") {
-      const num = Number(trimmed);
-      return Number.isFinite(num) ? num : trimmed;
-    }
-    if (valueType === "date") {
-      const parsed = new Date(trimmed);
-      return Number.isNaN(parsed.getTime()) ? trimmed : parsed;
-    }
-    if (["true", "false"].includes(lower)) {
-      return lower === "true";
-    }
-    return trimmed;
-  }
-
-  if (valueType === "boolean") {
-    return isTruthyFlag_(rawValue);
-  }
-  if (valueType === "number") {
-    const num = Number(rawValue);
-    return Number.isFinite(num) ? num : rawValue;
-  }
-  if (valueType === "date") {
-    const parsed = new Date(rawValue);
-    return Number.isNaN(parsed.getTime()) ? rawValue : parsed;
-  }
-
-  return rawValue;
-}
-
-function applyBulkActionPlan_(sheetName, ids, plan, context) {
-  if (!sheetName) {
-    throw new Error("تعذّر تحديد ورقة البيانات المستهدفة لهذا الإجراء.");
-  }
-
-  const sheet = getSheet_(sheetName);
-  if (!sheet) {
-    throw new Error(`لم يتم العثور على الورقة المستهدفة '${sheetName}'.`);
-  }
-
-  const range = sheet.getDataRange();
-  const values = range.getValues();
-  if (!values || !values.length) {
-    return {
-      updated: 0,
-      results: [],
-      message: "لا توجد بيانات في الورقة المستهدفة.",
-    };
-  }
-
-  const headers = values[0] || [];
-  const rows = values.slice(1);
-  const idResolution = resolveBulkActionIdColumnIndex_(ids, headers, rows, plan.idColumnCandidates);
-  if (idResolution.index < 0) {
-    throw new Error("تعذّر تحديد عمود المعرف للسجلات المحددة.");
-  }
-
-  const updateColumns = plan.updates.map((entry) => {
-    const index = findHeaderIndex_(headers, entry.column);
-    return { ...entry, index };
-  });
-
-  if (plan.failOnMissingColumns) {
-    const missing = updateColumns
-      .filter((entry) => entry.index < 0)
-      .map((entry) => entry.column);
-    if (missing.length) {
-      throw new Error(
-        `الأعمدة التالية غير موجودة في الورقة '${sheetName}': ${missing.join(", ")}`
-      );
-    }
-  }
-
-  const filteredUpdates = updateColumns.filter((entry) => entry.index >= 0);
-  if (!filteredUpdates.length) {
-    return {
-      updated: 0,
-      results: [],
-      message: "لم يتم العثور على أعمدة صالحة للتحديث.",
-    };
-  }
-
-  const autoTimestampColumns = plan.autoTimestamp
-    ? plan.timestampColumns.length
-      ? plan.timestampColumns
-      : ["Updated_At", "UpdatedAt", "Last_Updated"]
-    : [];
-  const autoActorColumns = plan.autoActor
-    ? plan.actorColumns.length
-      ? plan.actorColumns
-      : ["Updated_By", "UpdatedBy", "Last_Updated_By"]
-    : [];
-
-  const timestampColumnIndexes = autoTimestampColumns
-    .map((name) => ({ column: name, index: findHeaderIndex_(headers, name) }))
-    .filter((entry) => entry.index >= 0);
-  const actorColumnIndexes = autoActorColumns
-    .map((name) => ({ column: name, index: findHeaderIndex_(headers, name) }))
-    .filter((entry) => entry.index >= 0);
-
-  const idToRowIndex = new Map();
-  rows.forEach((row, idx) => {
-    const key = normalizeKeyValue_(getValueAt_(row, idResolution.index));
-    if (key && !idToRowIndex.has(key)) {
-      idToRowIndex.set(key, idx);
-    }
-  });
-
-  const now = new Date();
-  const actor = getActorEmail_();
-  const results = [];
-  let updatedCount = 0;
-  const writes = [];
-
-  ids.forEach((rawId) => {
-    const normalizedId = normalizeKeyValue_(rawId);
-    if (!normalizedId) {
-      results.push({
-        id: rawId,
-        updated: false,
-        reason: "INVALID_ID",
-      });
-      return;
-    }
-
-    const rowIndex = idToRowIndex.get(normalizedId);
-    if (rowIndex == null) {
-      const entry = {
-        id: normalizedId,
-        updated: false,
-      };
-      if (plan.onMissingRecord === "report") {
-        entry.reason = "NOT_FOUND";
-      }
-      results.push(entry);
-      return;
-    }
-
-    const rowValues = rows[rowIndex].slice();
-    const appliedColumns = [];
-
-    filteredUpdates.forEach((update) => {
-      const value = coerceBulkActionValue_(update.value, {
-        now,
-        actor,
-        currentId: normalizedId,
-        context,
-        row: rowValues,
-      }, update.valueType);
-      rowValues[update.index] = value;
-      appliedColumns.push(headers[update.index] || update.column);
-    });
-
-    timestampColumnIndexes.forEach((entry) => {
-      rowValues[entry.index] = now;
-      appliedColumns.push(headers[entry.index] || entry.column);
-    });
-
-    actorColumnIndexes.forEach((entry) => {
-      rowValues[entry.index] = actor;
-      appliedColumns.push(headers[entry.index] || entry.column);
-    });
-
-    if (!appliedColumns.length) {
-      results.push({
-        id: normalizedId,
-        updated: false,
-        reason: "NO_CHANGES",
-      });
-      return;
-    }
-
-    const rowNumber = rowIndex + 2;
-    rows[rowIndex] = rowValues;
-    writes.push({ rowNumber, values: rowValues });
-    updatedCount += 1;
-    results.push({
-      id: normalizedId,
-      updated: true,
-      columns: appliedColumns,
-    });
-  });
-
-  writes.forEach((entry) => {
-    sheet.getRange(entry.rowNumber, 1, 1, headers.length).setValues([entry.values]);
-  });
-
-  return {
-    updated: updatedCount,
-    results,
-  };
-}
-
-function handleBulkAction(tabId, actionName, selectedIds) {
-  const FNAME = "handleBulkAction";
-  debugLog(FNAME, "start", {
-    tabId,
-    actionName,
-    count: Array.isArray(selectedIds) ? selectedIds.length : 0,
-  });
-
-  try {
-    const safeTabId = String(tabId || "").trim();
-    const rawActionName = String(actionName || "").trim();
-    if (!safeTabId) {
-      throw new Error("tabId is required.");
-    }
-    if (!rawActionName) {
-      throw new Error("actionName is required.");
-    }
-
-    const ids = (Array.isArray(selectedIds) ? selectedIds : [])
-      .map((id) => normalizeKeyValue_(id))
-      .filter(Boolean);
-
-    if (!ids.length) {
-      return sanitizeForClientResponse_({
-        success: false,
-        message: "لم يتم تحديد أي سجلات صالحة.",
-        updated: 0,
-        results: [],
-      });
-    }
-
-    const normalizedAction = rawActionName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-
-    const tabContext = resolveBulkActionTabContext_(safeTabId);
-    const formsRegister = loadDynamicFormsRegisterSafe_();
-    const { quickAction, formConfig, paneKey } = resolveQuickActionForBulk_(
-      formsRegister,
-      tabContext.candidatePaneKeys,
-      normalizedAction,
-      rawActionName
-    );
-
-    const context = {
-      tabId: safeTabId,
-      actionName: rawActionName,
-      normalizedAction,
-      selectedIds: ids,
-      quickAction,
-      formConfig,
-      paneKey,
-      tabContext,
-    };
-
-    let result = null;
-
-    if (quickAction) {
-      const handlerName =
-        quickAction.handler ||
-        (quickAction.payload && quickAction.payload.handler) ||
-        quickAction.serverAction ||
-        quickAction.serverFunction ||
-        quickAction.serverMethod ||
-        quickAction.functionName ||
-        quickAction.FunctionName ||
-        quickAction.Handler ||
-        "";
-
-      if (handlerName) {
-        result = invokeNamedServerFunction_(handlerName, ids, context);
-      }
-
-      if (result == null) {
-        const plan = buildBulkActionPlan_(quickAction, context, tabContext);
-        if (plan) {
-          const sheetName = plan.sheetName || tabContext.sourceSheet;
-          const applied = applyBulkActionPlan_(sheetName, ids, plan, context);
-          const success = applied.updated > 0;
-          const message = success
-            ? plan.successMessage || "تم تحديث السجلات المحددة بنجاح."
-            : plan.noChangeMessage || "لم يتم إجراء أي تحديثات على السجلات المحددة.";
-          result = {
-            success,
-            updated: applied.updated,
-            results: applied.results,
-            sheet: sheetName,
-            action: quickAction.action || quickAction.label || normalizedAction,
-            message,
-          };
-        }
-      }
-
-      if (result == null && quickAction.targetState !== undefined) {
-        const desiredState = coerceBulkDesiredState_(quickAction.targetState);
-        if (desiredState != null && typeof bulkUpdateMaterialStatus === "function") {
-          result = bulkUpdateMaterialStatus(ids, desiredState);
-        }
-      }
-
-      if (
-        result == null &&
-        quickAction.payload &&
-        typeof quickAction.payload === "object" &&
-        quickAction.payload != null &&
-        Object.prototype.hasOwnProperty.call(quickAction.payload, "desiredState")
-      ) {
-        const desiredState = coerceBulkDesiredState_(quickAction.payload.desiredState);
-        if (desiredState != null && typeof bulkUpdateMaterialStatus === "function") {
-          result = bulkUpdateMaterialStatus(ids, desiredState);
-        }
-      }
-    }
-
-    if (result == null) {
-      result = executeDefaultBulkAction_(normalizedAction, ids, context);
-    }
-
-    const safeResult =
-      result && typeof result === "object"
-        ? result
-        : {
-            success: Boolean(result),
-            updated: Boolean(result) ? ids.length : 0,
-            results: [],
-          };
-
-    return sanitizeForClientResponse_(safeResult);
-  } catch (err) {
     debugError(FNAME, err, {
-      tabId,
-      actionName,
-      selectionCount: Array.isArray(selectedIds) ? selectedIds.length : 0,
+      count: Array.isArray(materialIds) ? materialIds.length : 0,
     });
     throw err;
   }
@@ -3315,10 +2354,15 @@ function updateMaterialPrice(materialId, newPrice) {
       sheet.getRange(rowNumber, indexes.updatedAt + 1).setValue(timestamp);
     }
     if (indexes.updatedBy >= 0) {
-      sheet.getRange(rowNumber, indexes.updatedBy + 1).setValue(getActorEmail_());
+      sheet
+        .getRange(rowNumber, indexes.updatedBy + 1)
+        .setValue(getActorEmail_());
     }
 
-    debugLog(FNAME, "complete", { materialId: normalizedId, price: numericPrice });
+    debugLog(FNAME, "complete", {
+      materialId: normalizedId,
+      price: numericPrice,
+    });
     return sanitizeForClientResponse_({
       success: true,
       materialId: normalizedId,
@@ -3539,14 +2583,7 @@ function saveMaterialCatalogEntry(payload) {
       "Subcategory2",
       "Sub_Category_2"
     );
-    setRowValue_(
-      headers,
-      targetRow,
-      unit,
-      "Default_Unit",
-      "Unit",
-      "Unit_Name"
-    );
+    setRowValue_(headers, targetRow, unit, "Default_Unit", "Unit", "Unit_Name");
     if (priceValue !== null) {
       setRowValue_(
         headers,
@@ -3558,14 +2595,7 @@ function saveMaterialCatalogEntry(payload) {
       );
     }
     if (vatValue !== null) {
-      setRowValue_(
-        headers,
-        targetRow,
-        vatValue,
-        "VAT_Rate",
-        "Vat_Rate",
-        "VAT"
-      );
+      setRowValue_(headers, targetRow, vatValue, "VAT_Rate", "Vat_Rate", "VAT");
     }
     setRowValue_(
       headers,
@@ -3587,7 +2617,9 @@ function saveMaterialCatalogEntry(payload) {
 
     const targetRowNumber =
       existingIndex >= 0 ? existingIndex + 2 : sheet.getLastRow() + 1;
-    sheet.getRange(targetRowNumber, 1, 1, headers.length).setValues([targetRow]);
+    sheet
+      .getRange(targetRowNumber, 1, 1, headers.length)
+      .setValues([targetRow]);
     if (existingIndex >= 0) {
       rows[existingIndex] = targetRow;
     } else {
@@ -3605,9 +2637,10 @@ function saveMaterialCatalogEntry(payload) {
       return acc;
     }, {});
 
-    const message = existingIndex >= 0
-      ? "تم تحديث بيانات المادة بنجاح."
-      : "تمت إضافة المادة بنجاح.";
+    const message =
+      existingIndex >= 0
+        ? "تم تحديث بيانات المادة بنجاح."
+        : "تمت إضافة المادة بنجاح.";
 
     debugLog(FNAME, "complete", {
       materialId: normalizedId,
@@ -3636,9 +2669,7 @@ function getProjectsForDropdown() {
   debugLog(FNAME, "start");
 
   try {
-    const { headers = [], rows = [] } = loadSheetData_(
-      CONFIG.SHEETS.PRJ_MAIN
-    );
+    const { headers = [], rows = [] } = loadSheetData_(CONFIG.SHEETS.PRJ_MAIN);
     if (!headers.length || !rows.length) {
       debugLog(FNAME, "noData", { headers: headers.length, rows: rows.length });
       return sanitizeForClientResponse_([]);
@@ -3687,7 +2718,9 @@ function getDirectExpenseViewData() {
     const projectHeaders = Array.isArray(projectSource.headers)
       ? projectSource.headers
       : [];
-    const projectRows = Array.isArray(projectSource.rows) ? projectSource.rows : [];
+    const projectRows = Array.isArray(projectSource.rows)
+      ? projectSource.rows
+      : [];
     const projectIdIndex = findHeaderIndex_(
       projectHeaders,
       "Project_ID",
@@ -3897,8 +2930,12 @@ function getAttachmentsForEntity(entityId, entityKey) {
     const attachments = rows
       .map((row) => {
         const rowEntity = idxEntity >= 0 ? getValueAt_(row, idxEntity) : "";
-        const rowEntityId = idxEntityId >= 0 ? getValueAt_(row, idxEntityId) : "";
-        if (normalizedEntity && normalizeKeyValue_(rowEntity) !== normalizedEntity) {
+        const rowEntityId =
+          idxEntityId >= 0 ? getValueAt_(row, idxEntityId) : "";
+        if (
+          normalizedEntity &&
+          normalizeKeyValue_(rowEntity) !== normalizedEntity
+        ) {
           return null;
         }
         if (normalizedId && normalizeKeyValue_(rowEntityId) !== normalizedId) {
@@ -3916,7 +2953,8 @@ function getAttachmentsForEntity(entityId, entityKey) {
           File_Name: idxFileName >= 0 ? getValueAt_(row, idxFileName) : "",
           Drive_URL: idxUrl >= 0 ? getValueAt_(row, idxUrl) : "",
           Drive_File_ID: idxDriveId >= 0 ? getValueAt_(row, idxDriveId) : "",
-          Uploaded_By: idxUploadedBy >= 0 ? getValueAt_(row, idxUploadedBy) : "",
+          Uploaded_By:
+            idxUploadedBy >= 0 ? getValueAt_(row, idxUploadedBy) : "",
           Created_At: idxUploadedAt >= 0 ? getValueAt_(row, idxUploadedAt) : "",
         };
       })
@@ -3943,7 +2981,10 @@ function saveAttachmentRecord(payload) {
     }
 
     const entityRaw =
-      payload.entity || payload.Entity || payload.entityKey || payload.Entity_Key;
+      payload.entity ||
+      payload.Entity ||
+      payload.entityKey ||
+      payload.Entity_Key;
     const entityIdRaw =
       payload.entityId ||
       payload.Entity_ID ||
@@ -3951,7 +2992,8 @@ function saveAttachmentRecord(payload) {
       payload.Record_ID;
     const labelRaw = payload.label || payload.Label || "";
     const fileNameRaw = payload.fileName || payload.File_Name || labelRaw;
-    const driveIdRaw = payload.driveId || payload.Drive_File_ID || payload.File_Id;
+    const driveIdRaw =
+      payload.driveId || payload.Drive_File_ID || payload.File_Id;
     const urlRaw = payload.url || payload.Drive_URL || payload.File_URL;
 
     const entity = String(entityRaw || "").trim();
@@ -4028,7 +3070,10 @@ function deleteAttachmentRecord(docId) {
 
     const data = sheet.getDataRange().getValues();
     if (!data || data.length <= 1) {
-      return sanitizeForClientResponse_({ success: false, message: "لا توجد بيانات" });
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "لا توجد بيانات",
+      });
     }
 
     const headers = data[0] || [];
@@ -4037,7 +3082,10 @@ function deleteAttachmentRecord(docId) {
 
     const rowIndex = data
       .slice(1)
-      .findIndex((row) => normalizeKeyValue_(row[idxDoc]) === normalizeKeyValue_(normalizedId));
+      .findIndex(
+        (row) =>
+          normalizeKeyValue_(row[idxDoc]) === normalizeKeyValue_(normalizedId)
+      );
 
     if (rowIndex < 0) {
       return sanitizeForClientResponse_({
@@ -4090,7 +3138,9 @@ function submitDynamicForm(formId, formData, options = {}) {
       if (!grouped.has(targetSheet)) grouped.set(targetSheet, []);
       grouped.get(targetSheet).push({
         fieldId: field.fieldId || field.Field_ID || targetColumn,
-        type: (field.type || field.Field_Type || "text").toString().toLowerCase(),
+        type: (field.type || field.Field_Type || "text")
+          .toString()
+          .toLowerCase(),
         targetColumn,
         required: !!field.required,
         defaultValue: field.defaultValue,
@@ -4107,7 +3157,8 @@ function submitDynamicForm(formId, formData, options = {}) {
       if (!sheet) throw new Error(`لم يتم العثور على ورقة ${sheetName}.`);
 
       const lastCol = sheet.getLastColumn();
-      if (!lastCol) throw new Error(`ورقة ${sheetName} تفتقر إلى رؤوس الأعمدة.`);
+      if (!lastCol)
+        throw new Error(`ورقة ${sheetName} تفتقر إلى رؤوس الأعمدة.`);
       const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0] || [];
       if (!headers.length)
         throw new Error(`تعذر قراءة رؤوس الأعمدة للورقة ${sheetName}.`);
@@ -4294,9 +3345,7 @@ function saveDirectExpenses(payload) {
     const vatRateRaw =
       item.vatRate ?? item.VAT_Rate ?? item.vat ?? item.taxRate ?? 0;
     const vatRateNum =
-      vatRateRaw === "" || vatRateRaw === null
-        ? 0
-        : Number(vatRateRaw) || 0;
+      vatRateRaw === "" || vatRateRaw === null ? 0 : Number(vatRateRaw) || 0;
     const vatFactor = vatRateNum > 1 ? vatRateNum / 100 : vatRateNum;
     const vatAmount =
       item.vatAmount != null && item.vatAmount !== ""
@@ -4319,8 +3368,7 @@ function saveDirectExpenses(payload) {
       item.Payment_Status ||
       headerPayStatus ||
       "";
-    const notes =
-      item.notes || item.Notes || item.note || headerNotes || "";
+    const notes = item.notes || item.Notes || item.note || headerNotes || "";
 
     const newRow = {
       Project_ID: projectId,
@@ -4633,8 +3681,12 @@ function authenticateUser(credentials) {
     const matchEntry = rows.find((row) => {
       const rowUsername = idx.username >= 0 ? row[idx.username] : "";
       const rowEmail = idx.email >= 0 ? row[idx.email] : "";
-      const normalizedUsername = String(rowUsername || "").trim().toLowerCase();
-      const normalizedEmail = String(rowEmail || "").trim().toLowerCase();
+      const normalizedUsername = String(rowUsername || "")
+        .trim()
+        .toLowerCase();
+      const normalizedEmail = String(rowEmail || "")
+        .trim()
+        .toLowerCase();
       return username === normalizedUsername || username === normalizedEmail;
     });
 
@@ -4668,17 +3720,23 @@ function authenticateUser(credentials) {
     }, {});
     const userRowIndex = entryIndex + 2;
 
-    console.log(`[${FNAME}] Password verified. Attempting to update last login...`);
+    console.log(
+      `[${FNAME}] Password verified. Attempting to update last login...`
+    );
     updateLastLogin_(userObject?.User_Id, userRowIndex, {
       sheet: sh,
       columnIndex: idx.lastLogin,
       username,
     });
-    console.log(`[${FNAME}] updateLastLogin complete. Attempting to get permissions...`);
+    console.log(
+      `[${FNAME}] updateLastLogin complete. Attempting to get permissions...`
+    );
 
     const permissions = getRolePermissions(userObject?.Role_Id);
     console.log(
-      `[${FNAME}] Permissions received (${permissions?.length || 0}). Attempting to create session...`
+      `[${FNAME}] Permissions received (${
+        permissions?.length || 0
+      }). Attempting to create session...`
     );
 
     const session = createSession_(userObject, "LOGIN");
@@ -4704,7 +3762,9 @@ function authenticateUser(credentials) {
     const bootstrap =
       getBootstrapData(userObject, permissions) ||
       sanitizeForClientResponse_(buildGuestBootstrapPayload_());
-    console.log(`[${FNAME}] Bootstrap data generated. Preparing success response...`);
+    console.log(
+      `[${FNAME}] Bootstrap data generated. Preparing success response...`
+    );
 
     const sanitizedUser =
       sanitizeForClientResponse_(bootstrap?.user) ||
@@ -4774,7 +3834,9 @@ function updateLastLogin_(userId, rowIndex, options = {}) {
     });
     return true;
   } catch (error) {
-    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    console.error(
+      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
+    );
     debugError(FNAME, error, {
       userId,
       rowIndex,
@@ -4847,7 +3909,9 @@ function createSession_(user, eventType) {
       type,
     };
   } catch (error) {
-    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    console.error(
+      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
+    );
     debugError(FNAME, error, {
       userId: user?.User_Id || null,
       username: user?.Username || user?.Email || null,
@@ -4873,7 +3937,9 @@ function logAuditEvent_(action, message, payload = {}, userId) {
     debugLog(FNAME, "logged", { action, userId });
     return true;
   } catch (error) {
-    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    console.error(
+      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
+    );
     debugError(FNAME, error, { action, userId });
     return false;
   }
@@ -5067,8 +4133,7 @@ function searchUsers(filters = {}) {
         Role_Id: readString(row, idx.role),
         IsActive: idx.isActive >= 0 ? isTruthyFlag_(row[idx.isActive]) : false,
         Job_Title: readString(row, idx.jobTitle),
-        Last_Login:
-          lastLoginValue || readString(row, idx.lastLogin) || "",
+        Last_Login: lastLoginValue || readString(row, idx.lastLogin) || "",
         Updated_At: updatedValue || readString(row, idx.updatedAt) || "",
       };
 
@@ -5114,7 +4179,9 @@ function searchUsers(filters = {}) {
 
       if (fromDate || toDate) {
         const updated =
-          updatedDate || coerceDate_(record.Updated_At) || coerceDate_(updatedRaw);
+          updatedDate ||
+          coerceDate_(record.Updated_At) ||
+          coerceDate_(updatedRaw);
         if (!updated) return;
         if (fromDate && updated < fromDate) return;
         if (toDate && updated > toDate) return;
@@ -5540,9 +4607,10 @@ function getTabRegister() {
           subLabelEn: sub.subLabelEn || "",
           subLabelAr: sub.subLabelAr || "",
           route: sub.route || "",
-          sortOrder: sub.sortOrder != null && Number.isFinite(sub.sortOrder)
-            ? sub.sortOrder
-            : null,
+          sortOrder:
+            sub.sortOrder != null && Number.isFinite(sub.sortOrder)
+              ? sub.sortOrder
+              : null,
           sourceSheet: sub.sourceSheet || "",
           renderMode: sub.renderMode || "",
           addFormId: sub.addFormId || "",
@@ -5566,9 +4634,7 @@ function getTabRegister() {
           return String(a.subId || "").localeCompare(String(b.subId || ""));
         });
       delete tab._subMap;
-      if (
-        tab.sortOrder == null || !Number.isFinite(Number(tab.sortOrder))
-      ) {
+      if (tab.sortOrder == null || !Number.isFinite(Number(tab.sortOrder))) {
         tab.sortOrder = null;
       }
       return {
@@ -5604,7 +4670,8 @@ function getTabRegister() {
   debugLog(FNAME, "resolved", {
     tabs: result.length,
     subTabs: result.reduce(
-      (count, tab) => count + (Array.isArray(tab.subTabs) ? tab.subTabs.length : 0),
+      (count, tab) =>
+        count + (Array.isArray(tab.subTabs) ? tab.subTabs.length : 0),
       0
     ),
     source: sheet ? sheet.getName() : sourceName || "<unknown>",
@@ -5633,7 +4700,8 @@ function loadSettingsMap_() {
         key: String(key).trim(),
         value: idx.value >= 0 ? getValueAt_(row, idx.value) : "",
         options: idx.options >= 0 ? getValueAt_(row, idx.options) : "",
-        description: idx.description >= 0 ? getValueAt_(row, idx.description) : "",
+        description:
+          idx.description >= 0 ? getValueAt_(row, idx.description) : "",
       });
     });
 
@@ -5714,9 +4782,7 @@ function getFilterOptionsForSubTab(subTabId) {
         );
       });
 
-    const defs = Array.isArray(entry?.filterOptions)
-      ? entry.filterOptions
-      : [];
+    const defs = Array.isArray(entry?.filterOptions) ? entry.filterOptions : [];
     if (!defs.length) {
       return sanitizeForClientResponse_({ success: true, definitions: [] });
     }
@@ -5798,6 +4864,406 @@ function logAction(userId, actionType, entityType, recordId, details = {}) {
   }
 }
 
+function normalizeHrKeyToken_(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/^sub_/, "")
+    .replace(/^hr_/, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function getHrSheetConfig_(key) {
+  if (!key) return null;
+  const normalized = normalizeHrKeyToken_(key);
+  if (!normalized) return null;
+  for (const [paneId, config] of Object.entries(HR_PANE_CONFIG)) {
+    const paneToken = normalizeHrKeyToken_(paneId);
+    if (paneToken === normalized) {
+      return config;
+    }
+  }
+  return null;
+}
+
+function getHrSheetContext_(config) {
+  if (!config) throw new Error("HR configuration missing");
+  const sheet = getSheet_(config.sheetName);
+  if (!sheet) {
+    throw new Error(`Sheet ${config.sheetName} not found`);
+  }
+  const lastCol = sheet.getLastColumn();
+  const headers =
+    lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
+  if (!headers.length) {
+    throw new Error(`Sheet ${config.sheetName} is missing headers`);
+  }
+  const idIndex = headers.indexOf(config.idColumn);
+  if (idIndex < 0) {
+    throw new Error(`${config.idColumn} column missing in ${config.sheetName}`);
+  }
+  return { sheet, headers, idIndex };
+}
+
+function buildFlexibleLookup_(data) {
+  const map = new Map();
+  if (!data || typeof data !== "object") return map;
+  Object.keys(data).forEach((key) => {
+    const value = data[key];
+    const original = String(key || "");
+    const lower = original.toLowerCase();
+    const compact = normalizeHrKeyToken_(original);
+    map.set(original, value);
+    map.set(lower, value);
+    map.set(compact, value);
+  });
+  return map;
+}
+
+function generateHrRecordId_(config) {
+  const prefix = String(
+    config.idPrefix || config.idColumn || "HR"
+  ).toUpperCase();
+  const token = Utilities.getUuid().split("-")[0].toUpperCase();
+  return `${prefix}-${token}`;
+}
+
+function getHrRecords_(key) {
+  const config = getHrSheetConfig_(key);
+  if (!config) {
+    return sanitizeForClientResponse_({ headers: [], rows: [] });
+  }
+  const { headers, rows } = loadSheetData_(config.sheetName);
+  return sanitizeForClientResponse_({ headers, rows });
+}
+
+function createHrRecord_(key, data = {}) {
+  const FNAME = "createHrRecord_";
+  try {
+    const config = getHrSheetConfig_(key);
+    if (!config) throw new Error("HR configuration not found");
+    const { sheet, headers, idIndex } = getHrSheetContext_(config);
+    const lookup = buildFlexibleLookup_(data);
+    let recordId = lookup.get(config.idColumn);
+    if (!recordId) {
+      recordId = lookup.get(config.idColumn.toLowerCase());
+    }
+    if (!recordId) {
+      recordId = lookup.get(normalizeHrKeyToken_(config.idColumn));
+    }
+    if (!recordId) {
+      recordId = generateHrRecordId_(config);
+    }
+
+    const now = new Date();
+    const actor = getActorEmail_();
+    const currentUser = getCurrentUser();
+    const rowValues = headers.map((header, index) => {
+      if (index === idIndex) {
+        return recordId;
+      }
+      const candidates = [
+        header,
+        String(header || "").toLowerCase(),
+        normalizeHrKeyToken_(header),
+      ];
+      for (const candidate of candidates) {
+        if (candidate && lookup.has(candidate)) {
+          return lookup.get(candidate);
+        }
+      }
+      return "";
+    });
+
+    const createdAtIdx = headers.indexOf("Created_At");
+    if (createdAtIdx >= 0) rowValues[createdAtIdx] = now;
+    const createdByIdx = headers.indexOf("Created_By");
+    if (createdByIdx >= 0) rowValues[createdByIdx] = actor;
+    const updatedAtIdx = headers.indexOf("Updated_At");
+    if (updatedAtIdx >= 0) rowValues[updatedAtIdx] = now;
+    const updatedByIdx = headers.indexOf("Updated_By");
+    if (updatedByIdx >= 0) rowValues[updatedByIdx] = actor;
+
+    sheet.appendRow(rowValues);
+
+    const rowObject = headers.reduce((acc, header, idx) => {
+      acc[header] = rowValues[idx];
+      return acc;
+    }, {});
+
+    logAction(currentUser?.User_Id || "", "CREATE", config.entity, recordId, {
+      sheet: config.sheetName,
+      data: rowObject,
+    });
+
+    return sanitizeForClientResponse_({
+      success: true,
+      recordId,
+      message: "تم إنشاء السجل بنجاح.",
+    });
+  } catch (error) {
+    debugError(FNAME, error, { key });
+    throw error;
+  }
+}
+
+function updateHrRecord_(key, recordId, updates = {}) {
+  const FNAME = "updateHrRecord_";
+  try {
+    const config = getHrSheetConfig_(key);
+    if (!config) throw new Error("HR configuration not found");
+    const { sheet, headers, idIndex } = getHrSheetContext_(config);
+    const lookup = buildFlexibleLookup_(updates);
+    const normalizedId = recordId || lookup.get(config.idColumn);
+    if (!normalizedId) throw new Error("Record identifier is required");
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "لا توجد بيانات لتحديثها.",
+      });
+    }
+
+    const dataRange = sheet.getRange(2, 1, lastRow - 1, headers.length);
+    const rows = dataRange.getValues();
+    const targetIndex = rows.findIndex((row) =>
+      keysEqual_(row[idIndex], normalizedId)
+    );
+
+    if (targetIndex < 0) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "تعذر العثور على السجل المطلوب.",
+      });
+    }
+
+    const rowNumber = targetIndex + 2;
+    const currentRow = rows[targetIndex];
+    const updatedRow = currentRow.slice();
+    const applied = {};
+
+    headers.forEach((header, index) => {
+      if (index === idIndex) return;
+      const candidates = [
+        header,
+        String(header || "").toLowerCase(),
+        normalizeHrKeyToken_(header),
+      ];
+      for (const candidate of candidates) {
+        if (candidate && lookup.has(candidate)) {
+          const value = lookup.get(candidate);
+          updatedRow[index] = value;
+          applied[header] = value;
+          return;
+        }
+      }
+    });
+
+    const now = new Date();
+    const actor = getActorEmail_();
+    const currentUser = getCurrentUser();
+    const updatedAtIdx = headers.indexOf("Updated_At");
+    if (updatedAtIdx >= 0) {
+      updatedRow[updatedAtIdx] = now;
+      applied[headers[updatedAtIdx]] = now;
+    }
+    const updatedByIdx = headers.indexOf("Updated_By");
+    if (updatedByIdx >= 0) {
+      updatedRow[updatedByIdx] = actor;
+      applied[headers[updatedByIdx]] = actor;
+    }
+
+    sheet.getRange(rowNumber, 1, 1, headers.length).setValues([updatedRow]);
+
+    logAction(
+      currentUser?.User_Id || "",
+      "UPDATE",
+      config.entity,
+      normalizedId,
+      {
+        sheet: config.sheetName,
+        updates: applied,
+      }
+    );
+
+    return sanitizeForClientResponse_({
+      success: true,
+      recordId: normalizedId,
+      message: "تم تحديث السجل بنجاح.",
+    });
+  } catch (error) {
+    debugError(FNAME, error, { key, recordId });
+    throw error;
+  }
+}
+
+function deleteHrRecord_(key, recordId) {
+  const FNAME = "deleteHrRecord_";
+  try {
+    const config = getHrSheetConfig_(key);
+    if (!config) throw new Error("HR configuration not found");
+    const { sheet, headers, idIndex } = getHrSheetContext_(config);
+    const normalizedId = String(recordId || "").trim();
+    if (!normalizedId) throw new Error("Record identifier is required");
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "لا توجد بيانات لحذفها.",
+      });
+    }
+
+    const dataRange = sheet.getRange(2, 1, lastRow - 1, headers.length);
+    const rows = dataRange.getValues();
+    const targetIndex = rows.findIndex((row) =>
+      keysEqual_(row[idIndex], normalizedId)
+    );
+
+    if (targetIndex < 0) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "تعذر العثور على السجل المطلوب.",
+      });
+    }
+
+    const rowNumber = targetIndex + 2;
+    sheet.deleteRow(rowNumber);
+
+    const currentUser = getCurrentUser();
+    logAction(
+      currentUser?.User_Id || "",
+      "DELETE",
+      config.entity,
+      normalizedId,
+      {
+        sheet: config.sheetName,
+      }
+    );
+
+    return sanitizeForClientResponse_({
+      success: true,
+      recordId: normalizedId,
+      message: "تم حذف السجل بنجاح.",
+    });
+  } catch (error) {
+    debugError(FNAME, error, { key, recordId });
+    throw error;
+  }
+}
+
+function getEmployees() {
+  return getHrRecords_("Sub_HR_Employees");
+}
+
+function getAttendanceRecords() {
+  return getHrRecords_("Sub_HR_Attendance");
+}
+
+function getLeaveRequests() {
+  return getHrRecords_("Sub_HR_Leave_Requests");
+}
+
+function getLeaveRecords() {
+  return getHrRecords_("Sub_HR_Leave");
+}
+
+function getAdvanceRecords() {
+  return getHrRecords_("Sub_HR_Advances");
+}
+
+function getDeductionRecords() {
+  return getHrRecords_("Sub_HR_Deductions");
+}
+
+function getPayrollRecords() {
+  return getHrRecords_("Sub_HR_Payroll");
+}
+
+function saveEmployee(data) {
+  return createHrRecord_("Sub_HR_Employees", data);
+}
+
+function saveAttendanceRecord(data) {
+  return createHrRecord_("Sub_HR_Attendance", data);
+}
+
+function saveLeaveRequest(data) {
+  return createHrRecord_("Sub_HR_Leave_Requests", data);
+}
+
+function saveLeaveRecord(data) {
+  return createHrRecord_("Sub_HR_Leave", data);
+}
+
+function saveAdvanceRecord(data) {
+  return createHrRecord_("Sub_HR_Advances", data);
+}
+
+function saveDeductionRecord(data) {
+  return createHrRecord_("Sub_HR_Deductions", data);
+}
+
+function savePayrollRecord(data) {
+  return createHrRecord_("Sub_HR_Payroll", data);
+}
+
+function updateEmployee(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Employees", recordId, updates);
+}
+
+function updateAttendanceRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Attendance", recordId, updates);
+}
+
+function updateLeaveRequest(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Leave_Requests", recordId, updates);
+}
+
+function updateLeaveRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Leave", recordId, updates);
+}
+
+function updateAdvanceRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Advances", recordId, updates);
+}
+
+function updateDeductionRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Deductions", recordId, updates);
+}
+
+function updatePayrollRecord(recordId, updates) {
+  return updateHrRecord_("Sub_HR_Payroll", recordId, updates);
+}
+
+function deleteEmployee(recordId) {
+  return deleteHrRecord_("Sub_HR_Employees", recordId);
+}
+
+function deleteAttendanceRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Attendance", recordId);
+}
+
+function deleteLeaveRequest(recordId) {
+  return deleteHrRecord_("Sub_HR_Leave_Requests", recordId);
+}
+
+function deleteLeaveRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Leave", recordId);
+}
+
+function deleteAdvanceRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Advances", recordId);
+}
+
+function deleteDeductionRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Deductions", recordId);
+}
+
+function deletePayrollRecord(recordId) {
+  return deleteHrRecord_("Sub_HR_Payroll", recordId);
+}
+
 function renderPaneHeader(paneElement, paneName) {
   if (!paneElement) return;
 
@@ -5873,7 +5339,9 @@ function doGetTabRegister() {
   debugLog(FNAME, "start");
   try {
     const data = getTabRegister();
-    debugLog(FNAME, "success", { count: Array.isArray(data) ? data.length : 0 });
+    debugLog(FNAME, "success", {
+      count: Array.isArray(data) ? data.length : 0,
+    });
     return sanitizeForClientResponse_(data);
   } catch (err) {
     debugError(FNAME, err);
@@ -6697,7 +6165,9 @@ function getRolePermissions(roleOrId) {
     debugLog(FNAME, "resolved", { count: rows.length });
     return rows;
   } catch (error) {
-    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    console.error(
+      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
+    );
     debugError(FNAME, error, { roleOrId });
     return [];
   }
@@ -6738,9 +6208,9 @@ function updateUser(userData) {
   const data = sh.getDataRange().getValues();
   const h = data[0];
   const iId = h.indexOf("User_Id");
-  const rIdx = data.slice(1).findIndex((r) =>
-    keysEqual_(r[iId], userData.User_Id)
-  );
+  const rIdx = data
+    .slice(1)
+    .findIndex((r) => keysEqual_(r[iId], userData.User_Id));
   if (rIdx < 0) throw new Error("User not found");
   const row = rIdx + 2;
 
@@ -6825,11 +6295,18 @@ function logAuditEvent(action, details) {
     const headers =
       lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues().flat() : [];
     if (!headers || !headers.length) {
-      sheet.appendRow([new Date(), actor, action, JSON.stringify(details || {})]);
+      sheet.appendRow([
+        new Date(),
+        actor,
+        action,
+        JSON.stringify(details || {}),
+      ]);
       return true;
     }
     const payloadObject =
-      details && typeof details === "object" ? Object.assign({}, details) : null;
+      details && typeof details === "object"
+        ? Object.assign({}, details)
+        : null;
     const row = new Array(headers.length).fill("");
     const now = new Date(); // Use a Date object for consistent timestamping
     setRowValue_(
@@ -6888,11 +6365,19 @@ function logAuditEvent(action, details) {
     setRowValue_(headers, row, entitySource.scope || "", "Scope");
     setRowValue_(headers, row, entitySource.sheet || "", "Sheet");
     setRowValue_(headers, row, entitySource.userId || "", "User_Id", "UserID");
-    setRowValue_(headers, row, entitySource.actorId || "", "Actor_Id", "ActorID");
+    setRowValue_(
+      headers,
+      row,
+      entitySource.actorId || "",
+      "Actor_Id",
+      "ActorID"
+    );
     sheet.appendRow(row);
     return true;
   } catch (error) {
-    console.error(`[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`);
+    console.error(
+      `[${FNAME}] EXCEPTION: ${error.message} Stack: ${error.stack}`
+    );
     debugError(FNAME, error, { action });
     return false;
   }
@@ -7298,8 +6783,7 @@ function getUserDocuments_(userId) {
     .slice(1)
     .filter((row) => {
       const entityMatch = idx.entity < 0 || row[idx.entity] === "Users";
-      const idMatch =
-        idx.entityId < 0 || keysEqual_(row[idx.entityId], userId);
+      const idMatch = idx.entityId < 0 || keysEqual_(row[idx.entityId], userId);
       return entityMatch && idMatch;
     })
     .map((row) => ({

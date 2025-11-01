@@ -1,1124 +1,542 @@
 <script>
-(function (window) {
-  'use strict';
+  (function (window) {
+    "use strict";
 
-  const viewTab = window.viewTab || (window.viewTab = {});
+    const viewTab = window.viewTab || (window.viewTab = {});
 
-  function resolveFormConfig(subTabConfig) {
-    if (
-      subTabConfig &&
-      typeof subTabConfig === 'object' &&
-      subTabConfig.formConfig &&
-      typeof subTabConfig.formConfig === 'object'
-    ) {
-      return subTabConfig.formConfig;
-    }
-
-    const subTabId =
-      subTabConfig?.subId ||
-      subTabConfig?.Sub_ID ||
-      subTabConfig?.subTabId ||
-      subTabConfig?.sub_id ||
-      '';
-    if (!subTabId) {
-      return null;
-    }
-
-    return window.bootstrapData?.forms?.[subTabId] || null;
-  }
-
-  function slugifyActionKey(value) {
-    return String(value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-
-  function boolFromValue(value) {
-    if (value === null || value === undefined || value === '') {
-      return undefined;
-    }
-    if (typeof value === 'boolean') {
-      return value;
-    }
-    if (typeof value === 'number') {
-      if (Number.isNaN(value)) return undefined;
-      return value !== 0;
-    }
-    if (typeof value === 'string') {
-      const normalized = value.trim().toLowerCase();
-      if (!normalized) return undefined;
-      if (['true', 'yes', 'y', '1', 'enabled', 'enable', 'active'].includes(normalized)) {
-        return true;
+    function buildDynamicViewPad(subTabConfig, data) {
+      const container = document.createElement("div");
+      container.className = "dynamic-view-pad";
+      if (subTabConfig?.subId) {
+        container.dataset.subTabId = subTabConfig.subId;
       }
-      if (['false', 'no', 'n', '0', 'disabled', 'disable', 'inactive'].includes(normalized)) {
-        return false;
+
+      const header = buildViewPadHeader(subTabConfig);
+      container.appendChild(header);
+
+      if (
+        subTabConfig?.searchBar ||
+        (Array.isArray(subTabConfig?.filterOptions) &&
+          subTabConfig.filterOptions.length > 0)
+      ) {
+        const searchFilters = buildSearchFilters(subTabConfig);
+        container.appendChild(searchFilters);
       }
-    }
-    return undefined;
-  }
 
-  function normalizeClientQuickAction(entry) {
-    if (!entry) return null;
-
-    if (typeof entry === 'string') {
-      const clean = entry.trim();
-      if (!clean) return null;
-      const slug = slugifyActionKey(clean) || clean;
-      return {
-        label: clean,
-        labelAr: '',
-        action: slug,
-        scope: 'row',
-        isBulk: false,
-        requiresConfirmation: false,
-        requiresSelection: true,
-        icon: '',
-        variant: '',
-        description: '',
-        handler: '',
-        payload: null,
-        sortOrder: null,
-        isDefault: slug === 'edit',
-        confirmationMessage: '',
-        original: entry,
-      };
-    }
-
-    if (typeof entry !== 'object') {
-      return null;
-    }
-
-    const label =
-      entry.label ||
-      entry.Label ||
-      entry.title ||
-      entry.Title ||
-      entry.name ||
-      entry.Name ||
-      '';
-    const action =
-      entry.action ||
-      entry.Action ||
-      entry.key ||
-      entry.Key ||
-      entry.id ||
-      entry.Id ||
-      label;
-
-    const normalizedLabel = String(label || action || '').trim();
-    if (!normalizedLabel) {
-      return null;
-    }
-
-    const slug = slugifyActionKey(action || normalizedLabel) || normalizedLabel;
-
-    const scopeValue =
-      entry.scope ||
-      entry.Scope ||
-      entry.level ||
-      entry.Level ||
-      entry.mode ||
-      entry.Mode ||
-      '';
-    const normalizedScope =
-      typeof scopeValue === 'string' ? scopeValue.trim().toLowerCase() : '';
-
-    const bulkFlag =
-      entry.isBulk ??
-      entry.bulk ??
-      entry.Bulk ??
-      entry.multi ??
-      entry.Multi ??
-      entry.multiple ??
-      entry.Multiple;
-    const isBulk =
-      typeof bulkFlag === 'boolean'
-        ? bulkFlag
-        : normalizedScope === 'bulk' ||
-          slug.startsWith('bulk-') ||
-          slug.endsWith('-bulk') ||
-          slug.endsWith('-all');
-
-    const requiresConfirmation =
-      boolFromValue(
-        entry.requiresConfirmation ??
-          entry.requiresConfirm ??
-          entry.confirm ??
-          entry.Confirm ??
-          entry.needsConfirmation ??
-          entry.NeedsConfirmation
-      ) || false;
-
-    const requiresSelectionValue = boolFromValue(
-      entry.requiresSelection ?? entry.RequiresSelection
-    );
-
-    const sortOrderRaw =
-      entry.sortOrder ??
-      entry.SortOrder ??
-      entry.sort ??
-      entry.Sort ??
-      entry.order ??
-      entry.Order ??
-      entry.priority ??
-      entry.Priority;
-    const sortOrder =
-      typeof sortOrderRaw === 'number'
-        ? sortOrderRaw
-        : Number.isFinite(Number(sortOrderRaw))
-        ? Number(sortOrderRaw)
-        : null;
-
-    const isDefault =
-      boolFromValue(
-        entry.isDefault ??
-          entry.default ??
-          entry.Default ??
-          entry.primary ??
-          entry.Primary
-      ) || false;
-
-    const icon =
-      typeof entry.icon === 'string'
-        ? entry.icon.trim()
-        : typeof entry.Icon === 'string'
-        ? entry.Icon.trim()
-        : typeof entry.iconClass === 'string'
-        ? entry.iconClass.trim()
-        : typeof entry.IconClass === 'string'
-        ? entry.IconClass.trim()
-        : '';
-
-    const variant =
-      typeof entry.variant === 'string'
-        ? entry.variant.trim().toLowerCase()
-        : typeof entry.Variant === 'string'
-        ? entry.Variant.trim().toLowerCase()
-        : typeof entry.style === 'string'
-        ? entry.style.trim().toLowerCase()
-        : typeof entry.Style === 'string'
-        ? entry.Style.trim().toLowerCase()
-        : '';
-
-    const description =
-      typeof entry.description === 'string'
-        ? entry.description.trim()
-        : typeof entry.Description === 'string'
-        ? entry.Description.trim()
-        : '';
-
-    const handler =
-      entry.handler ||
-      entry.Handler ||
-      entry.serverFunction ||
-      entry.ServerFunction ||
-      entry.serverAction ||
-      entry.ServerAction ||
-      entry.serverMethod ||
-      entry.ServerMethod ||
-      entry.functionName ||
-      entry.FunctionName ||
-      '';
-
-    const payload =
-      entry.payload ?? entry.Payload ?? entry.params ?? entry.Params ?? null;
-
-    const labelAr =
-      typeof entry.labelAr === 'string'
-        ? entry.labelAr.trim()
-        : typeof entry.LabelAr === 'string'
-        ? entry.LabelAr.trim()
-        : '';
-
-    const confirmationMessage =
-      typeof entry.confirmationMessage === 'string'
-        ? entry.confirmationMessage.trim()
-        : typeof entry.ConfirmationMessage === 'string'
-        ? entry.ConfirmationMessage.trim()
-        : typeof entry.confirmMessage === 'string'
-        ? entry.confirmMessage.trim()
-        : '';
-
-    const normalized = {
-      label: normalizedLabel,
-      labelAr,
-      action: slug,
-      scope: 'row',
-      isBulk: Boolean(isBulk),
-      requiresConfirmation,
-      requiresSelection:
-        typeof requiresSelectionValue === 'boolean'
-          ? requiresSelectionValue
-          : !isBulk,
-      icon,
-      variant,
-      description,
-      handler: typeof handler === 'string' ? handler.trim() : '',
-      payload: payload || null,
-      sortOrder,
-      isDefault: isDefault || slug === 'edit',
-      confirmationMessage,
-      original: entry,
-    };
-
-    const targetState =
-      entry.targetState ??
-      entry.TargetState ??
-      entry.desiredState ??
-      entry.DesiredState ??
-      entry.state ??
-      entry.State ??
-      entry.value ??
-      entry.Value;
-    if (targetState !== undefined) {
-      normalized.targetState = targetState;
-    }
-
-    if (normalized.isBulk) {
-      normalized.scope = 'bulk';
-      normalized.requiresSelection =
-        typeof requiresSelectionValue === 'boolean'
-          ? requiresSelectionValue
-          : true;
-    } else if (
-      ['row', 'record', 'single', 'item'].includes(normalizedScope)
-    ) {
-      normalized.scope = 'row';
-    }
-
-    return normalized;
-  }
-
-  function getQuickActionSets(subTabConfig) {
-    if (!subTabConfig || typeof subTabConfig !== 'object') {
-      return {
-        all: [],
-        rowActions: [],
-        bulkActions: [],
-        hasRowActions: false,
-        hasBulkActions: false,
-        defaultRowAction: null,
-        formConfig: resolveFormConfig(subTabConfig),
-      };
-    }
-
-    if (
-      Object.prototype.hasOwnProperty.call(subTabConfig, '__quickActionSets') &&
-      subTabConfig.__quickActionSets
-    ) {
-      return subTabConfig.__quickActionSets;
-    }
-
-    const formConfig = resolveFormConfig(subTabConfig);
-    const rawActions = Array.isArray(formConfig?.quickActions)
-      ? formConfig.quickActions
-      : [];
-
-    const normalizedList = rawActions
-      .map((entry) => normalizeClientQuickAction(entry))
-      .filter(Boolean);
-
-    const compareActions = (a, b) => {
-      const orderA =
-        typeof a.sortOrder === 'number'
-          ? a.sortOrder
-          : Number.MAX_SAFE_INTEGER;
-      const orderB =
-        typeof b.sortOrder === 'number'
-          ? b.sortOrder
-          : Number.MAX_SAFE_INTEGER;
-      if (orderA !== orderB) return orderA - orderB;
-      return a.label.localeCompare(b.label, 'ar', { sensitivity: 'base' });
-    };
-
-    normalizedList.sort(compareActions);
-
-    const rowActions = [];
-    const bulkActions = [];
-
-    normalizedList.forEach((action) => {
-      if (action.isBulk || action.scope === 'bulk') {
-        bulkActions.push(action);
-      } else {
-        rowActions.push(action);
-      }
-    });
-
-    if (!rowActions.length) {
-      const fallbackAction = normalizeClientQuickAction({
-        label: 'تعديل',
-        labelAr: 'تعديل',
-        action: 'edit',
-        icon: 'fas fa-edit',
-        scope: 'row',
-        isDefault: true,
-      });
-      if (fallbackAction) {
-        fallbackAction.sortOrder = Number.MIN_SAFE_INTEGER;
-        rowActions.push(fallbackAction);
-        normalizedList.push(fallbackAction);
-      }
-    }
-
-    normalizedList.sort(compareActions);
-    rowActions.sort(compareActions);
-    bulkActions.sort(compareActions);
-
-    const defaultRowAction =
-      rowActions.find((action) => action.isDefault) || rowActions[0] || null;
-
-    const result = {
-      all: normalizedList,
-      rowActions,
-      bulkActions,
-      hasRowActions: rowActions.length > 0,
-      hasBulkActions: bulkActions.length > 0,
-      defaultRowAction,
-      formConfig,
-    };
-
-    try {
-      Object.defineProperty(subTabConfig, '__quickActionSets', {
-        value: result,
-        writable: true,
-        configurable: true,
-        enumerable: false,
-      });
-    } catch (err) {
-      subTabConfig.__quickActionSets = result;
-    }
-
-    return result;
-  }
-
-  function normalizeActionDescriptor(actionSpec) {
-    if (!actionSpec) return null;
-    if (
-      typeof actionSpec === 'object' &&
-      actionSpec.label &&
-      actionSpec.action
-    ) {
-      return actionSpec;
-    }
-    return normalizeClientQuickAction(actionSpec);
-  }
-
-  function collectSelectedRows(subTabConfig) {
-    const selector =
-      subTabConfig?.subId
-        ? `table.dynamic-data-table[data-sub-tab-id="${subTabConfig.subId}"]`
-        : 'table.dynamic-data-table';
-    const table = document.querySelector(selector);
-    const scopeRoot = table || document;
-    const checkboxes = scopeRoot.querySelectorAll('.row-checkbox:checked');
-    return Array.from(checkboxes).map((checkbox) => {
-      const rowIndex = parseInt(checkbox.value, 10);
-      const row = checkbox.closest('tr');
-      return {
-        index: Number.isNaN(rowIndex) ? null : rowIndex,
-        id: checkbox.dataset?.rowId || row?.dataset?.rowId || null,
-        element: row || null,
-      };
-    });
-  }
-
-  function performRowAction(action, record, headers, rawRow, subTabConfig, rowIndex) {
-    const normalized = normalizeActionDescriptor(action);
-    if (!normalized) return;
-
-    const context = {
-      action: normalized,
-      record,
-      headers,
-      rawRow,
-      subTabConfig,
-      rowIndex,
-    };
-
-    if (normalized.requiresConfirmation) {
-      const message =
-        normalized.confirmationMessage ||
-        normalized.description ||
-        `هل تريد تنفيذ الإجراء "${normalized.label}"؟`;
-      if (!window.confirm(message)) {
-        return;
-      }
-    }
-
-    const actionKey = String(normalized.action || '').toLowerCase();
-
-    if (['edit', 'open-edit', 'edit-record'].includes(actionKey)) {
-      openEditFormForRow(record, headers, subTabConfig);
-      return;
-    }
-
-    if (['view', 'view-record', 'show', 'details', 'inspect'].includes(actionKey)) {
-      openEditFormForRow(record, headers, subTabConfig);
-      return;
-    }
-
-    let handled = false;
-    if (typeof window.handleRowAction === 'function') {
-      handled = window.handleRowAction(context) === true;
-    }
-
-    if (!handled && typeof window.dispatchEvent === 'function') {
-      const customEvent = new CustomEvent('viewTab:row-action', {
-        detail: context,
-        cancelable: true,
-      });
-      const eventNotCancelled = window.dispatchEvent(customEvent);
-      if (!eventNotCancelled || customEvent.defaultPrevented) {
-        handled = true;
-      }
-    }
-
-    if (!handled && typeof window.showToast === 'function') {
-      window.showToast(
-        `الإجراء "${normalized.label}" غير مدعوم بعد.`,
-        'info'
-      );
-    }
-  }
-
-  function createRowActionButton(action, record, headers, rawRow, subTabConfig, rowIndex) {
-    const normalized = normalizeActionDescriptor(action);
-    if (!normalized) return null;
-
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'row-action-btn';
-    if (normalized.action === 'edit') {
-      button.classList.add('edit-btn');
-    }
-    if (normalized.variant) {
-      button.classList.add(
-        `variant-${normalized.variant.replace(/\s+/g, '-').toLowerCase()}`
-      );
-    }
-    button.dataset.action = normalized.action;
-    button.dataset.actionLabel = normalized.label;
-    if (normalized.requiresConfirmation) {
-      button.dataset.requiresConfirmation = 'true';
-    }
-    if (normalized.isDefault) {
-      button.dataset.defaultAction = 'true';
-    }
-
-    if (normalized.icon) {
-      const iconElement = document.createElement('i');
-      iconElement.className = normalized.icon;
-      button.appendChild(iconElement);
-      button.appendChild(document.createTextNode(' '));
-    }
-
-    button.appendChild(
-      document.createTextNode(normalized.labelAr || normalized.label)
-    );
-    button.title = normalized.description || normalized.label;
-
-    button.addEventListener('click', (event) => {
-      event.stopPropagation();
-      performRowAction(normalized, record, headers, rawRow, subTabConfig, rowIndex);
-    });
-
-    return button;
-  }
-
-  function buildDynamicViewPad(subTabConfig, data) {
-    const container = document.createElement('div');
-    container.className = 'dynamic-view-pad';
-    if (subTabConfig?.subId) {
-      container.dataset.subTabId = subTabConfig.subId;
-    }
-
-    const header = buildViewPadHeader(subTabConfig);
-    container.appendChild(header);
-
-    if (subTabConfig?.searchBar || (Array.isArray(subTabConfig?.filterOptions) && subTabConfig.filterOptions.length > 0)) {
-      const searchFilters = buildSearchFilters(subTabConfig);
-      container.appendChild(searchFilters);
-    }
-
-    const headers = Array.isArray(data?.headers) ? data.headers : [];
-    const rows = Array.isArray(data?.rows)
-      ? data.rows
-      : Array.isArray(data?.data)
+      const headers = Array.isArray(data?.headers) ? data.headers : [];
+      const rows = Array.isArray(data?.rows)
+        ? data.rows
+        : Array.isArray(data?.data)
         ? data.data
         : [];
-    const table = buildDataTable({ headers, rows }, subTabConfig);
-    container.appendChild(table);
+      const table = buildDataTable({ headers, rows }, subTabConfig);
+      container.appendChild(table);
 
-    return container;
-  }
-
-  function buildViewPadHeader(subTabConfig) {
-    const header = document.createElement('div');
-    header.className = 'view-pad-header';
-
-    const leftSection = document.createElement('div');
-    leftSection.className = 'header-left';
-
-    const rightSection = document.createElement('div');
-    rightSection.className = 'header-right';
-
-    const quickActions = getQuickActionSets(subTabConfig);
-    const formConfig =
-      quickActions.formConfig || resolveFormConfig(subTabConfig);
-
-    if (formConfig?.formId) {
-      const addButton = document.createElement('button');
-      addButton.type = 'button';
-      addButton.className = 'add-new-btn accent-button';
-      addButton.innerHTML = `<i class="fas fa-plus"></i> ${
-        formConfig.titleAr || 'إضافة جديد'
-      }`;
-      addButton.onclick = () =>
-        openFormModal(formConfig.formId, null, subTabConfig?.subId);
-      leftSection.appendChild(addButton);
+      return container;
     }
 
-    if (quickActions.hasBulkActions) {
-      const bulkActions = document.createElement('select');
-      bulkActions.className = 'bulk-actions-dropdown';
-      bulkActions.title = 'الإجراءات الجماعية المتاحة';
+    function buildViewPadHeader(subTabConfig) {
+      const header = document.createElement("div");
+      header.className = "view-pad-header";
 
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = 'إجراءات جماعية...';
-      placeholder.selected = true;
-      bulkActions.appendChild(placeholder);
+      const leftSection = document.createElement("div");
+      leftSection.className = "header-left";
 
-      quickActions.bulkActions.forEach((action) => {
-        const option = document.createElement('option');
-        option.value = action.action;
-        option.textContent = action.label;
-        option.dataset.actionLabel = action.label;
-        bulkActions.appendChild(option);
-      });
+      const rightSection = document.createElement("div");
+      rightSection.className = "header-right";
 
-      bulkActions.addEventListener('change', (event) => {
-        const selectedValue = event.target.value;
-        if (!selectedValue) return;
-        const selectedOption = event.target.selectedOptions[0];
-        const selectedLabel =
-          selectedOption?.dataset?.actionLabel || selectedOption?.text || selectedValue;
-        const action =
-          quickActions.bulkActions.find(
-            (item) => item && item.action === selectedValue
-          ) ||
-          normalizeActionDescriptor({
-            label: selectedLabel,
-            action: selectedValue,
-            scope: 'bulk',
-          });
-        performBulkAction(action, subTabConfig);
-        event.target.value = '';
-      });
+      const formConfig =
+        subTabConfig?.formConfig ||
+        window.bootstrapData?.forms?.[subTabConfig?.subId];
+      if (formConfig?.formId) {
+        const addButton = document.createElement("button");
+        addButton.type = "button";
+        addButton.className = "add-new-btn accent-button";
+        addButton.innerHTML = `<i class="fas fa-plus"></i> ${
+          formConfig.titleAr || "إضافة جديد"
+        }`;
+        addButton.onclick = () =>
+          openFormModal(formConfig.formId, null, subTabConfig?.subId);
+        leftSection.appendChild(addButton);
+      }
 
-      rightSection.appendChild(bulkActions);
-    }
-
-    header.appendChild(leftSection);
-    header.appendChild(rightSection);
-
-    return header;
-  }
-
-  function performBulkAction(actionSpec, subTabConfig) {
-    const action = normalizeActionDescriptor(actionSpec);
-    if (!action) {
-      window.showToast?.('❌ تعذر تحديد الإجراء المطلوب.', 'error');
-      return;
-    }
-
-    const selectedRows = collectSelectedRows(subTabConfig);
-    if (!selectedRows.length) {
-      window.showToast?.('⚠️ يرجى تحديد عنصر واحد على الأقل', 'warning');
-      return;
-    }
-
-    const selectedIds = selectedRows
-      .map((row) => row.id)
-      .filter((id) => id != null && id !== '');
-
-    if (!selectedIds.length) {
-      window.showToast?.(
-        '⚠️ تعذر قراءة معرفات السجلات المحددة.',
-        'warning'
-      );
-      return;
-    }
-
-    if (
-      action.requiresConfirmation &&
-      !window.confirm(
-        action.confirmationMessage ||
-          action.description ||
-          `هل تريد تنفيذ الإجراء "${action.label}" على ${selectedIds.length} عنصر؟`
-      )
-    ) {
-      return;
-    }
-
-    const tabId =
-      subTabConfig?.subId ||
-      subTabConfig?.Sub_ID ||
-      subTabConfig?.subTabId ||
-      subTabConfig?.sub_id ||
-      '';
-
-    if (!tabId) {
-      window.showToast?.(
-        '❌ تعذر تحديد التبويب الحالي لتنفيذ الإجراء.',
-        'error'
-      );
-      return;
-    }
-
-    if (!(window.google && google.script && google.script.run)) {
-      window.showToast?.(
-        'خدمة Google Apps Script غير متاحة حالياً.',
-        'error'
-      );
-      return;
-    }
-
-    const actionLabel = action.label || action.action;
-
-    google.script.run
-      .withSuccessHandler((response) => {
-        if (response?.success) {
-          const updatedCount =
-            typeof response.updated === 'number'
-              ? response.updated
-              : selectedIds.length;
-          const message =
-            response?.message ||
-            `تم تنفيذ الإجراء "${actionLabel}" على ${updatedCount} عنصر${
-              updatedCount !== 1 ? 'اً' : ''
-            }.`;
-          window.showToast?.(message, 'success');
-          loadSubTabContent(subTabConfig);
-        } else {
-          const message =
-            response?.message ||
-            `تعذر تنفيذ الإجراء "${actionLabel}".`;
-          window.showToast?.(message, 'warning');
+      const bulkActions = document.createElement("select");
+      bulkActions.className = "bulk-actions-dropdown";
+      bulkActions.innerHTML = `
+        <option value="">إجراءات جماعية...</option>
+        <option value="activate">تفعيل المحدد</option>
+        <option value="deactivate">تعطيل المحدد</option>
+        <option value="delete">حذف المحدد</option>
+    `;
+      bulkActions.addEventListener("change", (event) => {
+        const value = event.target.value;
+        if (value) {
+          performBulkAction(value, subTabConfig);
+          event.target.value = "";
         }
-      })
-      .withFailureHandler((error) => {
-        const message =
-          error?.message ||
-          String(error) ||
-          `فشل تنفيذ الإجراء "${actionLabel}".`;
-        window.showToast?.(message, 'error');
-      })
-      .handleBulkAction(tabId, actionLabel, selectedIds);
-  }
+      });
+      rightSection.appendChild(bulkActions);
 
-  function buildDataTable(data, subTabConfig) {
-    const table = document.createElement('table');
-    table.className = 'dynamic-data-table';
-    table.dataset.subTabId = subTabConfig?.subId || '';
+      header.appendChild(leftSection);
+      header.appendChild(rightSection);
 
-    const headers = Array.isArray(data?.headers) ? data.headers : [];
-    const rows = Array.isArray(data?.rows) ? data.rows : [];
+      return header;
+    }
 
-    const quickActions = getQuickActionSets(subTabConfig);
+    function performBulkAction(action, subTabConfig) {
+      const selectedCheckboxes = document.querySelectorAll(
+        ".row-checkbox:checked"
+      );
 
-    const headerRow = buildTableHeaders(headers, subTabConfig, quickActions);
-    table.appendChild(headerRow);
+      if (selectedCheckboxes.length === 0) {
+        window.showToast?.("⚠️ يرجى تحديد عنصر واحد على الأقل", "warning");
+        return;
+      }
 
-    const tbody = document.createElement('tbody');
-    rows.forEach((row, index) => {
-      const tr = buildTableRow(row, headers, subTabConfig, index, quickActions);
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
+      const selectedRows = Array.from(selectedCheckboxes).map((cb) => {
+        const rowIndex = parseInt(cb.value, 10);
+        const row = document.querySelector(`tr[data-row-index="${rowIndex}"]`);
+        return {
+          index: rowIndex,
+          id: row?.dataset?.rowId,
+          element: row,
+        };
+      });
 
-    return table;
-  }
+      console.log(
+        `🔄 Performing ${action} on ${selectedRows.length} rows:`,
+        selectedRows
+      );
 
-  function buildTableHeaders(headers, subTabConfig, quickActions) {
-    const actionSets = quickActions || getQuickActionSets(subTabConfig);
-    const hasBulkActions = actionSets?.hasBulkActions;
+      switch (action) {
+        case "activate":
+          activateSelectedRows(selectedRows, subTabConfig);
+          break;
+        case "deactivate":
+          deactivateSelectedRows(selectedRows, subTabConfig);
+          break;
+        case "delete":
+          deleteSelectedRows(selectedRows, subTabConfig);
+          break;
+        case "export":
+          exportSelectedRows(selectedRows, subTabConfig);
+          break;
+        default:
+          window.showToast?.("❌ الإجراء غير معروف", "error");
+      }
+    }
 
-    const thead = document.createElement('thead');
-    const headerRow = document.createElement('tr');
+    function activateSelectedRows(selectedRows, subTabConfig) {
+      const rowIds = selectedRows.map((row) => row.id);
 
-    let checkboxTh = null;
+      const scriptRunner = google?.script?.run;
+      if (!scriptRunner) {
+        window.showToast?.("خدمة التفعيل غير متاحة حالياً", "error");
+        return;
+      }
 
-    if (hasBulkActions) {
-      checkboxTh = document.createElement('th');
-      checkboxTh.className = 'bulk-select-header';
+      scriptRunner
+        .withSuccessHandler((response) => {
+          if (response.success) {
+            window.showToast?.(
+              `✅ تم تفعيل ${response.updated} عنصر`,
+              "success"
+            );
+            loadSubTabContent(subTabConfig);
+          } else {
+            window.showToast?.("❌ فشل التفعيل", "error");
+          }
+        })
+        .withFailureHandler((error) => {
+          window.showToast?.(`❌ خطأ في التفعيل: ${error.message}`, "error");
+        })
+        .bulkUpdateMaterialStatus(rowIds, true);
+    }
+
+    function deactivateSelectedRows(selectedRows, subTabConfig) {
+      window.showToast?.(`🔒 تعطيل ${selectedRows.length} عنصر`, "info");
+    }
+
+    function deleteSelectedRows(selectedRows, subTabConfig) {
+      if (confirm(`⚠️ هل أنت متأكد من حذف ${selectedRows.length} عنصر؟`)) {
+        window.showToast?.(`🗑️ جاري حذف ${selectedRows.length} عنصر`, "info");
+      }
+    }
+
+    function exportSelectedRows(selectedRows, subTabConfig) {
+      window.showToast?.(`📤 تصدير ${selectedRows.length} عنصر`, "info");
+    }
+
+    function buildDataTable(data, subTabConfig) {
+      const table = document.createElement("table");
+      table.className = "dynamic-data-table";
+      table.dataset.subTabId = subTabConfig?.subId || "";
+
+      const headers = Array.isArray(data?.headers) ? data.headers : [];
+      const rows = Array.isArray(data?.rows) ? data.rows : [];
+
+      const headerRow = buildTableHeaders(headers, subTabConfig);
+      table.appendChild(headerRow);
+
+      const tbody = document.createElement("tbody");
+      rows.forEach((row, index) => {
+        const tr = buildTableRow(row, headers, subTabConfig, index);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+
+      return table;
+    }
+
+    function buildTableHeaders(headers, subTabConfig) {
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+
+      const checkboxTh = document.createElement("th");
       checkboxTh.innerHTML =
-        '<input type="checkbox" class="select-all-checkbox" title="تحديد الكل">';
-      checkboxTh.style.width = '50px';
-      checkboxTh.style.textAlign = 'center';
+        '<input type="checkbox" id="selectAllCheckboxes" title="تحديد الكل">';
+      checkboxTh.style.width = "50px";
+      checkboxTh.style.textAlign = "center";
       headerRow.appendChild(checkboxTh);
-    }
 
-    headers.forEach((header) => {
-      const th = document.createElement('th');
-      th.textContent = header;
-      headerRow.appendChild(th);
-    });
+      headers.forEach((header) => {
+        const th = document.createElement("th");
+        th.textContent = header;
+        headerRow.appendChild(th);
+      });
 
-    const actionsTh = document.createElement('th');
-    actionsTh.textContent = 'الإجراءات';
-    actionsTh.className = 'actions-column-header';
-    headerRow.appendChild(actionsTh);
+      const actionsTh = document.createElement("th");
+      actionsTh.textContent = "الإجراءات";
+      actionsTh.style.width = "120px";
+      headerRow.appendChild(actionsTh);
 
-    thead.appendChild(headerRow);
+      thead.appendChild(headerRow);
 
-    if (subTabConfig?.subId) {
-      thead.dataset.subTabId = subTabConfig.subId;
-    }
+      if (subTabConfig?.subId) {
+        thead.dataset.subTabId = subTabConfig.subId;
+      }
 
-    if (checkboxTh) {
-      const selectAllCheckbox = checkboxTh.querySelector('input[type="checkbox"]');
+      const selectAllCheckbox = checkboxTh.querySelector(
+        'input[type="checkbox"]'
+      );
       if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function () {
-          const table = thead.closest('table');
+        selectAllCheckbox.addEventListener("change", function () {
+          const table = thead.closest("table");
           const rowCheckboxes = table
-            ? table.querySelectorAll('.row-checkbox')
-            : document.querySelectorAll('.row-checkbox');
+            ? table.querySelectorAll(".row-checkbox")
+            : document.querySelectorAll(".row-checkbox");
           rowCheckboxes.forEach((checkbox) => {
             checkbox.checked = this.checked;
           });
         });
       }
+
+      return thead;
     }
 
-    return thead;
-  }
+    function buildTableRow(row, headers, subTabConfig, rowIndex) {
+      const tr = document.createElement("tr");
+      tr.className = "clickable-row";
+      tr.dataset.rowIndex = rowIndex;
 
-  function buildTableRow(row, headers, subTabConfig, rowIndex, quickActions) {
-    const tr = document.createElement('tr');
-    tr.className = 'clickable-row';
-    tr.dataset.rowIndex = rowIndex;
+      const record = coerceRowToRecord(row, headers);
+      const recordId =
+        (record && (record.ID || record.User_Id || record.Employee_ID)) ??
+        rowIndex;
+      tr.dataset.rowId = recordId;
 
-    const actionSets = quickActions || getQuickActionSets(subTabConfig);
-    const hasBulkActions = actionSets?.hasBulkActions;
-    const rowActions = Array.isArray(actionSets?.rowActions)
-      ? actionSets.rowActions
-      : [];
-    const defaultRowAction =
-      actionSets?.defaultRowAction ||
-      rowActions.find((action) => action.isDefault) ||
-      rowActions[0] ||
-      null;
-
-    const record = coerceRowToRecord(row, headers);
-    const recordId =
-      (record && (record.ID || record.User_Id || record.Employee_ID)) ??
-      rowIndex;
-    tr.dataset.rowId = recordId;
-
-    if (hasBulkActions) {
-      const checkboxTd = document.createElement('td');
-      checkboxTd.style.textAlign = 'center';
-      const rowCheckbox = document.createElement('input');
-      rowCheckbox.type = 'checkbox';
-      rowCheckbox.className = 'row-checkbox';
+      const checkboxTd = document.createElement("td");
+      checkboxTd.style.textAlign = "center";
+      const rowCheckbox = document.createElement("input");
+      rowCheckbox.type = "checkbox";
+      rowCheckbox.className = "row-checkbox";
       rowCheckbox.value = rowIndex;
-      if (recordId != null && recordId !== '') {
-        rowCheckbox.dataset.rowId = recordId;
-      }
       checkboxTd.appendChild(rowCheckbox);
       tr.appendChild(checkboxTd);
+
+      headers.forEach((header) => {
+        const td = document.createElement("td");
+        const cellValue = record ? record[header] : undefined;
+        td.textContent = cellValue || "";
+        td.setAttribute("data-column", header);
+
+        if (header.includes("Date") || header.includes("تاريخ")) {
+          td.setAttribute("data-date", cellValue);
+        }
+
+        tr.appendChild(td);
+      });
+
+      const actionsTd = document.createElement("td");
+      actionsTd.className = "row-actions";
+      actionsTd.dataset.column = "actions";
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "edit-btn";
+      editBtn.innerHTML = '<i class="fas fa-edit"></i> تعديل';
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        openEditFormForRow(row, headers, subTabConfig);
+      };
+
+      actionsTd.appendChild(editBtn);
+      tr.appendChild(actionsTd);
+
+      tr.onclick = (e) => {
+        if (
+          !e.target.matches('input[type="checkbox"]') &&
+          !e.target.closest(".row-actions")
+        ) {
+          openEditFormForRow(row, headers, subTabConfig);
+        }
+      };
+
+      return tr;
     }
 
-    headers.forEach((header) => {
-      const td = document.createElement('td');
-      const cellValue = record ? record[header] : undefined;
-      td.textContent = cellValue || '';
-      td.setAttribute('data-column', header);
+    function openEditFormForRow(
+      rowOrRecord,
+      headersOrSubTabConfig,
+      maybeSubTabConfig
+    ) {
+      const headers = Array.isArray(headersOrSubTabConfig)
+        ? headersOrSubTabConfig
+        : [];
+      const subTabConfig = Array.isArray(headersOrSubTabConfig)
+        ? maybeSubTabConfig
+        : headersOrSubTabConfig;
 
-      if (header.includes('Date') || header.includes('تاريخ')) {
-        td.setAttribute('data-date', cellValue);
+      const record = coerceRowToRecord(rowOrRecord, headers);
+
+      const formConfig =
+        subTabConfig?.formConfig ||
+        window.bootstrapData?.forms?.[subTabConfig?.subId];
+      const editFormId = formConfig?.editFormId || formConfig?.formId;
+
+      if (editFormId) {
+        openFormModal(editFormId, record, subTabConfig?.subId, true);
+      } else if (typeof window.showToast === "function") {
+        window.showToast("تعذر فتح نموذج التعديل", "error");
+      }
+    }
+
+    function buildSearchFilters(subTabConfig) {
+      const filtersContainer = document.createElement("div");
+      filtersContainer.className = "search-filters-container";
+
+      if (subTabConfig?.searchBar) {
+        const searchBar = buildSearchBar();
+        filtersContainer.appendChild(searchBar);
       }
 
-      tr.appendChild(td);
-    });
-
-    const actionsTd = document.createElement('td');
-    actionsTd.className = 'row-actions';
-    actionsTd.dataset.column = 'actions';
-
-    rowActions.forEach((action) => {
-      const button = createRowActionButton(
-        action,
-        record,
-        headers,
-        row,
-        subTabConfig,
-        rowIndex
-      );
-      if (button) {
-        actionsTd.appendChild(button);
-      }
-    });
-
-    tr.appendChild(actionsTd);
-
-    tr.addEventListener('click', (event) => {
       if (
-        event.target.matches('input[type="checkbox"]') ||
-        event.target.closest('.row-actions') ||
-        event.target.closest('.row-action-btn')
+        Array.isArray(subTabConfig?.filterOptions) &&
+        subTabConfig.filterOptions.length > 0
       ) {
+        const filterDropdowns = buildFilterDropdowns(
+          subTabConfig.filterOptions
+        );
+        filtersContainer.appendChild(filterDropdowns);
+      }
+
+      return filtersContainer;
+    }
+
+    function buildSearchBar() {
+      const searchContainer = document.createElement("div");
+      searchContainer.className = "search-bar-container";
+
+      const searchInput = document.createElement("input");
+      searchInput.type = "text";
+      searchInput.placeholder = "ابحث...";
+      searchInput.className = "search-input";
+
+      const fromDate = document.createElement("input");
+      fromDate.type = "date";
+      fromDate.className = "date-filter from-date";
+      fromDate.placeholder = "من تاريخ";
+
+      const toDate = document.createElement("input");
+      toDate.type = "date";
+      toDate.className = "date-filter to-date";
+      toDate.placeholder = "إلى تاريخ";
+
+      let searchTimeout;
+      searchInput.addEventListener("input", (event) => {
+        const value = event.target.value;
+        clearTimeout(searchTimeout);
+        searchTimeout = window.setTimeout(() => {
+          performSearch(value, fromDate.value, toDate.value);
+        }, 300);
+      });
+
+      [fromDate, toDate].forEach((input) => {
+        input.addEventListener("change", () => {
+          performSearch(searchInput.value, fromDate.value, toDate.value);
+        });
+      });
+
+      searchContainer.appendChild(searchInput);
+      searchContainer.appendChild(fromDate);
+      searchContainer.appendChild(toDate);
+
+      return searchContainer;
+    }
+
+    function buildFilterDropdowns(filterOptions) {
+      const filtersContainer = document.createElement("div");
+      filtersContainer.className = "filter-dropdowns-container";
+
+      filterOptions.forEach((filter) => {
+        const filterGroup = document.createElement("div");
+        filterGroup.className = "filter-group";
+
+        const label = document.createElement("label");
+        label.textContent = filter.label;
+        label.htmlFor = `filter-${filter.column}`;
+
+        const select = document.createElement("select");
+        select.id = `filter-${filter.column}`;
+        select.className = "filter-select";
+        select.dataset.column = filter.column;
+
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = `كل ${filter.label}`;
+        select.appendChild(defaultOption);
+
+        if (Array.isArray(filter.options)) {
+          filter.options.forEach((option) => {
+            const optionElement = document.createElement("option");
+            optionElement.value = option.value;
+            optionElement.textContent = option.label;
+            select.appendChild(optionElement);
+          });
+        }
+
+        select.addEventListener("change", applyFilters);
+
+        filterGroup.appendChild(label);
+        filterGroup.appendChild(select);
+        filtersContainer.appendChild(filterGroup);
+      });
+
+      return filtersContainer;
+    }
+
+    function performSearch(searchTerm = "", fromDate = "", toDate = "") {
+      const table = document.querySelector(".dynamic-data-table");
+      if (!table) {
         return;
       }
-      if (defaultRowAction) {
-        performRowAction(
-          defaultRowAction,
-          record,
-          headers,
-          row,
-          subTabConfig,
-          rowIndex
-        );
-      }
-    });
 
-    return tr;
-  }
+      const rows = table.querySelectorAll("tbody tr");
+      const searchLower = String(searchTerm || "").toLowerCase();
 
-  function openEditFormForRow(rowOrRecord, headersOrSubTabConfig, maybeSubTabConfig) {
-    const headers = Array.isArray(headersOrSubTabConfig)
-      ? headersOrSubTabConfig
-      : [];
-    const subTabConfig = Array.isArray(headersOrSubTabConfig)
-      ? maybeSubTabConfig
-      : headersOrSubTabConfig;
+      rows.forEach((row) => {
+        let showRow = true;
 
-    const record = coerceRowToRecord(rowOrRecord, headers);
+        const rowText = row.textContent.toLowerCase();
+        if (searchLower && !rowText.includes(searchLower)) {
+          showRow = false;
+        }
 
-    const formConfig =
-      subTabConfig?.formConfig ||
-      window.bootstrapData?.forms?.[subTabConfig?.subId];
-    const editFormId = formConfig?.editFormId || formConfig?.formId;
+        if (fromDate || toDate) {
+          const dateCells = row.querySelectorAll("[data-date]");
+          let dateMatch = dateCells.length === 0;
 
-    if (editFormId) {
-      openFormModal(editFormId, record, subTabConfig?.subId, true);
-    } else if (typeof window.showToast === 'function') {
-      window.showToast('تعذر فتح نموذج التعديل', 'error');
-    }
-  }
+          dateCells.forEach((cell) => {
+            const cellDate = cell.dataset.date;
+            if (cellDate) {
+              if (
+                (fromDate && cellDate < fromDate) ||
+                (toDate && cellDate > toDate)
+              ) {
+                dateMatch = false;
+              } else {
+                dateMatch = true;
+              }
+            }
+          });
 
-  function buildSearchFilters(subTabConfig) {
-    const filtersContainer = document.createElement('div');
-    filtersContainer.className = 'search-filters-container';
+          showRow = showRow && dateMatch;
+        }
 
-    if (subTabConfig?.searchBar) {
-      const searchBar = buildSearchBar();
-      filtersContainer.appendChild(searchBar);
-    }
-
-    if (Array.isArray(subTabConfig?.filterOptions) && subTabConfig.filterOptions.length > 0) {
-      const filterDropdowns = buildFilterDropdowns(subTabConfig.filterOptions);
-      filtersContainer.appendChild(filterDropdowns);
-    }
-
-    return filtersContainer;
-  }
-
-  function buildSearchBar() {
-    const searchContainer = document.createElement('div');
-    searchContainer.className = 'search-bar-container';
-
-    const searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.placeholder = 'ابحث...';
-    searchInput.className = 'search-input';
-
-    const fromDate = document.createElement('input');
-    fromDate.type = 'date';
-    fromDate.className = 'date-filter from-date';
-    fromDate.placeholder = 'من تاريخ';
-
-    const toDate = document.createElement('input');
-    toDate.type = 'date';
-    toDate.className = 'date-filter to-date';
-    toDate.placeholder = 'إلى تاريخ';
-
-    let searchTimeout;
-    searchInput.addEventListener('input', (event) => {
-      const value = event.target.value;
-      clearTimeout(searchTimeout);
-      searchTimeout = window.setTimeout(() => {
-        performSearch(value, fromDate.value, toDate.value);
-      }, 300);
-    });
-
-    [fromDate, toDate].forEach((input) => {
-      input.addEventListener('change', () => {
-        performSearch(searchInput.value, fromDate.value, toDate.value);
+        row.style.display = showRow ? "" : "none";
       });
-    });
-
-    searchContainer.appendChild(searchInput);
-    searchContainer.appendChild(fromDate);
-    searchContainer.appendChild(toDate);
-
-    return searchContainer;
-  }
-
-  function buildFilterDropdowns(filterOptions) {
-    const filtersContainer = document.createElement('div');
-    filtersContainer.className = 'filter-dropdowns-container';
-
-    filterOptions.forEach((filter) => {
-      const filterGroup = document.createElement('div');
-      filterGroup.className = 'filter-group';
-
-      const label = document.createElement('label');
-      label.textContent = filter.label;
-      label.htmlFor = `filter-${filter.column}`;
-
-      const select = document.createElement('select');
-      select.id = `filter-${filter.column}`;
-      select.className = 'filter-select';
-      select.dataset.column = filter.column;
-
-      const defaultOption = document.createElement('option');
-      defaultOption.value = '';
-      defaultOption.textContent = `كل ${filter.label}`;
-      select.appendChild(defaultOption);
-
-      if (Array.isArray(filter.options)) {
-        filter.options.forEach((option) => {
-          const optionElement = document.createElement('option');
-          optionElement.value = option.value;
-          optionElement.textContent = option.label;
-          select.appendChild(optionElement);
-        });
-      }
-
-      select.addEventListener('change', applyFilters);
-
-      filterGroup.appendChild(label);
-      filterGroup.appendChild(select);
-      filtersContainer.appendChild(filterGroup);
-    });
-
-    return filtersContainer;
-  }
-
-  function performSearch(searchTerm = '', fromDate = '', toDate = '') {
-    const table = document.querySelector('.dynamic-data-table');
-    if (!table) {
-      return;
     }
 
-    const rows = table.querySelectorAll('tbody tr');
-    const searchLower = String(searchTerm || '').toLowerCase();
+    function applyFilters() {
+      const activeFilters = {};
+      const filterSelects = document.querySelectorAll(".filter-select");
 
-    rows.forEach((row) => {
-      let showRow = true;
+      filterSelects.forEach((select) => {
+        if (select.value) {
+          activeFilters[select.dataset.column] = select.value;
+        }
+      });
 
-      const rowText = row.textContent.toLowerCase();
-      if (searchLower && !rowText.includes(searchLower)) {
-        showRow = false;
+      filterTableData(activeFilters);
+    }
+
+    function filterTableData(filters) {
+      const table = document.querySelector(".dynamic-data-table");
+      if (!table) {
+        return;
       }
 
-      if (fromDate || toDate) {
-        const dateCells = row.querySelectorAll('[data-date]');
-        let dateMatch = dateCells.length === 0;
+      const rows = table.querySelectorAll("tbody tr");
 
-        dateCells.forEach((cell) => {
-          const cellDate = cell.dataset.date;
-          if (cellDate) {
-            if ((fromDate && cellDate < fromDate) || (toDate && cellDate > toDate)) {
-              dateMatch = false;
-            } else {
-              dateMatch = true;
+      rows.forEach((row) => {
+        let showRow = true;
+
+        Object.keys(filters).forEach((column) => {
+          const cell = row.querySelector(`[data-column="${column}"]`);
+          if (cell) {
+            const cellValue = cell.textContent.trim();
+            if (cellValue !== String(filters[column]).trim()) {
+              showRow = false;
             }
           }
         });
 
-        showRow = showRow && dateMatch;
-      }
-
-      row.style.display = showRow ? '' : 'none';
-    });
-  }
-
-  function applyFilters() {
-    const activeFilters = {};
-    const filterSelects = document.querySelectorAll('.filter-select');
-
-    filterSelects.forEach((select) => {
-      if (select.value) {
-        activeFilters[select.dataset.column] = select.value;
-      }
-    });
-
-    filterTableData(activeFilters);
-  }
-
-  function filterTableData(filters) {
-    const table = document.querySelector('.dynamic-data-table');
-    if (!table) {
-      return;
-    }
-
-    const rows = table.querySelectorAll('tbody tr');
-
-    rows.forEach((row) => {
-      let showRow = true;
-
-      Object.keys(filters).forEach((column) => {
-        const cell = row.querySelector(`[data-column="${column}"]`);
-        if (cell) {
-          const cellValue = cell.textContent.trim();
-          if (cellValue !== String(filters[column]).trim()) {
-            showRow = false;
-          }
-        }
+        row.style.display = showRow ? "" : "none";
       });
-
-      row.style.display = showRow ? '' : 'none';
-    });
-  }
-
-  function coerceRowToRecord(row, headers) {
-    if (row && typeof row === 'object' && !Array.isArray(row)) {
-      return row;
     }
-    const record = {};
-    headers.forEach((header, index) => {
-      record[header] = Array.isArray(row) ? row[index] : undefined;
-    });
-    return record;
-  }
 
-  function normalizeDateValue(value) {
-    if (value instanceof Date && !Number.isNaN(value.getTime())) {
-      return value.toISOString().split('T')[0];
-    }
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      const isoMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
-      if (isoMatch) {
-        return isoMatch[1];
+    function coerceRowToRecord(row, headers) {
+      if (row && typeof row === "object" && !Array.isArray(row)) {
+        return row;
       }
-      const slashMatch = trimmed.match(/^(\d{4})[\/](\d{2})[\/](\d{2})/);
-      if (slashMatch) {
-        return `${slashMatch[1]}-${slashMatch[2]}-${slashMatch[3]}`;
-      }
+      const record = {};
+      headers.forEach((header, index) => {
+        record[header] = Array.isArray(row) ? row[index] : undefined;
+      });
+      return record;
     }
-    return '';
-  }
 
-  viewTab.buildDynamicViewPad = buildDynamicViewPad;
-  viewTab.performBulkAction = performBulkAction;
-  viewTab.performSearch = performSearch;
-  viewTab.applyFilters = applyFilters;
-  viewTab.filterTableData = filterTableData;
-})(window);
+    function normalizeDateValue(value) {
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return value.toISOString().split("T")[0];
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        const isoMatch = trimmed.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (isoMatch) {
+          return isoMatch[1];
+        }
+        const slashMatch = trimmed.match(/^(\d{4})[\/](\d{2})[\/](\d{2})/);
+        if (slashMatch) {
+          return `${slashMatch[1]}-${slashMatch[2]}-${slashMatch[3]}`;
+        }
+      }
+      return "";
+    }
+
+    viewTab.buildDynamicViewPad = buildDynamicViewPad;
+    viewTab.performBulkAction = performBulkAction;
+    viewTab.performSearch = performSearch;
+    viewTab.applyFilters = applyFilters;
+    viewTab.filterTableData = filterTableData;
+  })(window);
 </script>

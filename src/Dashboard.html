@@ -3138,7 +3138,6 @@
           </div>
         </header>
 
-<<<<<<< HEAD
         <section class="workspace-content">
           <section
             id="sys-overview-pane"
@@ -3184,6 +3183,205 @@
                 <strong>المستخدمون</strong> لإدارة دليل المستخدمين بالكامل طبقًا
                 لـ PV_SYS_Users_Table.
               </p>
+            </div>
+          </section>
+
+          <section id="sys-users-pane" class="sys-pane" data-pane="users">
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">دليل المستخدمين</h3>
+              <p class="muted">
+                أدوات بحث وإجراءات مجمّعة لإدارة المستخدمين بجميع حالاتهم.
+              </p>
+            </div>
+            <div class="module-controls sys-users__controls">
+              <div class="module-controls__row module-controls__primary">
+                <div class="pane-mode-switch">
+                  <button
+                    type="button"
+                    id="sys-users-view-btn"
+                    class="pane-mode-button is-active"
+                    data-mode="list"
+                  >
+                    عرض المستخدمين
+                  </button>
+                  <button
+                    type="button"
+                    id="btn-new-user"
+                    class="pane-mode-button"
+                    data-mode="form"
+                  >
+                    إضافة مستخدم
+                  </button>
+                </div>
+              </div>
+              <div class="module-controls__row module-controls__secondary">
+                <div class="sys-users__filters">
+                  <input
+                    type="search"
+                    id="users-search"
+                    placeholder="بحث سريع..."
+                  />
+                  <select id="department-filter">
+                    <option value="">كل الأقسام</option>
+                  </select>
+                  <select id="role-filter">
+                    <option value="">كل الأدوار</option>
+                  </select>
+                  <select id="status-filter">
+                    <option value="">كل الحالات</option>
+                    <option value="true">نشط</option>
+                    <option value="false">غير نشط</option>
+                  </select>
+                  <input
+                    type="date"
+                    id="updated-from"
+                    aria-label="تاريخ التحديث من"
+                  />
+                  <input
+                    type="date"
+                    id="updated-to"
+                    aria-label="تاريخ التحديث إلى"
+                  />
+                </div>
+                <div class="sys-users__bulk-actions">
+                  <button id="bulk-export" class="ghost-button" disabled>
+                    تصدير
+                  </button>
+                  <button id="bulk-activate" class="ghost-button" disabled>
+                    تفعيل
+                  </button>
+                  <button id="bulk-deactivate" class="ghost-button" disabled>
+                    تعطيل
+                  </button>
+                  <select id="bulk-role-select" disabled>
+                    <option value="">اختر دورًا</option>
+                  </select>
+                  <button id="bulk-assign-role" class="ghost-button" disabled>
+                    تعيين الدور
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="table-wrapper">
+              <table id="users-table">
+                <thead>
+                  <tr>
+                    <th class="select-cell">
+                      <input type="checkbox" id="select-all-users" />
+                    </th>
+                    <th>معرّف المستخدم</th>
+                    <th>الاسم الكامل</th>
+                    <th>اسم المستخدم</th>
+                    <th>البريد الإلكتروني</th>
+                    <th>القسم</th>
+                    <th>الدور</th>
+                    <th>الحالة</th>
+                    <th>آخر تسجيل دخول</th>
+                    <th>آخر تحديث</th>
+                    <th>إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="users-tbody">
+                  <tr>
+                    <td colspan="11" class="muted">جاري التحميل…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="sys-roles-pane" class="sys-pane" data-pane="roles">
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">سجل الأدوار</h3>
+              <p class="muted">
+                متابعة الأدوار المعرّفة في ‎SYS_Roles‎ وتحديد الأدوار النظامية.
+              </p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>معرّف الدور</th>
+                    <th>المسمى</th>
+                    <th>الوصف</th>
+                    <th>دور نظامي؟</th>
+                    <th>آخر تحديث</th>
+                  </tr>
+                </thead>
+                <tbody id="roles-tbody">
+                  <tr>
+                    <td colspan="5" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            id="sys-permissions-pane"
+            class="sys-pane"
+            data-pane="permissions"
+          >
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">سجل الأذونات</h3>
+              <p class="muted">
+                يعرض ‎SYS_Permissions‎ للتدقيق السريع والتصنيف حسب الفئات.
+              </p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>مفتاح الإذن</th>
+                    <th>البيان</th>
+                    <th>الفئة</th>
+                    <th>الوصف</th>
+                    <th>آخر تحديث</th>
+                  </tr>
+                </thead>
+                <tbody id="permissions-tbody">
+                  <tr>
+                    <td colspan="5" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section
+            id="sys-role-perms-pane"
+            class="sys-pane"
+            data-pane="rolePerms"
+          >
+            <div class="sys-pane__header">
+              <h3 class="pane-heading">تعيين أذونات الأدوار</h3>
+              <p class="muted">
+                خريطة الأذونات مع النطاق والحالة للمساعدة في مراجعة الصلاحيات.
+              </p>
+            </div>
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الدور</th>
+                    <th>الإذن</th>
+                    <th>النطاق</th>
+                    <th>مسموح؟</th>
+                    <th>آخر تحديث</th>
+                  </tr>
+                </thead>
+                <tbody id="role-perms-tbody">
+                  <tr>
+                    <td colspan="5" class="muted">
+                      لم يتم تحميل البيانات بعد.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
 
@@ -3278,10 +3476,6 @@
               </table>
             </div>
           </section>
-=======
-        <section class="workspace-content" id="sys-workspace-content">
-          <!-- System Management panes are rendered dynamically via ViewTab.js -->
->>>>>>> 1fe9ae39a5944e035db051a8825a24ab45a16453
         </section>
 
         <aside class="workspace-nav" id="sys-side-nav">
@@ -3290,9 +3484,178 @@
       </div>
     </div>
 
+    <!-- إنشاء مستخدم (ديناميكي إن توفرت الجداول؛ وإلا نموذج مبسّط) -->
+    <dialog id="dlg-new-user">
+      <h3 style="margin-bottom: 0.6rem">إنشاء مستخدم جديد</h3>
+      <form method="dialog" id="new-user-form">
+        <div id="new-user-fields" class="dialog-body"></div>
+        <div class="actions">
+          <button type="submit" class="action-button save-button">حفظ</button>
+          <button
+            type="button"
+            id="btn-cancel-new"
+            class="action-button cancel-button"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </dialog>
 
+    <!-- ملف المستخدم -->
+    <dialog id="dlg-user-profile">
+      <div class="profile-dialog__header">
+        <h3 id="profile-title">ملف المستخدم</h3>
+        <div id="profile-username" class="profile-dialog__username"></div>
+      </div>
+      <div class="profile-tabs" id="profile-tabs">
+        <button type="button" class="nav-item active" data-tab="profile">
+          الملف
+        </button>
+        <button type="button" class="nav-item" data-tab="properties">
+          الخصائص
+        </button>
+        <button type="button" class="nav-item" data-tab="documents">
+          المستندات
+        </button>
+        <button type="button" class="nav-item" data-tab="sessions">
+          الجلسات
+        </button>
+        <button type="button" class="nav-item" data-tab="audit">التدقيق</button>
+      </div>
+      <div class="profile-panels" id="profile-panels">
+        <section class="profile-panel active" data-tab="profile">
+          <dl class="profile-dl" id="profile-overview-list"></dl>
+        </section>
+        <section class="profile-panel" data-tab="properties">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>المفتاح</th>
+                <th>القيمة</th>
+                <th>آخر تحديث</th>
+                <th>المحدّث</th>
+              </tr>
+            </thead>
+            <tbody id="profile-properties-body"></tbody>
+          </table>
+        </section>
+        <section class="profile-panel" data-tab="documents">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>المستند</th>
+                <th>المرفوع بواسطة</th>
+                <th>التاريخ</th>
+                <th>رابط</th>
+              </tr>
+            </thead>
+            <tbody id="profile-documents-body"></tbody>
+          </table>
+        </section>
+        <section class="profile-panel" data-tab="sessions">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>Session</th>
+                <th>المنتحل</th>
+                <th>النوع</th>
+                <th>الحالة</th>
+                <th>البداية</th>
+                <th>النهاية</th>
+              </tr>
+            </thead>
+            <tbody id="profile-sessions-body"></tbody>
+          </table>
+        </section>
+        <section class="profile-panel" data-tab="audit">
+          <table class="profile-table">
+            <thead>
+              <tr>
+                <th>الوقت</th>
+                <th>المستخدم</th>
+                <th>الإجراء</th>
+                <th>التفاصيل</th>
+              </tr>
+            </thead>
+            <tbody id="profile-audit-body"></tbody>
+          </table>
+        </section>
+      </div>
+      <div class="actions">
+        <button
+          type="button"
+          id="btn-close-profile"
+          class="action-button cancel-button"
+        >
+          إغلاق
+        </button>
+      </div>
+    </dialog>
 
+    <!-- تعيين دور -->
+    <dialog id="dlg-assign-role">
+      <h3 style="margin-bottom: 0.6rem">تعيين دور للمستخدم</h3>
+      <form method="dialog" id="form-assign-role">
+        <input type="hidden" id="assign-role-user" name="userId" />
+        <div class="form-grid">
+          <div class="span-2">
+            <label for="assign-role-select">اختر الدور</label>
+            <select id="assign-role-select" name="roleId" required></select>
+          </div>
+          <div class="span-2 muted" id="assign-role-user-label"></div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="action-button save-button">حفظ</button>
+          <button
+            type="button"
+            id="btn-cancel-assign"
+            class="action-button cancel-button"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </dialog>
 
+    <!-- إعادة تعيين كلمة المرور -->
+    <dialog id="dlg-reset-pass">
+      <h3 style="margin-bottom: 0.6rem">إعادة تعيين كلمة المرور</h3>
+      <form method="dialog" id="form-reset-pass">
+        <div class="form-grid">
+          <div class="span-2">
+            <label for="reset_pass">كلمة المرور الجديدة</label
+            ><input
+              type="password"
+              id="reset_pass"
+              name="password"
+              autocomplete="new-password"
+              required
+            />
+          </div>
+          <div class="span-2">
+            <label for="reset_confirm">تأكيد كلمة المرور</label
+            ><input
+              type="password"
+              id="reset_confirm"
+              name="confirm"
+              autocomplete="new-password"
+              required
+            />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit" class="action-button edit-button">تحديث</button>
+          <button
+            type="button"
+            id="btn-cancel-reset"
+            class="action-button cancel-button"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </dialog>
 
     <?!= include('FormModal.js'); ?>
     <?!= include('ViewTab.js'); ?>
@@ -3674,6 +4037,9 @@
         const bulkDeactivateBtn = document.getElementById("bulk-deactivate");
         const bulkAssignRoleBtn = document.getElementById("bulk-assign-role");
         const bulkRoleSelect = document.getElementById("bulk-role-select");
+        const sysUsersViewButton =
+          document.getElementById("sys-users-view-btn");
+        const addUserButton = document.getElementById("btn-new-user");
         const dlgReset = document.getElementById("dlg-reset-pass");
         const formReset = document.getElementById("form-reset-pass");
         const dlgProfile = document.getElementById("dlg-user-profile");
@@ -3925,6 +4291,73 @@
             console.log("THEME: Applying default theme.", { targetId });
           }
         }
+        if (sysUsersViewButton) {
+          setButtonIconLabel(sysUsersViewButton, "view", "عرض المستخدمين");
+          sysUsersViewButton.addEventListener("click", () => {
+            sysUsersViewButton.classList.add("is-active");
+            if (addUserButton) {
+              addUserButton.classList.remove("is-active");
+            }
+            if (usersTable && typeof usersTable.scrollIntoView === "function") {
+              try {
+                usersTable.scrollIntoView({
+                  behavior: "smooth",
+                  block: "start",
+                });
+              } catch (err) {
+                usersTable.scrollIntoView();
+              }
+            }
+          });
+        }
+        if (addUserButton) {
+          addUserButton.setAttribute("type", "button");
+          setButtonIconLabel(addUserButton, "add", "إضافة مستخدم");
+        }
+        const HR_API_HANDLERS = Object.freeze({
+          Sub_HR_Employees: {
+            fetch: "getEmployees",
+            create: "saveEmployee",
+            update: "updateEmployee",
+            remove: "deleteEmployee",
+          },
+          Sub_HR_Attendance: {
+            fetch: "getAttendanceRecords",
+            create: "saveAttendanceRecord",
+            update: "updateAttendanceRecord",
+            remove: "deleteAttendanceRecord",
+          },
+          Sub_HR_Leave_Requests: {
+            fetch: "getLeaveRequests",
+            create: "saveLeaveRequest",
+            update: "updateLeaveRequest",
+            remove: "deleteLeaveRequest",
+          },
+          Sub_HR_Leave: {
+            fetch: "getLeaveRecords",
+            create: "saveLeaveRecord",
+            update: "updateLeaveRecord",
+            remove: "deleteLeaveRecord",
+          },
+          Sub_HR_Advances: {
+            fetch: "getAdvanceRecords",
+            create: "saveAdvanceRecord",
+            update: "updateAdvanceRecord",
+            remove: "deleteAdvanceRecord",
+          },
+          Sub_HR_Deductions: {
+            fetch: "getDeductionRecords",
+            create: "saveDeductionRecord",
+            update: "updateDeductionRecord",
+            remove: "deleteDeductionRecord",
+          },
+          Sub_HR_Payroll: {
+            fetch: "getPayrollRecords",
+            create: "savePayrollRecord",
+            update: "updatePayrollRecord",
+            remove: "deletePayrollRecord",
+          },
+        });
         let lastWorkspaceNavRendered = null;
         let currencyFormatter;
         try {
@@ -4094,6 +4527,98 @@
             filterOptions: [],
           },
         ];
+        const CLIENT_FORM_FALLBACKS = Object.freeze({
+          Sub_SYS_Users: {
+            formId: "FORM_SYS_AddUser",
+            titleEn: "Add User",
+            titleAr: "إضافة مستخدم جديد",
+          },
+          Sub_SYS_Roles: {
+            formId: "FORM_SYS_AddRole",
+            titleEn: "Add Role",
+            titleAr: "إضافة دور",
+          },
+          Sub_SYS_Permissions: {
+            formId: "FORM_SYS_AddPermission",
+            titleEn: "Add Permission",
+            titleAr: "إضافة إذن",
+          },
+          Sub_SYS_RolePerms: {
+            formId: "FORM_SYS_MapRolePermission",
+            titleEn: "Map Role Permission",
+            titleAr: "ربط إذن بدور",
+          },
+          Sub_SYS_Properties: {
+            formId: "FORM_SYS_AddUserProperty",
+            titleEn: "Add User Property",
+            titleAr: "إضافة خاصية مستخدم",
+          },
+          Sub_PRJ_Main: {
+            formId: "FORM_PRJ_AddProject",
+            titleEn: "Add Project",
+            titleAr: "إضافة مشروع جديد",
+          },
+          Sub_PRJ_Tasks: {
+            formId: "FORM_PRJ_AddTask",
+            titleEn: "Add Project Task",
+            titleAr: "إضافة مهمة مشروع",
+          },
+          Sub_PRJ_Costs: {
+            formId: "FORM_PRJ_AddCost",
+            titleEn: "Log Project Cost",
+            titleAr: "تسجيل تكلفة مشروع",
+          },
+          Sub_PRJ_Materials: {
+            formId: "FORM_PRJ_AddMaterial",
+            titleEn: "Add Material",
+            titleAr: "إضافة مادة جديدة",
+          },
+          Sub_PRJ_Revenue: {
+            formId: "FORM_PRJ_AddRevenue",
+            titleEn: "Log Project Revenue",
+            titleAr: "تسجيل إيراد مشروع",
+          },
+          Sub_PRJ_Clients: {
+            formId: "FORM_PRJ_AddClient",
+            titleEn: "Add Client",
+            titleAr: "إضافة عميل",
+          },
+          Sub_HR_Employees: {
+            formId: "FORM_HR_AddEmployee",
+            titleEn: "Add Employee",
+            titleAr: "إضافة موظف",
+          },
+          Sub_HR_Attendance: {
+            formId: "FORM_HR_AddAttendance",
+            titleEn: "Log Attendance",
+            titleAr: "تسجيل الحضور",
+          },
+          Sub_HR_Leave_Requests: {
+            formId: "FORM_HR_AddLeaveRequest",
+            titleEn: "Submit Leave Request",
+            titleAr: "تقديم طلب إجازة",
+          },
+          Sub_HR_Leave: {
+            formId: "FORM_HR_AddLeave",
+            titleEn: "Record Leave",
+            titleAr: "تسجيل إجازة",
+          },
+          Sub_HR_Advances: {
+            formId: "FORM_HR_AddAdvance",
+            titleEn: "Log Advance",
+            titleAr: "تسجيل سلفة",
+          },
+          Sub_HR_Deductions: {
+            formId: "FORM_HR_AddDeduction",
+            titleEn: "Log Deduction",
+            titleAr: "تسجيل خصم",
+          },
+          Sub_HR_Payroll: {
+            formId: "FORM_HR_AddPayroll",
+            titleEn: "Create Payroll Entry",
+            titleAr: "إنشاء بيان راتب",
+          },
+        });
         let bootstrapData = {};
 
         const TRUTHY_FLAG_SET = new Set([
@@ -5630,8 +6155,49 @@
         function resolveFormMetaForPane(paneKey, sourceSheet, labelText) {
           const register =
             (bootstrapData && bootstrapData.forms) || Object.create(null);
+          const resolveFallback = (key) => {
+            if (!key) return null;
+            const variations = new Set();
+            variations.add(String(key));
+            const trimmed = String(key).trim();
+            if (!/^Sub_/i.test(trimmed)) {
+              variations.add(`Sub_${trimmed}`);
+            }
+            const withoutPrefix = trimmed.replace(/^(Sub_|PRJ_|FIN_|HR_)/i, "");
+            if (withoutPrefix && withoutPrefix !== trimmed) {
+              variations.add(withoutPrefix);
+              variations.add(`Sub_${withoutPrefix}`);
+            }
+            const normalizedKey = trimmed
+              .replace(/[\s_\-]+/g, "")
+              .toLowerCase();
+            variations.add(normalizedKey);
+            variations.add(`sub${normalizedKey}`);
+
+            for (const variant of variations) {
+              const direct = CLIENT_FORM_FALLBACKS[variant];
+              if (direct) return direct;
+            }
+
+            const normalizedVariants = Array.from(variations).map((variant) =>
+              String(variant || "")
+                .trim()
+                .replace(/[\s_\-]+/g, "")
+                .toLowerCase()
+            );
+
+            return (
+              Object.entries(CLIENT_FORM_FALLBACKS).find(([candidate]) => {
+                const normalizedCandidate = String(candidate || "")
+                  .trim()
+                  .replace(/[\s_\-]+/g, "")
+                  .toLowerCase();
+                return normalizedVariants.includes(normalizedCandidate);
+              })?.[1] || null
+            );
+          };
           if (!register || typeof register !== "object") {
-            return null;
+            return resolveFallback(paneKey);
           }
 
           const entries = Object.entries(register).map(([key, meta]) => ({
@@ -5673,6 +6239,8 @@
 
           for (const candidate of candidates) {
             if (register[candidate]) return register[candidate];
+            const fallback = resolveFallback(candidate);
+            if (fallback) return fallback;
           }
 
           const normalizedCandidates = Array.from(candidates)
@@ -5688,6 +6256,8 @@
               (entry) => entry.normalized === normalized
             );
             if (match) return match.meta;
+            const fallback = resolveFallback(normalized);
+            if (fallback) return fallback;
           }
 
           return null;
@@ -5808,6 +6378,7 @@
 
           const paneId = String(paneName);
           const trimmedSource = (sourceSheet || "").trim();
+          const paneApiConfig = HR_API_HANDLERS[paneId] || null;
           let paneElement = contentElement.querySelector(
             `[data-generic-pane="${paneId}"]`
           );
@@ -5901,6 +6472,7 @@
             "";
           paneState.resolvedFormId = baseFormId;
           paneState.formAvailable = Boolean(baseFormId);
+          paneState.apiConfig = paneApiConfig;
           if (typeof paneState.searchColumnIndex !== "number") {
             paneState.searchColumnIndex = -1;
           }
@@ -6029,8 +6601,15 @@
           };
 
           function fetchData() {
+            const fetchAction = paneApiConfig?.fetch
+              ? String(paneApiConfig.fetch)
+              : "";
             const hasGoogleRunner =
               window.google && google.script && google.script.run;
+            const hasCustomFetch =
+              fetchAction &&
+              hasGoogleRunner &&
+              typeof google.script.run[fetchAction] === "function";
             const normalizeRows = (rows, headers) => {
               if (!Array.isArray(rows) || !rows.length) return [];
               return rows.map((row) => {
@@ -6078,7 +6657,7 @@
               renderData();
             };
 
-            if (!trimmedSource && !paneId) {
+            if (!trimmedSource && !hasCustomFetch) {
               paneState.headers = [];
               paneState.rows = [];
               paneState.filteredRows = [];
@@ -6215,7 +6794,9 @@
                 handleLegacyResult(result);
               });
 
-            if (paneId) {
+            if (hasCustomFetch) {
+              runner[fetchAction]();
+            } else if (paneId) {
               runner.getSubTabViewData(paneId);
             } else {
               runner.getSheetData(trimmedSource);
@@ -6346,9 +6927,19 @@
             });
           }
 
+          renderPaneHeader(paneElement, paneName, {
+            formMeta,
+            paneLabel: normalizedLabel,
+            sourceSheet: trimmedSource,
+            onAdd: () => setPaneMode(paneElement, paneState, "form"),
+            onRefresh: fetchData,
+            hideAddButton: true,
+          });
+
           renderGenericFormPane(formContainer, {
             paneId,
             formMeta,
+            submitAction: paneApiConfig?.create,
             onSubmitted: () => {
               fetchData();
               setPaneMode(paneElement, paneState, "list");
@@ -7738,6 +8329,48 @@
           let viewButton;
           let addButton;
 
+          const handleUpload = () => {
+            const targetId = window.prompt(
+              "أدخل معرّف المادة لإدارة مرفقاتها:",
+              ""
+            );
+            if (!targetId) return;
+            openAttachmentsModal({
+              paneId: paneName,
+              entityKey: resolveEntityKeyForPane(paneName),
+              recordId: targetId.trim(),
+              record: null,
+              onUpdated: () =>
+                loadMaterialsViewData(viewContainer, {
+                  formId,
+                  reload: true,
+                  controlsRow: secondaryRow,
+                  onSwitchMode: activateTab,
+                }),
+            });
+          };
+
+          try {
+            renderPaneHeader(paneElement, paneName, {
+              formMeta,
+              paneLabel: paneName,
+              onAdd: () => activateTab("add"),
+              onRefresh: () =>
+                loadMaterialsViewData(viewContainer, {
+                  formId,
+                  reload: true,
+                  controlsRow: secondaryRow,
+                  onSwitchMode: activateTab,
+                }),
+              onUpload: handleUpload,
+            });
+          } catch (err) {
+            console.warn(
+              "[renderMaterialsModule] unable to render pane header",
+              err
+            );
+          }
+
           const moduleWrapper = document.createElement("div");
           moduleWrapper.className = "materials-module";
 
@@ -8930,6 +9563,138 @@
           updateBulkActionsVisibility();
         }
 
+        function renderPaneHeader(paneElement, paneName, options = {}) {
+          if (!paneElement) return;
+
+          const formsRegister =
+            (bootstrapData && bootstrapData.forms) || Object.create(null);
+          const formEntry =
+            options.formMeta ||
+            resolveFormMetaForPane(
+              paneName,
+              options?.sourceSheet,
+              options?.paneLabel
+            ) ||
+            null;
+
+          if (window.console) {
+            console.log(`[renderPaneHeader] lookup`, {
+              paneName,
+              hasForms: Boolean(formsRegister),
+              availableForms: Object.keys(formsRegister),
+              formEntry,
+              options,
+            });
+          }
+
+          const formId = formEntry?.formId;
+          let header = paneElement.querySelector(".pane-header");
+          if (!header) {
+            header = document.createElement("div");
+            header.className = "pane-header";
+            paneElement.prepend(header);
+          }
+
+          header.innerHTML = "";
+          if (formId) header.dataset.formId = formId;
+
+          const title = document.createElement("div");
+          title.className = "pane-header__title";
+          title.textContent =
+            formEntry?.titleAr || formEntry?.titleEn || "إدارة السجل";
+          header.appendChild(title);
+
+          const buttonGroup = document.createElement("div");
+          buttonGroup.className = "pane-header__buttons";
+          header.appendChild(buttonGroup);
+
+          if (options.enableAttachments) {
+            const attachButton = createIconButton("file", {
+              className: "icon-btn",
+              title: "تحميل المرفقات",
+              ariaLabel: "تحميل المرفقات",
+            });
+            if (typeof options.onUpload === "function") {
+              attachButton.addEventListener("click", (event) => {
+                options.onUpload.call(paneElement, event);
+              });
+            } else {
+              attachButton.addEventListener("click", () => {
+                showToast("لم يتم تفعيل إدارة المرفقات لهذا التبويب.", "info");
+              });
+            }
+            buttonGroup.appendChild(attachButton);
+          }
+
+          const refreshButton = createIconButton("refresh", {
+            className: "icon-btn",
+            title: "تحديث البيانات",
+            ariaLabel: "تحديث البيانات",
+          });
+          if (typeof options.onRefresh === "function") {
+            refreshButton.addEventListener("click", (event) => {
+              options.onRefresh.call(paneElement, event);
+            });
+          } else {
+            refreshButton.disabled = true;
+          }
+          buttonGroup.appendChild(refreshButton);
+
+          if (formId && options.hideAddButton !== true) {
+            const addLabelText =
+              formEntry?.titleAr || formEntry?.titleEn || "إضافة جديد";
+            const addButton = createIconButton("add", {
+              className: "icon-btn icon-btn--accent",
+              title: addLabelText,
+              ariaLabel: addLabelText,
+            });
+
+            if (typeof options.onAdd === "function") {
+              addButton.addEventListener("click", (event) => {
+                options.onAdd.call(paneElement, event);
+              });
+            } else {
+              const renderFormHandler =
+                (typeof window !== "undefined" && window.renderForm) ||
+                (typeof window !== "undefined" &&
+                  window.app &&
+                  typeof window.app.renderForm === "function" &&
+                  window.app.renderForm) ||
+                (typeof window !== "undefined" &&
+                  window.forms &&
+                  typeof window.forms.renderForm === "function" &&
+                  window.forms.renderForm);
+
+              if (typeof renderFormHandler === "function") {
+                const context =
+                  (typeof window !== "undefined" && window.app) ||
+                  (typeof window !== "undefined" && window.forms) ||
+                  window;
+                addButton.addEventListener("click", () => {
+                  if (window.console) {
+                    console.log("[renderPaneHeader] Add New button clicked", {
+                      paneName,
+                      formId,
+                    });
+                  }
+                  renderFormHandler.call(context, formId, null);
+                });
+              } else {
+                addButton.addEventListener("click", () => {
+                  console.warn("renderForm handler is not available", {
+                    formId,
+                    windowHasRenderForm:
+                      typeof window !== "undefined" &&
+                      typeof window.renderForm === "function",
+                  });
+                  showToast("ميزة النماذج غير متاحة حالياً.", "warning");
+                });
+              }
+            }
+
+            buttonGroup.appendChild(addButton);
+          }
+        }
         function renderDirectExpenseShell(paneElement) {
           if (!paneElement) return;
 
@@ -12359,27 +13124,397 @@
           setTimeout(hide, 3500);
         }
 
+        /* ---------- Create / Edit User ---------- */
+        const dlgNew = document.getElementById("dlg-new-user");
+        const fieldsHost = document.getElementById("new-user-fields");
+        let currentEditId = null; // null=create, value=edit mode
+        if (dlgNew) {
+          dlgNew.addEventListener("close", () => {
+            if (sysUsersViewButton) {
+              sysUsersViewButton.classList.add("is-active");
+            }
+            if (addUserButton) {
+              addUserButton.classList.remove("is-active");
+            }
+          });
+        }
+
+        if (addUserButton) {
+          addUserButton.addEventListener("click", () => {
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("غير متصل بالخادم.", "error");
+              return;
+            }
+            currentEditId = null; // creation mode
+            addUserButton.classList.add("is-active");
+            if (sysUsersViewButton) {
+              sysUsersViewButton.classList.remove("is-active");
+            }
+            // Try dynamic form; if empty fallback to minimal static form
+            google.script.run
+              .withFailureHandler((err) => {
+                console.error(err);
+                buildMinimalUserForm();
+                dlgNew.showModal();
+              })
+              .withSuccessHandler((fields) => {
+                console.log("Add user form fields received:", fields);
+                if (Array.isArray(fields) && fields.length) {
+                  renderDynamicUserForm(fields, null);
+                } else {
+                  buildMinimalUserForm();
+                }
+                dlgNew.showModal();
+              })
+              .getFormWithOptions("FORM_SYS_AddUser");
+          });
+        }
+
+        document
+          .getElementById("btn-cancel-new")
+          .addEventListener("click", () => dlgNew.close());
+
+        function renderDynamicUserForm(fields, initialData = null) {
+          const host = document.getElementById("new-user-fields");
+          host.classList.add("dialog-body");
+          host.innerHTML = "";
+          const layout = document.createElement("div");
+          layout.className = "dyn-layout";
+          const tabBar = document.createElement("div");
+          tabBar.className = "dyn-tabs";
+          tabBar.setAttribute("role", "tablist");
+          const pages = document.createElement("div");
+          pages.className = "dyn-pages";
+          layout.appendChild(tabBar);
+          layout.appendChild(pages);
+          host.appendChild(layout);
+
+          const tabs = {};
+          fields.forEach((f) => {
+            const tab = f.tabId || f.tabName || "default";
+            const sec = f.section || "";
+            if (!tabs[tab])
+              tabs[tab] = { name: f.tabName || "عام", sections: {} };
+            if (!tabs[tab].sections[sec]) tabs[tab].sections[sec] = [];
+            tabs[tab].sections[sec].push(f);
+          });
+
+          function makePage(tabKey, tab, index) {
+            const page = document.createElement("div");
+            const safeKey = String(tabKey || "tab")
+              .replace(/[^a-zA-Z0-9_-]+/g, "_")
+              .toLowerCase();
+            page.className = "form-grid dyn-page hidden";
+            page.id = `dyn-tab-${index}-${safeKey}`;
+            page.setAttribute("role", "tabpanel");
+            page.setAttribute("aria-hidden", "true");
+            Object.keys(tab.sections).forEach((sec) => {
+              if (sec) {
+                const h = document.createElement("div");
+                h.className = "span-2 muted";
+                h.style.margin = ".4rem 0 .2rem";
+                h.textContent = sec;
+                page.appendChild(h);
+              }
+              tab.sections[sec].forEach((f, i) => {
+                const id = `nu_${(
+                  f.targetColumn ||
+                  f.fieldId ||
+                  tabKey + i
+                ).replace(/\s+/g, "_")}`;
+                const wrap = document.createElement("div");
+                const label = document.createElement("label");
+                label.textContent =
+                  f.label || f.targetColumn || f.fieldId || "حقل " + (i + 1);
+                label.setAttribute("for", id);
+                let el;
+                const t = String(f.type || "text").toLowerCase();
+                const isPassword =
+                  f.targetColumn === "Password_Hash" ||
+                  f.targetColumn === "password" ||
+                  /password/i.test(f.fieldId || "");
+                if (currentEditId && isPassword) return; // لا نعرض كلمة المرور في وضع التعديل
+                if (t === "dropdown") {
+                  el = document.createElement("select");
+                  (f.options || []).forEach((opt) => {
+                    const o = document.createElement("option");
+                    o.value = opt.value;
+                    o.textContent = opt.label || opt.value;
+                    el.appendChild(o);
+                  });
+                } else if (t === "textarea" || t === "paragraph") {
+                  el = document.createElement("textarea");
+                  el.rows = 4;
+                  wrap.classList.add("span-2");
+                } else if (t === "auto") {
+                  el = document.createElement("input");
+                  el.type = "text";
+                  el.readOnly = true;
+                  el.placeholder = "AutoGenerate";
+                } else if (t === "password" || isPassword) {
+                  el = document.createElement("input");
+                  el.type = "password";
+                  el.autocomplete = initialData
+                    ? "current-password"
+                    : "new-password";
+                } else {
+                  el = document.createElement("input");
+                  el.type = t === "email" ? "email" : "text";
+                }
+                el.name = f.targetColumn || f.fieldId || id;
+                el.id = id;
+                if (f.readOnly) {
+                  el.readOnly = true;
+                  el.setAttribute("aria-readonly", "true");
+                }
+                if (f.required && !el.readOnly) el.required = true;
+                if (initialData) {
+                  const k = f.targetColumn || f.fieldId;
+                  if (k && initialData[k] != null) el.value = initialData[k];
+                  if (k === "User_Id") el.readOnly = true;
+                } else if (
+                  f.defaultValue !== undefined &&
+                  f.defaultValue !== null &&
+                  String(f.defaultValue) !== ""
+                ) {
+                  el.value = f.defaultValue;
+                }
+                if (
+                  !initialData &&
+                  (f.targetColumn === "User_Id" ||
+                    /User_Id/i.test(f.fieldId || ""))
+                ) {
+                  if (window.google && google.script && google.script.run) {
+                    google.script.run
+                      .withSuccessHandler((nextId) => {
+                        el.value = nextId;
+                        el.readOnly = true;
+                      })
+                      .getNextUserId();
+                  }
+                }
+                if (
+                  /Notes|ملاحظات/i.test(f.fieldId || "") ||
+                  /Notes|ملاحظات/i.test(f.targetColumn || "")
+                ) {
+                  wrap.classList.add("span-2");
+                }
+                wrap.appendChild(label);
+                wrap.appendChild(el);
+                page.appendChild(wrap);
+              });
+            });
+            return page;
+          }
+
+          const tabKeys = Object.keys(tabs);
+          const pagesEls = tabKeys.map((k, idx) => makePage(k, tabs[k], idx));
+          pagesEls.forEach((p) => pages.appendChild(p));
+          const tabButtons = [];
+          const activateTab = (targetIdx) => {
+            pagesEls.forEach((page, idx) => {
+              const isActive = idx === targetIdx;
+              page.classList.toggle("hidden", !isActive);
+              page.setAttribute("aria-hidden", isActive ? "false" : "true");
+            });
+            tabButtons.forEach((btn, idx) => {
+              const isActive = idx === targetIdx;
+              btn.classList.toggle("active", isActive);
+              btn.setAttribute("aria-selected", isActive ? "true" : "false");
+              btn.tabIndex = isActive ? 0 : -1;
+            });
+          };
+
+          tabKeys.forEach((k, idx) => {
+            const b = document.createElement("button");
+            b.type = "button";
+            b.className = "nav-item" + (idx === 0 ? " active" : "");
+            b.textContent = tabs[k].name || "تبويب";
+            b.setAttribute("role", "tab");
+            b.setAttribute("aria-selected", idx === 0 ? "true" : "false");
+            b.setAttribute("aria-controls", pagesEls[idx].id);
+            b.tabIndex = idx === 0 ? 0 : -1;
+            b.addEventListener("click", () => activateTab(idx));
+            b.addEventListener("keydown", (evt) => {
+              if (evt.key === "ArrowLeft" || evt.key === "ArrowUp") {
+                evt.preventDefault();
+                const prev = (idx - 1 + tabButtons.length) % tabButtons.length;
+                activateTab(prev);
+                tabButtons[prev].focus();
+              } else if (evt.key === "ArrowRight" || evt.key === "ArrowDown") {
+                evt.preventDefault();
+                const next = (idx + 1) % tabButtons.length;
+                activateTab(next);
+                tabButtons[next].focus();
+              }
+            });
+            tabBar.appendChild(b);
+            tabButtons.push(b);
+          });
+
+          if (tabKeys.length) {
+            activateTab(0);
+          }
+        }
+
+        function buildMinimalUserForm(initialData = null) {
+          fieldsHost.innerHTML = "";
+          fieldsHost.classList.add("dialog-body");
+          const grid = document.createElement("div");
+          grid.className = "form-grid";
+          const isEdit = !!initialData;
+          grid.innerHTML = `
+            <div><label>رقم المستخدم</label><input id="nu_uid" name="User_Id" type="text" ${
+              isEdit ? "" : "readonly"
+            } autocomplete="off" placeholder="AutoGenerate" /></div>
+            <div><label>الاسم الكامل</label><input name="Full_Name" type="text" required /></div>
+            <div><label>اسم المستخدم</label><input name="Username" type="text" required /></div>
+            <div><label>البريد الإلكتروني</label><input name="Email" type="email" /></div>
+            <div><label>القسم</label><select id="nu_dept" name="Department"></select></div>
+            <div><label>الدور</label><select id="nu_role" name="Role_Id"></select></div>
+            <div class="span-2"><label>ملاحظات</label><textarea name="Notes" rows="3"></textarea></div>
+            <div><label>نشط؟</label><select name="IsActive"><option value="true">نعم</option><option value="false">لا</option></select></div>
+            ${
+              isEdit
+                ? ""
+                : '<div><label>كلمة المرور</label><input name="password" type="password" autocomplete="new-password" required /></div>'
+            }`;
+          fieldsHost.appendChild(grid);
+          // next id & filters
+          if (window.google && google.script && google.script.run) {
+            if (!isEdit) {
+              google.script.run
+                .withSuccessHandler((nextId) => {
+                  console.log("Next user ID received:", nextId);
+                  const el = document.getElementById("nu_uid");
+                  if (el) {
+                    el.value = nextId;
+                  }
+                })
+                .getNextUserId();
+            }
+            google.script.run
+              .withSuccessHandler((f) => {
+                console.log("Dynamic form filters received:", f);
+                const d = f?.departments || [];
+                const r = f?.roles || [];
+                const dSel = document.getElementById("nu_dept");
+                const rSel = document.getElementById("nu_role");
+                [d, r].forEach((arr, idx) => {
+                  const sel = idx === 0 ? dSel : rSel;
+                  sel.innerHTML =
+                    '<option value=""></option>' +
+                    (arr || [])
+                      .map((v) => `<option value="${v}">${v}</option>`)
+                      .join("");
+                });
+                if (initialData) {
+                  if (initialData.Department)
+                    dSel.value = initialData.Department;
+                  if (initialData.Role_Id) rSel.value = initialData.Role_Id;
+                }
+              })
+              .getDeptAndRoleFilters();
+          }
+          if (initialData) {
+            Object.keys(initialData).forEach((k) => {
+              const el = grid.querySelector(`[name="${k}"]`);
+              if (el) {
+                el.value = initialData[k];
+              }
+            });
+            const idEl = grid.querySelector("#nu_uid");
+            if (idEl) {
+              idEl.readOnly = true;
+            }
+          }
+        }
+
+        // إرسال النموذج (يخدم الإنشاء والتعديل)
+        document
+          .getElementById("new-user-form")
+          .addEventListener("submit", (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            const payload = {};
+            for (const [k, v] of fd.entries()) {
+              if (k === "IsActive") {
+                payload[k] =
+                  v === "true" || v === "Yes" || v === "نشط" || v === "Active";
+              } else if (k === "password") {
+                payload.password = v;
+              } else {
+                payload[k] = v;
+              }
+            }
+            if (!(window.google && google.script && google.script.run)) {
+              showToast("غير متصل بالخادم.", "error");
+              return;
+            }
+            if (currentEditId) {
+              payload.User_Id = payload.User_Id || currentEditId;
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                  showToast("تعذّر تحديث المستخدم.", "error");
+                })
+                .withSuccessHandler((res) => {
+                  console.log("Update user response:", res);
+                  showToast("تم تحديث بيانات المستخدم.", "success");
+                  dlgNew.close();
+                  e.target.reset();
+                  loadUsers();
+                })
+                .updateUser(payload);
+            } else {
+              google.script.run
+                .withFailureHandler((err) => {
+                  console.error(err);
+                  showToast("تعذّر إنشاء المستخدم.", "error");
+                })
+                .withSuccessHandler((res) => {
+                  console.log("Create user response:", res);
+                  showToast("تم إنشاء المستخدم بنجاح.", "success");
+                  dlgNew.close();
+                  e.target.reset();
+                  loadUsers();
+                })
+                .createUser(payload);
+            }
+          });
+
         function openUserEditor(userId) {
-          const normalizedId = userId ? String(userId).trim() : "";
-          if (!normalizedId) {
-            showToast("لم يتم تحديد مستخدم للتحرير.", "error");
-            return;
-          }
-          if (typeof window.openFormModal === "function") {
-            window.openFormModal(
-              "FORM_SYS_EditUser",
-              { User_Id: normalizedId },
-              "Sub_SYS_Users",
-              true
-            );
-            return;
-          }
-          if (window.console) {
-            console.warn(
-              "[openUserEditor] openFormModal is unavailable for FORM_SYS_EditUser"
-            );
-          }
-          showToast("نظام النماذج غير متاح حالياً.", "error");
+          currentEditId = userId;
+          google.script.run
+            .withFailureHandler((err) => {
+              console.error(err);
+              showToast("تعذر تحميل بيانات المستخدم.", "error");
+            })
+            .withSuccessHandler((user) => {
+              console.log("User profile for edit received:", user);
+              if (!user) {
+                showToast("لم يتم العثور على المستخدم.", "error");
+                return;
+              }
+              const handleForm = (fields) => {
+                console.log("Edit user form fields received:", fields);
+                if (Array.isArray(fields) && fields.length) {
+                  renderDynamicUserForm(fields, user);
+                } else {
+                  buildMinimalUserForm(user);
+                }
+                dlgNew.showModal();
+              };
+              google.script.run
+                .withFailureHandler((err2) => {
+                  console.error(err2);
+                  buildMinimalUserForm(user);
+                  dlgNew.showModal();
+                })
+                .withSuccessHandler(handleForm)
+                .getFormWithOptions("FORM_SYS_EditUser");
+            })
+            .getUserById(userId);
         }
 
         function ensureRoleOptionsLoaded(callback) {
