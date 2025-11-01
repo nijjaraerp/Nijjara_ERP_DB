@@ -1078,6 +1078,247 @@ function parseQuickActions_(rawValue) {
     .filter(Boolean);
 }
 
+function normalizeQuickActionExtras_(entry) {
+  if (!entry || typeof entry !== "object") {
+    return {};
+  }
+
+  const extras = {};
+  const readValue = (...keys) => {
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+      if (
+        Object.prototype.hasOwnProperty.call(entry, key) &&
+        entry[key] != null &&
+        entry[key] !== ""
+      ) {
+        return entry[key];
+      }
+    }
+    return undefined;
+  };
+
+  const scopeValue = readValue(
+    "scope",
+    "Scope",
+    "type",
+    "Type",
+    "level",
+    "Level",
+    "mode",
+    "Mode",
+    "target",
+    "Target"
+  );
+  if (scopeValue != null && scopeValue !== "") {
+    extras.scope = String(scopeValue).trim().toLowerCase();
+  }
+
+  const bulkFlag = readValue(
+    "bulk",
+    "Bulk",
+    "isBulk",
+    "IsBulk",
+    "multiple",
+    "Multiple",
+    "multi",
+    "Multi"
+  );
+  if (bulkFlag != null && bulkFlag !== "") {
+    extras.isBulk = isTruthyFlag_(bulkFlag);
+  }
+
+  const confirmFlag = readValue(
+    "confirm",
+    "Confirm",
+    "requiresConfirm",
+    "RequiresConfirm",
+    "needsConfirmation",
+    "NeedsConfirmation"
+  );
+  if (confirmFlag != null && confirmFlag !== "") {
+    extras.requiresConfirmation = isTruthyFlag_(confirmFlag);
+  }
+
+  const defaultFlag = readValue(
+    "default",
+    "Default",
+    "isDefault",
+    "IsDefault",
+    "primary",
+    "Primary"
+  );
+  if (defaultFlag != null && defaultFlag !== "") {
+    extras.isDefault = isTruthyFlag_(defaultFlag);
+  }
+
+  const requiresSelectionFlag = readValue(
+    "requiresSelection",
+    "RequiresSelection"
+  );
+  if (requiresSelectionFlag != null && requiresSelectionFlag !== "") {
+    extras.requiresSelection = isTruthyFlag_(requiresSelectionFlag);
+  }
+
+  const handlerName = readValue(
+    "handler",
+    "Handler",
+    "serverAction",
+    "ServerAction",
+    "serverFunction",
+    "ServerFunction",
+    "serverMethod",
+    "ServerMethod",
+    "function",
+    "Function",
+    "functionName",
+    "FunctionName",
+    "gsFunction",
+    "GsFunction",
+    "script",
+    "Script",
+    "onServer",
+    "OnServer"
+  );
+  if (handlerName) {
+    extras.handler = String(handlerName).trim();
+  }
+
+  const iconValue = readValue(
+    "icon",
+    "Icon",
+    "iconClass",
+    "IconClass",
+    "iconName",
+    "IconName"
+  );
+  if (iconValue) {
+    extras.icon = String(iconValue).trim();
+  }
+
+  const variantValue = readValue(
+    "variant",
+    "Variant",
+    "style",
+    "Style",
+    "appearance",
+    "Appearance",
+    "theme",
+    "Theme"
+  );
+  if (variantValue) {
+    extras.variant = String(variantValue).trim().toLowerCase();
+  }
+
+  const descriptionValue = readValue(
+    "description",
+    "Description",
+    "helpText",
+    "HelpText",
+    "hint",
+    "Hint"
+  );
+  if (descriptionValue) {
+    extras.description = String(descriptionValue).trim();
+  }
+
+  const labelArValue = readValue(
+    "labelAr",
+    "LabelAr",
+    "label_ar",
+    "label_AR",
+    "labelArabic",
+    "LabelArabic",
+    "titleAr",
+    "TitleAr"
+  );
+  if (labelArValue) {
+    extras.labelAr = String(labelArValue).trim();
+  }
+
+  const payloadValue = readValue(
+    "payload",
+    "Payload",
+    "params",
+    "Params",
+    "arguments",
+    "Arguments",
+    "data",
+    "Data"
+  );
+  if (payloadValue !== undefined) {
+    extras.payload = payloadValue;
+  }
+
+  const targetStateValue = readValue(
+    "targetState",
+    "TargetState",
+    "desiredState",
+    "DesiredState",
+    "state",
+    "State",
+    "value",
+    "Value",
+    "status",
+    "Status",
+    "setTo",
+    "SetTo",
+    "activate",
+    "Activate"
+  );
+  if (targetStateValue !== undefined) {
+    extras.targetState = targetStateValue;
+  }
+
+  const sortValue = readValue(
+    "sort",
+    "Sort",
+    "order",
+    "Order",
+    "priority",
+    "Priority"
+  );
+  if (sortValue !== undefined) {
+    const numericSort = Number(sortValue);
+    if (Number.isFinite(numericSort)) {
+      extras.sortOrder = numericSort;
+    }
+  }
+
+  return extras;
+}
+
+function inferQuickActionScope_(normalizedAction, extras) {
+  if (extras && typeof extras === "object") {
+    if (typeof extras.isBulk === "boolean") {
+      return extras.isBulk ? "bulk" : "row";
+    }
+    if (typeof extras.scope === "string" && extras.scope) {
+      const directScope = extras.scope.toLowerCase();
+      if (["bulk", "multi", "mass", "batch", "all", "selected"].includes(directScope)) {
+        return "bulk";
+      }
+      if (["row", "record", "single", "item", "per-row", "line"].includes(directScope)) {
+        return "row";
+      }
+    }
+  }
+
+  if (normalizedAction) {
+    const slug = normalizedAction.toLowerCase();
+    if (
+      slug.startsWith("bulk-") ||
+      slug.startsWith("multi-") ||
+      slug.endsWith("-bulk") ||
+      slug.endsWith("-all")
+    ) {
+      return "bulk";
+    }
+  }
+
+  return "row";
+}
+
 function normalizeQuickAction_(entry) {
   if (!entry) return null;
   if (typeof entry === "string") {
@@ -1087,10 +1328,13 @@ function normalizeQuickAction_(entry) {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
-    return {
+    const normalized = {
       label: clean,
       action: slug || clean,
     };
+    normalized.scope = inferQuickActionScope_(normalized.action, {});
+    normalized.isBulk = normalized.scope === "bulk";
+    return normalized;
   }
 
   const label =
@@ -1118,10 +1362,28 @@ function normalizeQuickAction_(entry) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  return {
+  const extras = normalizeQuickActionExtras_(entry);
+  const originalScope = extras.scope;
+  const normalizedScope = inferQuickActionScope_(normalizedAction || normalizedLabel, extras);
+
+  const normalized = {
+    ...extras,
     label: normalizedLabel,
     action: normalizedAction || normalizedLabel,
+    scope: normalizedScope,
+    isBulk:
+      typeof extras.isBulk === "boolean" ? extras.isBulk : normalizedScope === "bulk",
   };
+
+  if (originalScope && originalScope !== normalizedScope) {
+    normalized.scopeRaw = originalScope;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(normalized, "requiresSelection")) {
+    normalized.requiresSelection = normalized.scope === "row";
+  }
+
+  return normalized;
 }
 
 function mergeQuickActions_(existing, next) {
@@ -2082,6 +2344,254 @@ function bulkUpdateMaterialStatus(materialIds = [], status = true) {
     });
   } catch (err) {
     debugError(FNAME, err, { count: Array.isArray(materialIds) ? materialIds.length : 0 });
+    throw err;
+  }
+}
+
+function invokeNamedServerFunction_(functionName, ids, context) {
+  if (!functionName) return null;
+  const trimmed = String(functionName).trim();
+  if (!trimmed) return null;
+
+  const globalScope =
+    typeof globalThis === "object" && globalThis
+      ? globalThis
+      : typeof self === "object" && self
+      ? self
+      : this;
+
+  const candidate =
+    globalScope && typeof globalScope[trimmed] === "function"
+      ? globalScope[trimmed]
+      : null;
+
+  if (!candidate) {
+    debugLog("invokeNamedServerFunction_", "missingHandler", { functionName: trimmed });
+    return null;
+  }
+
+  return candidate(ids, context);
+}
+
+function executeDefaultBulkAction_(actionKey, ids, context) {
+  if (!actionKey) {
+    return {
+      success: false,
+      message: "لم يتم تحديد إجراء للتنفيذ.",
+      updated: 0,
+      results: [],
+    };
+  }
+
+  const normalizedKey = String(actionKey || "")
+    .trim()
+    .toLowerCase();
+  const hasBulkUpdate =
+    typeof bulkUpdateMaterialStatus === "function";
+
+  const supportsBulkToggle =
+    hasBulkUpdate &&
+    Array.isArray(ids) &&
+    ids.length > 0;
+
+  if (supportsBulkToggle) {
+    if (
+      ["activate", "activate-selected", "set-active", "enable", "make-active", "mark-active"].includes(
+        normalizedKey
+      )
+    ) {
+      return bulkUpdateMaterialStatus(ids, true);
+    }
+    if (
+      [
+        "deactivate",
+        "deactivate-selected",
+        "set-inactive",
+        "archive",
+        "disable",
+        "make-inactive",
+        "mark-inactive",
+      ].includes(normalizedKey)
+    ) {
+      return bulkUpdateMaterialStatus(ids, false);
+    }
+  }
+
+  return {
+    success: false,
+    message: `الإجراء '${context?.actionName || normalizedKey}' غير مدعوم حالياً.`,
+    updated: 0,
+    results: [],
+  };
+}
+
+function handleBulkAction(tabId, actionName, selectedIds) {
+  const FNAME = "handleBulkAction";
+  debugLog(FNAME, "start", {
+    tabId,
+    actionName,
+    count: Array.isArray(selectedIds) ? selectedIds.length : 0,
+  });
+
+  const coerceDesiredState = (value) => {
+    if (value === null || value === undefined) return null;
+    if (typeof value === "boolean") return value;
+    if (typeof value === "number") {
+      if (value === 1) return true;
+      if (value === 0) return false;
+    }
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (!normalized) return null;
+      if (
+        ["1", "true", "yes", "y", "active", "enable", "enabled", "activate", "set-active"].includes(
+          normalized
+        )
+      ) {
+        return true;
+      }
+      if (
+        [
+          "0",
+          "false",
+          "no",
+          "n",
+          "inactive",
+          "disable",
+          "disabled",
+          "deactivate",
+          "set-inactive",
+          "archive",
+          "archived",
+        ].includes(normalized)
+      ) {
+        return false;
+      }
+    }
+    if (typeof value === "object" && value != null) {
+      if (Object.prototype.hasOwnProperty.call(value, "desiredState")) {
+        return coerceDesiredState(value.desiredState);
+      }
+      if (Object.prototype.hasOwnProperty.call(value, "state")) {
+        return coerceDesiredState(value.state);
+      }
+      if (Object.prototype.hasOwnProperty.call(value, "value")) {
+        return coerceDesiredState(value.value);
+      }
+    }
+    return null;
+  };
+
+  try {
+    const safeTabId = String(tabId || "").trim();
+    const rawActionName = String(actionName || "").trim();
+    if (!safeTabId) {
+      throw new Error("tabId is required.");
+    }
+    if (!rawActionName) {
+      throw new Error("actionName is required.");
+    }
+
+    const ids = (Array.isArray(selectedIds) ? selectedIds : [])
+      .map((id) => normalizeKeyValue_(id))
+      .filter(Boolean);
+
+    if (!ids.length) {
+      return sanitizeForClientResponse_({
+        success: false,
+        message: "لم يتم تحديد أي سجلات صالحة.",
+        updated: 0,
+        results: [],
+      });
+    }
+
+    const normalizedAction = rawActionName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const formsRegister = loadDynamicFormsRegisterSafe_();
+    const formConfig = formsRegister?.[safeTabId];
+    const quickActions = Array.isArray(formConfig?.quickActions)
+      ? formConfig.quickActions
+      : [];
+
+    const quickAction =
+      quickActions.find((item) => item && item.action === normalizedAction) ||
+      quickActions.find((item) => {
+        if (!item || typeof item.label !== "string") return false;
+        return item.label.trim().toLowerCase() === rawActionName.toLowerCase();
+      }) ||
+      null;
+
+    const context = {
+      tabId: safeTabId,
+      actionName: rawActionName,
+      normalizedAction,
+      selectedIds: ids,
+      quickAction,
+      formConfig,
+    };
+
+    let result = null;
+
+    if (quickAction) {
+      const handlerName =
+        quickAction.handler ||
+        (quickAction.payload && quickAction.payload.handler) ||
+        quickAction.serverAction ||
+        quickAction.serverFunction ||
+        quickAction.serverMethod ||
+        quickAction.functionName ||
+        quickAction.FunctionName ||
+        quickAction.Handler ||
+        "";
+
+      if (handlerName) {
+        result = invokeNamedServerFunction_(handlerName, ids, context);
+      }
+
+      if (result == null && quickAction.targetState !== undefined) {
+        const desiredState = coerceDesiredState(quickAction.targetState);
+        if (desiredState != null && typeof bulkUpdateMaterialStatus === "function") {
+          result = bulkUpdateMaterialStatus(ids, desiredState);
+        }
+      }
+
+      if (
+        result == null &&
+        quickAction.payload &&
+        typeof quickAction.payload === "object" &&
+        quickAction.payload != null &&
+        Object.prototype.hasOwnProperty.call(quickAction.payload, "desiredState")
+      ) {
+        const desiredState = coerceDesiredState(quickAction.payload.desiredState);
+        if (desiredState != null && typeof bulkUpdateMaterialStatus === "function") {
+          result = bulkUpdateMaterialStatus(ids, desiredState);
+        }
+      }
+    }
+
+    if (result == null) {
+      result = executeDefaultBulkAction_(normalizedAction, ids, context);
+    }
+
+    const safeResult =
+      result && typeof result === "object"
+        ? result
+        : {
+            success: Boolean(result),
+            updated: Boolean(result) ? ids.length : 0,
+            results: [],
+          };
+
+    return sanitizeForClientResponse_(safeResult);
+  } catch (err) {
+    debugError(FNAME, err, {
+      tabId,
+      actionName,
+      selectionCount: Array.isArray(selectedIds) ? selectedIds.length : 0,
+    });
     throw err;
   }
 }
