@@ -3138,6 +3138,7 @@
           </div>
         </header>
 
+<<<<<<< HEAD
         <section class="workspace-content">
           <section
             id="sys-overview-pane"
@@ -3277,6 +3278,10 @@
               </table>
             </div>
           </section>
+=======
+        <section class="workspace-content" id="sys-workspace-content">
+          <!-- System Management panes are rendered dynamically via ViewTab.js -->
+>>>>>>> 1fe9ae39a5944e035db051a8825a24ab45a16453
         </section>
 
         <aside class="workspace-nav" id="sys-side-nav">
@@ -3285,178 +3290,9 @@
       </div>
     </div>
 
-    <!-- إنشاء مستخدم (ديناميكي إن توفرت الجداول؛ وإلا نموذج مبسّط) -->
-    <dialog id="dlg-new-user">
-      <h3 style="margin-bottom: 0.6rem">إنشاء مستخدم جديد</h3>
-      <form method="dialog" id="new-user-form">
-        <div id="new-user-fields" class="dialog-body"></div>
-        <div class="actions">
-          <button type="submit" class="action-button save-button">حفظ</button>
-          <button
-            type="button"
-            id="btn-cancel-new"
-            class="action-button cancel-button"
-          >
-            إلغاء
-          </button>
-        </div>
-      </form>
-    </dialog>
 
-    <!-- ملف المستخدم -->
-    <dialog id="dlg-user-profile">
-      <div class="profile-dialog__header">
-        <h3 id="profile-title">ملف المستخدم</h3>
-        <div id="profile-username" class="profile-dialog__username"></div>
-      </div>
-      <div class="profile-tabs" id="profile-tabs">
-        <button type="button" class="nav-item active" data-tab="profile">
-          الملف
-        </button>
-        <button type="button" class="nav-item" data-tab="properties">
-          الخصائص
-        </button>
-        <button type="button" class="nav-item" data-tab="documents">
-          المستندات
-        </button>
-        <button type="button" class="nav-item" data-tab="sessions">
-          الجلسات
-        </button>
-        <button type="button" class="nav-item" data-tab="audit">التدقيق</button>
-      </div>
-      <div class="profile-panels" id="profile-panels">
-        <section class="profile-panel active" data-tab="profile">
-          <dl class="profile-dl" id="profile-overview-list"></dl>
-        </section>
-        <section class="profile-panel" data-tab="properties">
-          <table class="profile-table">
-            <thead>
-              <tr>
-                <th>المفتاح</th>
-                <th>القيمة</th>
-                <th>آخر تحديث</th>
-                <th>المحدّث</th>
-              </tr>
-            </thead>
-            <tbody id="profile-properties-body"></tbody>
-          </table>
-        </section>
-        <section class="profile-panel" data-tab="documents">
-          <table class="profile-table">
-            <thead>
-              <tr>
-                <th>المستند</th>
-                <th>المرفوع بواسطة</th>
-                <th>التاريخ</th>
-                <th>رابط</th>
-              </tr>
-            </thead>
-            <tbody id="profile-documents-body"></tbody>
-          </table>
-        </section>
-        <section class="profile-panel" data-tab="sessions">
-          <table class="profile-table">
-            <thead>
-              <tr>
-                <th>Session</th>
-                <th>المنتحل</th>
-                <th>النوع</th>
-                <th>الحالة</th>
-                <th>البداية</th>
-                <th>النهاية</th>
-              </tr>
-            </thead>
-            <tbody id="profile-sessions-body"></tbody>
-          </table>
-        </section>
-        <section class="profile-panel" data-tab="audit">
-          <table class="profile-table">
-            <thead>
-              <tr>
-                <th>الوقت</th>
-                <th>المستخدم</th>
-                <th>الإجراء</th>
-                <th>التفاصيل</th>
-              </tr>
-            </thead>
-            <tbody id="profile-audit-body"></tbody>
-          </table>
-        </section>
-      </div>
-      <div class="actions">
-        <button
-          type="button"
-          id="btn-close-profile"
-          class="action-button cancel-button"
-        >
-          إغلاق
-        </button>
-      </div>
-    </dialog>
 
-    <!-- تعيين دور -->
-    <dialog id="dlg-assign-role">
-      <h3 style="margin-bottom: 0.6rem">تعيين دور للمستخدم</h3>
-      <form method="dialog" id="form-assign-role">
-        <input type="hidden" id="assign-role-user" name="userId" />
-        <div class="form-grid">
-          <div class="span-2">
-            <label for="assign-role-select">اختر الدور</label>
-            <select id="assign-role-select" name="roleId" required></select>
-          </div>
-          <div class="span-2 muted" id="assign-role-user-label"></div>
-        </div>
-        <div class="actions">
-          <button type="submit" class="action-button save-button">حفظ</button>
-          <button
-            type="button"
-            id="btn-cancel-assign"
-            class="action-button cancel-button"
-          >
-            إلغاء
-          </button>
-        </div>
-      </form>
-    </dialog>
 
-    <!-- إعادة تعيين كلمة المرور -->
-    <dialog id="dlg-reset-pass">
-      <h3 style="margin-bottom: 0.6rem">إعادة تعيين كلمة المرور</h3>
-      <form method="dialog" id="form-reset-pass">
-        <div class="form-grid">
-          <div class="span-2">
-            <label for="reset_pass">كلمة المرور الجديدة</label
-            ><input
-              type="password"
-              id="reset_pass"
-              name="password"
-              autocomplete="new-password"
-              required
-            />
-          </div>
-          <div class="span-2">
-            <label for="reset_confirm">تأكيد كلمة المرور</label
-            ><input
-              type="password"
-              id="reset_confirm"
-              name="confirm"
-              autocomplete="new-password"
-              required
-            />
-          </div>
-        </div>
-        <div class="actions">
-          <button type="submit" class="action-button edit-button">تحديث</button>
-          <button
-            type="button"
-            id="btn-cancel-reset"
-            class="action-button cancel-button"
-          >
-            إلغاء
-          </button>
-        </div>
-      </form>
-    </dialog>
 
     <?!= include('FormModal.js'); ?>
     <?!= include('ViewTab.js'); ?>
