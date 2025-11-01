@@ -2425,6 +2425,717 @@ function executeDefaultBulkAction_(actionKey, ids, context) {
   };
 }
 
+function coerceBulkDesiredState_(value) {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") {
+    if (value === 1) return true;
+    if (value === 0) return false;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return null;
+    if (
+      ["1", "true", "yes", "y", "active", "enable", "enabled", "activate", "set-active"].includes(
+        normalized
+      )
+    ) {
+      return true;
+    }
+    if (
+      [
+        "0",
+        "false",
+        "no",
+        "n",
+        "inactive",
+        "disable",
+        "disabled",
+        "deactivate",
+        "set-inactive",
+        "archive",
+        "archived",
+      ].includes(normalized)
+    ) {
+      return false;
+    }
+  }
+  if (typeof value === "object" && value != null) {
+    if (Object.prototype.hasOwnProperty.call(value, "desiredState")) {
+      return coerceBulkDesiredState_(value.desiredState);
+    }
+    if (Object.prototype.hasOwnProperty.call(value, "state")) {
+      return coerceBulkDesiredState_(value.state);
+    }
+    if (Object.prototype.hasOwnProperty.call(value, "value")) {
+      return coerceBulkDesiredState_(value.value);
+    }
+  }
+  return null;
+}
+
+function resolveBulkActionTabContext_(tabId) {
+  const register = getTabRegister();
+  if (!Array.isArray(register) || !register.length) {
+    return {
+      tab: null,
+      subTab: null,
+      sourceSheet: "",
+      candidatePaneKeys: [],
+    };
+  }
+
+  const normalizedTarget = normalizeKeyValue_(tabId);
+  let resolvedTab = null;
+  let resolvedSubTab = null;
+
+  register.some((tab) => {
+    if (!tab) return false;
+    const tabKey = normalizeKeyValue_(tab.tabId || tab.tabID || tab.key);
+    const subTabs = Array.isArray(tab.subTabs) ? tab.subTabs : [];
+
+    if (tabKey && tabKey === normalizedTarget) {
+      resolvedTab = tab;
+      return true;
+    }
+
+    const matchedSubTab = subTabs.find((sub) => {
+      const subKey = normalizeKeyValue_(sub.subId || sub.subID || sub.Sub_ID || sub.key);
+      return subKey && subKey === normalizedTarget;
+    });
+
+    if (matchedSubTab) {
+      resolvedTab = tab;
+      resolvedSubTab = matchedSubTab;
+      return true;
+    }
+
+    return false;
+  });
+
+  const candidatePaneKeys = [];
+  const pushKey = (value) => {
+    if (!value) return;
+    const trimmed = String(value).trim();
+    if (!trimmed) return;
+    if (!candidatePaneKeys.includes(trimmed)) {
+      candidatePaneKeys.push(trimmed);
+    }
+  };
+
+  pushKey(tabId);
+  pushKey(resolvedSubTab ? resolvedSubTab.subId || resolvedSubTab.Sub_ID || resolvedSubTab.key : "");
+  pushKey(resolvedTab ? resolvedTab.tabId || resolvedTab.tabID || resolvedTab.key : "");
+
+  const sourceSheet =
+    (resolvedSubTab && resolvedSubTab.sourceSheet) ||
+    (resolvedTab && resolvedTab.sourceSheet) ||
+    "";
+
+  return {
+    tab: resolvedTab,
+    subTab: resolvedSubTab,
+    sourceSheet,
+    candidatePaneKeys,
+  };
+}
+
+function resolveQuickActionForBulk_(
+  formsRegister,
+  candidatePaneKeys,
+  normalizedAction,
+  rawActionName
+) {
+  if (!formsRegister || typeof formsRegister !== "object") {
+    return { quickAction: null, formConfig: null, paneKey: null };
+  }
+
+  const lowerLabel = String(rawActionName || "").trim().toLowerCase();
+  const seen = new Set();
+
+  const tryResolve = (paneKey) => {
+    if (!paneKey) return null;
+    const trimmed = String(paneKey).trim();
+    if (!trimmed || seen.has(trimmed)) return null;
+    seen.add(trimmed);
+
+    const formConfig = formsRegister[trimmed];
+    if (!formConfig || typeof formConfig !== "object") {
+      return null;
+    }
+
+    const quickActions = Array.isArray(formConfig.quickActions)
+      ? formConfig.quickActions
+      : [];
+
+    if (!quickActions.length) return null;
+
+    const match = quickActions.find((item) => {
+      if (!item) return false;
+      const actionKey = String(item.action || "").trim().toLowerCase();
+      if (actionKey && actionKey === normalizedAction) return true;
+      const label = String(item.label || "").trim().toLowerCase();
+      if (label && label === lowerLabel) return true;
+      if (actionKey && actionKey.replace(/[^a-z0-9]+/g, "-") === normalizedAction) return true;
+      return false;
+    });
+
+    if (match) {
+      return { quickAction: match, formConfig, paneKey: trimmed };
+    }
+    return null;
+  };
+
+  for (let i = 0; i < candidatePaneKeys.length; i++) {
+    const resolved = tryResolve(candidatePaneKeys[i]);
+    if (resolved) return resolved;
+  }
+
+  const allKeys = Object.keys(formsRegister);
+  for (let i = 0; i < allKeys.length; i++) {
+    const resolved = tryResolve(allKeys[i]);
+    if (resolved) return resolved;
+  }
+
+  return { quickAction: null, formConfig: null, paneKey: null };
+}
+
+function buildBulkActionPlan_(quickAction, context, tabContext) {
+  if (!quickAction || typeof quickAction !== "object") return null;
+
+  const payload =
+    quickAction.payload && typeof quickAction.payload === "object"
+      ? quickAction.payload
+      : {};
+
+  const updates = [];
+
+  const addUpdate = (column, value, valueType) => {
+    if (!column) return;
+    const normalizedColumn = String(column).trim();
+    if (!normalizedColumn) return;
+    updates.push({
+      column: normalizedColumn,
+      value,
+      valueType: valueType || payload.valueType || null,
+    });
+  };
+
+  const ensureUpdatesFromObject = (obj, valueType) => {
+    if (!obj || typeof obj !== "object") return;
+    Object.keys(obj).forEach((key) => {
+      addUpdate(key, obj[key], valueType);
+    });
+  };
+
+  if (Array.isArray(payload.updates)) {
+    payload.updates.forEach((entry) => {
+      if (!entry || typeof entry !== "object") return;
+      const column =
+        entry.column ||
+        entry.targetColumn ||
+        entry.field ||
+        entry.key ||
+        entry.columnName ||
+        entry.name;
+      const value =
+        entry.value ??
+        entry.set ??
+        entry.setTo ??
+        entry.targetValue ??
+        entry.desiredState ??
+        entry.state ??
+        entry.use;
+      addUpdate(column, value, entry.valueType || entry.type || null);
+    });
+  }
+
+  if (Array.isArray(payload.set)) {
+    payload.set.forEach((entry) => {
+      if (!entry || typeof entry !== "object") return;
+      const column =
+        entry.column ||
+        entry.targetColumn ||
+        entry.field ||
+        entry.key ||
+        entry.columnName ||
+        entry.name;
+      addUpdate(column, entry.value ?? entry.valueTo ?? entry.setTo ?? entry.set ?? "");
+    });
+  }
+
+  ensureUpdatesFromObject(payload.sets, payload.valueType);
+  ensureUpdatesFromObject(payload.columns, payload.valueType);
+  ensureUpdatesFromObject(payload.assign, payload.valueType);
+
+  if (Array.isArray(payload.clear)) {
+    payload.clear.forEach((column) => addUpdate(column, ""));
+  }
+  if (Array.isArray(payload.clearColumns)) {
+    payload.clearColumns.forEach((column) => addUpdate(column, ""));
+  }
+
+  const singleColumn =
+    payload.column ||
+    payload.targetColumn ||
+    payload.field ||
+    payload.key ||
+    payload.columnName;
+  if (singleColumn && !updates.length) {
+    const value =
+      payload.value ??
+      payload.set ??
+      payload.setTo ??
+      payload.targetValue ??
+      payload.desiredState ??
+      payload.state ??
+      payload.use;
+    addUpdate(singleColumn, value);
+  }
+
+  if (!updates.length && quickAction.targetState !== undefined) {
+    const stateColumn =
+      payload.stateColumn ||
+      payload.statusColumn ||
+      payload.targetColumn ||
+      payload.column ||
+      "IsActive";
+    const desiredState = coerceBulkDesiredState_(quickAction.targetState);
+    if (desiredState != null) {
+      addUpdate(stateColumn, desiredState, "boolean");
+    }
+  }
+
+  if (!updates.length) {
+    return null;
+  }
+
+  const sheetCandidates = [];
+  const pushSheet = (value) => {
+    if (!value) return;
+    const trimmed = String(value).trim();
+    if (!trimmed) return;
+    if (!sheetCandidates.includes(trimmed)) {
+      sheetCandidates.push(trimmed);
+    }
+  };
+
+  pushSheet(payload.targetSheet);
+  pushSheet(payload.sourceSheet);
+  pushSheet(context?.formConfig?.targetSheet);
+  pushSheet(context?.formConfig?.sourceSheet);
+  if (tabContext) {
+    pushSheet(tabContext.subTab ? tabContext.subTab.sourceSheet : "");
+    pushSheet(tabContext.tab ? tabContext.tab.sourceSheet : "");
+  }
+
+  const idCandidates = [];
+  const pushIdCandidate = (value) => {
+    if (!value) return;
+    const trimmed = String(value).trim();
+    if (!trimmed) return;
+    if (!idCandidates.includes(trimmed)) {
+      idCandidates.push(trimmed);
+    }
+  };
+
+  const idSources = [
+    payload.idColumn,
+    payload.idField,
+    payload.primaryKey,
+    payload.keyColumn,
+    payload.recordIdColumn,
+    payload.identifier,
+    payload.lookupColumn,
+    payload.lookupKey,
+    quickAction.idColumn,
+    quickAction.primaryKey,
+    context?.formConfig?.primaryKey,
+    context?.formConfig?.keyColumn,
+  ];
+  idSources.forEach((candidate) => pushIdCandidate(candidate));
+  if (Array.isArray(payload.idColumns)) {
+    payload.idColumns.forEach((candidate) => pushIdCandidate(candidate));
+  }
+
+  const timestampColumns = [];
+  const pushTimestamp = (value) => {
+    if (!value) return;
+    const trimmed = String(value).trim();
+    if (!trimmed) return;
+    if (!timestampColumns.includes(trimmed)) {
+      timestampColumns.push(trimmed);
+    }
+  };
+
+  const actorColumns = [];
+  const pushActor = (value) => {
+    if (!value) return;
+    const trimmed = String(value).trim();
+    if (!trimmed) return;
+    if (!actorColumns.includes(trimmed)) {
+      actorColumns.push(trimmed);
+    }
+  };
+
+  const payloadTimestampSources = [].concat(
+    payload.timestampColumn || [],
+    payload.timestampColumns || [],
+    payload.updatedAtColumn || []
+  );
+  payloadTimestampSources.forEach((value) => pushTimestamp(value));
+
+  const payloadActorSources = [].concat(
+    payload.actorColumn || [],
+    payload.actorColumns || [],
+    payload.updatedByColumn || []
+  );
+  payloadActorSources.forEach((value) => pushActor(value));
+
+  return {
+    sheetName: sheetCandidates.length ? sheetCandidates[0] : "",
+    updates,
+    idColumnCandidates: idCandidates,
+    timestampColumns,
+    actorColumns,
+    autoTimestamp:
+      payload.autoTimestamp !== false &&
+      payload.updateTimestamp !== false &&
+      payload.skipTimestamp !== true,
+    autoActor:
+      payload.autoActor !== false &&
+      payload.updateActor !== false &&
+      payload.skipActor !== true,
+    successMessage:
+      payload.successMessage ||
+      quickAction.successMessage ||
+      quickAction.message ||
+      "",
+    noChangeMessage:
+      payload.noChangeMessage ||
+      payload.emptyMessage ||
+      quickAction.emptyMessage ||
+      "",
+    failOnMissingColumns:
+      payload.failOnMissingColumns !== false &&
+      payload.allowMissingColumns !== true,
+    onMissingRecord:
+      payload.onMissingRecord === "skip" || payload.onMissingRecord === "ignore"
+        ? "skip"
+        : "report",
+  };
+}
+
+function resolveBulkActionIdColumnIndex_(ids, headers, rows, candidates) {
+  if (!headers || !headers.length) {
+    return { index: -1, candidate: null, matches: 0 };
+  }
+
+  const normalizedIds = Array.isArray(ids)
+    ? ids.map((value) => normalizeKeyValue_(value)).filter(Boolean)
+    : [];
+  const idSet = new Set(normalizedIds);
+
+  const evaluateIndex = (index, candidate) => {
+    if (index == null || index < 0) return { matches: 0, index: -1, candidate: null };
+    let matches = 0;
+    if (rows && rows.length && idSet.size) {
+      for (let i = 0; i < rows.length; i++) {
+        const value = normalizeKeyValue_(getValueAt_(rows[i], index));
+        if (value && idSet.has(value)) {
+          matches += 1;
+        }
+      }
+    }
+    return { matches, index, candidate };
+  };
+
+  const evaluated = [];
+  const candidateList = Array.isArray(candidates) ? candidates : [];
+  candidateList.forEach((candidate) => {
+    const index = findHeaderIndex_(headers, candidate);
+    const result = evaluateIndex(index, candidate);
+    if (result.index >= 0) evaluated.push(result);
+  });
+
+  if (!evaluated.length) {
+    headers.forEach((header, idx) => {
+      const normalizedHeader = normalizeHeaderKey_(header);
+      if (!normalizedHeader) return;
+      if (/(^|_)(id|identifier)$/.test(normalizedHeader) || normalizedHeader.endsWith("id")) {
+        const result = evaluateIndex(idx, header);
+        if (result.index >= 0) evaluated.push(result);
+      }
+    });
+  }
+
+  if (!evaluated.length) {
+    headers.forEach((header, idx) => {
+      const normalizedHeader = normalizeHeaderKey_(header);
+      if (!normalizedHeader) return;
+      if (normalizedHeader.includes("id")) {
+        const result = evaluateIndex(idx, header);
+        if (result.index >= 0) evaluated.push(result);
+      }
+    });
+  }
+
+  if (!evaluated.length) {
+    return { index: -1, candidate: null, matches: 0 };
+  }
+
+  evaluated.sort((a, b) => {
+    if (b.matches !== a.matches) return b.matches - a.matches;
+    if (a.index !== b.index) return a.index - b.index;
+    return 0;
+  });
+
+  return evaluated[0];
+}
+
+function coerceBulkActionValue_(rawValue, context, valueType) {
+  if (rawValue === undefined) {
+    return "";
+  }
+  if (rawValue === null) {
+    return "";
+  }
+  if (rawValue instanceof Date) {
+    return rawValue;
+  }
+
+  const resolveFromToken = (token) => {
+    switch (token) {
+      case "@now":
+      case "{{now}}":
+      case "@timestamp":
+      case "{{timestamp}}":
+      case "now":
+      case "now()":
+        return context.now;
+      case "@today":
+      case "{{today}}": {
+        const today = new Date(context.now);
+        today.setHours(0, 0, 0, 0);
+        return today;
+      }
+      case "@user":
+      case "{{user}}":
+      case "@actor":
+      case "{{actor}}":
+        return context.actor;
+      case "@id":
+      case "{{id}}":
+      case "@record":
+      case "{{record}}":
+        return context.currentId;
+      default:
+        return null;
+    }
+  };
+
+  if (typeof rawValue === "string") {
+    const trimmed = rawValue.trim();
+    const lower = trimmed.toLowerCase();
+    const tokenValue = resolveFromToken(lower);
+    if (tokenValue !== null) {
+      return tokenValue;
+    }
+    if (valueType === "boolean") {
+      return isTruthyFlag_(trimmed);
+    }
+    if (valueType === "number") {
+      const num = Number(trimmed);
+      return Number.isFinite(num) ? num : trimmed;
+    }
+    if (valueType === "date") {
+      const parsed = new Date(trimmed);
+      return Number.isNaN(parsed.getTime()) ? trimmed : parsed;
+    }
+    if (["true", "false"].includes(lower)) {
+      return lower === "true";
+    }
+    return trimmed;
+  }
+
+  if (valueType === "boolean") {
+    return isTruthyFlag_(rawValue);
+  }
+  if (valueType === "number") {
+    const num = Number(rawValue);
+    return Number.isFinite(num) ? num : rawValue;
+  }
+  if (valueType === "date") {
+    const parsed = new Date(rawValue);
+    return Number.isNaN(parsed.getTime()) ? rawValue : parsed;
+  }
+
+  return rawValue;
+}
+
+function applyBulkActionPlan_(sheetName, ids, plan, context) {
+  if (!sheetName) {
+    throw new Error("تعذّر تحديد ورقة البيانات المستهدفة لهذا الإجراء.");
+  }
+
+  const sheet = getSheet_(sheetName);
+  if (!sheet) {
+    throw new Error(`لم يتم العثور على الورقة المستهدفة '${sheetName}'.`);
+  }
+
+  const range = sheet.getDataRange();
+  const values = range.getValues();
+  if (!values || !values.length) {
+    return {
+      updated: 0,
+      results: [],
+      message: "لا توجد بيانات في الورقة المستهدفة.",
+    };
+  }
+
+  const headers = values[0] || [];
+  const rows = values.slice(1);
+  const idResolution = resolveBulkActionIdColumnIndex_(ids, headers, rows, plan.idColumnCandidates);
+  if (idResolution.index < 0) {
+    throw new Error("تعذّر تحديد عمود المعرف للسجلات المحددة.");
+  }
+
+  const updateColumns = plan.updates.map((entry) => {
+    const index = findHeaderIndex_(headers, entry.column);
+    return { ...entry, index };
+  });
+
+  if (plan.failOnMissingColumns) {
+    const missing = updateColumns
+      .filter((entry) => entry.index < 0)
+      .map((entry) => entry.column);
+    if (missing.length) {
+      throw new Error(
+        `الأعمدة التالية غير موجودة في الورقة '${sheetName}': ${missing.join(", ")}`
+      );
+    }
+  }
+
+  const filteredUpdates = updateColumns.filter((entry) => entry.index >= 0);
+  if (!filteredUpdates.length) {
+    return {
+      updated: 0,
+      results: [],
+      message: "لم يتم العثور على أعمدة صالحة للتحديث.",
+    };
+  }
+
+  const autoTimestampColumns = plan.autoTimestamp
+    ? plan.timestampColumns.length
+      ? plan.timestampColumns
+      : ["Updated_At", "UpdatedAt", "Last_Updated"]
+    : [];
+  const autoActorColumns = plan.autoActor
+    ? plan.actorColumns.length
+      ? plan.actorColumns
+      : ["Updated_By", "UpdatedBy", "Last_Updated_By"]
+    : [];
+
+  const timestampColumnIndexes = autoTimestampColumns
+    .map((name) => ({ column: name, index: findHeaderIndex_(headers, name) }))
+    .filter((entry) => entry.index >= 0);
+  const actorColumnIndexes = autoActorColumns
+    .map((name) => ({ column: name, index: findHeaderIndex_(headers, name) }))
+    .filter((entry) => entry.index >= 0);
+
+  const idToRowIndex = new Map();
+  rows.forEach((row, idx) => {
+    const key = normalizeKeyValue_(getValueAt_(row, idResolution.index));
+    if (key && !idToRowIndex.has(key)) {
+      idToRowIndex.set(key, idx);
+    }
+  });
+
+  const now = new Date();
+  const actor = getActorEmail_();
+  const results = [];
+  let updatedCount = 0;
+  const writes = [];
+
+  ids.forEach((rawId) => {
+    const normalizedId = normalizeKeyValue_(rawId);
+    if (!normalizedId) {
+      results.push({
+        id: rawId,
+        updated: false,
+        reason: "INVALID_ID",
+      });
+      return;
+    }
+
+    const rowIndex = idToRowIndex.get(normalizedId);
+    if (rowIndex == null) {
+      const entry = {
+        id: normalizedId,
+        updated: false,
+      };
+      if (plan.onMissingRecord === "report") {
+        entry.reason = "NOT_FOUND";
+      }
+      results.push(entry);
+      return;
+    }
+
+    const rowValues = rows[rowIndex].slice();
+    const appliedColumns = [];
+
+    filteredUpdates.forEach((update) => {
+      const value = coerceBulkActionValue_(update.value, {
+        now,
+        actor,
+        currentId: normalizedId,
+        context,
+        row: rowValues,
+      }, update.valueType);
+      rowValues[update.index] = value;
+      appliedColumns.push(headers[update.index] || update.column);
+    });
+
+    timestampColumnIndexes.forEach((entry) => {
+      rowValues[entry.index] = now;
+      appliedColumns.push(headers[entry.index] || entry.column);
+    });
+
+    actorColumnIndexes.forEach((entry) => {
+      rowValues[entry.index] = actor;
+      appliedColumns.push(headers[entry.index] || entry.column);
+    });
+
+    if (!appliedColumns.length) {
+      results.push({
+        id: normalizedId,
+        updated: false,
+        reason: "NO_CHANGES",
+      });
+      return;
+    }
+
+    const rowNumber = rowIndex + 2;
+    rows[rowIndex] = rowValues;
+    writes.push({ rowNumber, values: rowValues });
+    updatedCount += 1;
+    results.push({
+      id: normalizedId,
+      updated: true,
+      columns: appliedColumns,
+    });
+  });
+
+  writes.forEach((entry) => {
+    sheet.getRange(entry.rowNumber, 1, 1, headers.length).setValues([entry.values]);
+  });
+
+  return {
+    updated: updatedCount,
+    results,
+  };
+}
+
 function handleBulkAction(tabId, actionName, selectedIds) {
   const FNAME = "handleBulkAction";
   debugLog(FNAME, "start", {
@@ -2432,55 +3143,6 @@ function handleBulkAction(tabId, actionName, selectedIds) {
     actionName,
     count: Array.isArray(selectedIds) ? selectedIds.length : 0,
   });
-
-  const coerceDesiredState = (value) => {
-    if (value === null || value === undefined) return null;
-    if (typeof value === "boolean") return value;
-    if (typeof value === "number") {
-      if (value === 1) return true;
-      if (value === 0) return false;
-    }
-    if (typeof value === "string") {
-      const normalized = value.trim().toLowerCase();
-      if (!normalized) return null;
-      if (
-        ["1", "true", "yes", "y", "active", "enable", "enabled", "activate", "set-active"].includes(
-          normalized
-        )
-      ) {
-        return true;
-      }
-      if (
-        [
-          "0",
-          "false",
-          "no",
-          "n",
-          "inactive",
-          "disable",
-          "disabled",
-          "deactivate",
-          "set-inactive",
-          "archive",
-          "archived",
-        ].includes(normalized)
-      ) {
-        return false;
-      }
-    }
-    if (typeof value === "object" && value != null) {
-      if (Object.prototype.hasOwnProperty.call(value, "desiredState")) {
-        return coerceDesiredState(value.desiredState);
-      }
-      if (Object.prototype.hasOwnProperty.call(value, "state")) {
-        return coerceDesiredState(value.state);
-      }
-      if (Object.prototype.hasOwnProperty.call(value, "value")) {
-        return coerceDesiredState(value.value);
-      }
-    }
-    return null;
-  };
 
   try {
     const safeTabId = String(tabId || "").trim();
@@ -2510,19 +3172,14 @@ function handleBulkAction(tabId, actionName, selectedIds) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
+    const tabContext = resolveBulkActionTabContext_(safeTabId);
     const formsRegister = loadDynamicFormsRegisterSafe_();
-    const formConfig = formsRegister?.[safeTabId];
-    const quickActions = Array.isArray(formConfig?.quickActions)
-      ? formConfig.quickActions
-      : [];
-
-    const quickAction =
-      quickActions.find((item) => item && item.action === normalizedAction) ||
-      quickActions.find((item) => {
-        if (!item || typeof item.label !== "string") return false;
-        return item.label.trim().toLowerCase() === rawActionName.toLowerCase();
-      }) ||
-      null;
+    const { quickAction, formConfig, paneKey } = resolveQuickActionForBulk_(
+      formsRegister,
+      tabContext.candidatePaneKeys,
+      normalizedAction,
+      rawActionName
+    );
 
     const context = {
       tabId: safeTabId,
@@ -2531,6 +3188,8 @@ function handleBulkAction(tabId, actionName, selectedIds) {
       selectedIds: ids,
       quickAction,
       formConfig,
+      paneKey,
+      tabContext,
     };
 
     let result = null;
@@ -2551,8 +3210,28 @@ function handleBulkAction(tabId, actionName, selectedIds) {
         result = invokeNamedServerFunction_(handlerName, ids, context);
       }
 
+      if (result == null) {
+        const plan = buildBulkActionPlan_(quickAction, context, tabContext);
+        if (plan) {
+          const sheetName = plan.sheetName || tabContext.sourceSheet;
+          const applied = applyBulkActionPlan_(sheetName, ids, plan, context);
+          const success = applied.updated > 0;
+          const message = success
+            ? plan.successMessage || "تم تحديث السجلات المحددة بنجاح."
+            : plan.noChangeMessage || "لم يتم إجراء أي تحديثات على السجلات المحددة.";
+          result = {
+            success,
+            updated: applied.updated,
+            results: applied.results,
+            sheet: sheetName,
+            action: quickAction.action || quickAction.label || normalizedAction,
+            message,
+          };
+        }
+      }
+
       if (result == null && quickAction.targetState !== undefined) {
-        const desiredState = coerceDesiredState(quickAction.targetState);
+        const desiredState = coerceBulkDesiredState_(quickAction.targetState);
         if (desiredState != null && typeof bulkUpdateMaterialStatus === "function") {
           result = bulkUpdateMaterialStatus(ids, desiredState);
         }
@@ -2565,7 +3244,7 @@ function handleBulkAction(tabId, actionName, selectedIds) {
         quickAction.payload != null &&
         Object.prototype.hasOwnProperty.call(quickAction.payload, "desiredState")
       ) {
-        const desiredState = coerceDesiredState(quickAction.payload.desiredState);
+        const desiredState = coerceBulkDesiredState_(quickAction.payload.desiredState);
         if (desiredState != null && typeof bulkUpdateMaterialStatus === "function") {
           result = bulkUpdateMaterialStatus(ids, desiredState);
         }
