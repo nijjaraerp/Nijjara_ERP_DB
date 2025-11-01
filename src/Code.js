@@ -62,99 +62,6 @@ const CONFIG = {
 };
 
 
-const DYNAMIC_FORMS_FALLBACK = Object.freeze({
-  Sub_SYS_Users: {
-    formId: "FORM_SYS_AddUser",
-    titleEn: "Add User",
-    titleAr: "إضافة مستخدم جديد",
-  },
-  Sub_SYS_Roles: {
-    formId: "FORM_SYS_AddRole",
-    titleEn: "Add Role",
-    titleAr: "إضافة دور",
-  },
-  Sub_SYS_Permissions: {
-    formId: "FORM_SYS_AddPermission",
-    titleEn: "Add Permission",
-    titleAr: "إضافة إذن",
-  },
-  Sub_SYS_RolePerms: {
-    formId: "FORM_SYS_MapRolePermission",
-    titleEn: "Map Role Permission",
-    titleAr: "ربط إذن بدور",
-  },
-  Sub_SYS_Properties: {
-    formId: "FORM_SYS_AddUserProperty",
-    titleEn: "Add User Property",
-    titleAr: "إضافة خاصية مستخدم",
-  },
-  Sub_PRJ_Main: {
-    formId: "FORM_PRJ_AddProject",
-    titleEn: "Add Project",
-    titleAr: "إضافة مشروع جديد",
-  },
-  Sub_PRJ_Tasks: {
-    formId: "FORM_PRJ_AddTask",
-    titleEn: "Add Project Task",
-    titleAr: "إضافة مهمة مشروع",
-  },
-  Sub_PRJ_Costs: {
-    formId: "FORM_PRJ_AddCost",
-    titleEn: "Log Project Cost",
-    titleAr: "تسجيل تكلفة مشروع",
-  },
-  Sub_PRJ_Materials: {
-    formId: "FORM_PRJ_AddMaterial",
-    titleEn: "Add Material",
-    titleAr: "إضافة مادة جديدة",
-  },
-  Sub_PRJ_Revenue: {
-    formId: "FORM_PRJ_AddRevenue",
-    titleEn: "Log Project Revenue",
-    titleAr: "تسجيل إيراد مشروع",
-  },
-  Sub_PRJ_Clients: {
-    formId: "FORM_PRJ_AddClient",
-    titleEn: "Add Client",
-    titleAr: "إضافة عميل",
-  },
-  Sub_HR_Employees: {
-    formId: "FORM_HR_AddEmployee",
-    titleEn: "Add Employee",
-    titleAr: "إضافة موظف",
-  },
-  Sub_HR_Attendance: {
-    formId: "FORM_HR_AddAttendance",
-    titleEn: "Log Attendance",
-    titleAr: "تسجيل الحضور",
-  },
-  Sub_HR_Leave_Requests: {
-    formId: "FORM_HR_AddLeaveRequest",
-    titleEn: "Submit Leave Request",
-    titleAr: "تقديم طلب إجازة",
-  },
-  Sub_HR_Leave: {
-    formId: "FORM_HR_AddLeave",
-    titleEn: "Record Leave",
-    titleAr: "تسجيل إجازة",
-  },
-  Sub_HR_Advances: {
-    formId: "FORM_HR_AddAdvance",
-    titleEn: "Log Advance",
-    titleAr: "تسجيل سلفة",
-  },
-  Sub_HR_Deductions: {
-    formId: "FORM_HR_AddDeduction",
-    titleEn: "Log Deduction",
-    titleAr: "تسجيل خصم",
-  },
-  Sub_HR_Payroll: {
-    formId: "FORM_HR_AddPayroll",
-    titleEn: "Create Payroll Entry",
-    titleAr: "إنشاء بيان راتب",
-  },
-});
-
 /** ---- DEBUGGING UTILITIES ---- */
 function debugLog(context, message, data) {
   if (!CONFIG.DEBUG) return;
@@ -1076,29 +983,17 @@ function buildGuestBootstrapPayload_() {
 
 function loadDynamicFormsRegisterSafe_() {
   const FNAME = "loadDynamicFormsRegisterSafe_";
-  const fallback = cloneDynamicFormsFallback_();
 
   try {
-    const features = CONFIG?.FEATURES || {};
-    if (features.enableDynamicForms === false) {
-      debugLog(FNAME, "disabledByConfig");
-      return fallback;
-    }
-
-    if (typeof getDynamicFormsRegister_ !== "function") {
-      debugLog(FNAME, "missingLoader");
-      return fallback;
-    }
-
     const register = getDynamicFormsRegister_();
     if (!register || typeof register !== "object") {
       debugLog(FNAME, "invalidRegister", {
         type: register == null ? "null" : typeof register,
       });
-      return fallback;
+      return Object.create(null);
     }
 
-    const safeRegister = cloneDynamicFormsFallback_();
+    const safeRegister = Object.create(null);
     Object.keys(register).forEach((key) => {
       if (!key) return;
       const entry = register[key];
@@ -1138,28 +1033,8 @@ function loadDynamicFormsRegisterSafe_() {
     return safeRegister;
   } catch (err) {
     debugError(FNAME, err);
-    return fallback;
+    return Object.create(null);
   }
-}
-
-function cloneDynamicFormsFallback_() {
-  const clone = Object.create(null);
-  const source = DYNAMIC_FORMS_FALLBACK || {};
-  Object.keys(source).forEach((key) => {
-    if (!key) return;
-    const entry = source[key] || {};
-    const formId = entry.formId ? String(entry.formId).trim() : "";
-    const editFormId = entry.editFormId ? String(entry.editFormId).trim() : "";
-    clone[key] = {
-      ...entry,
-      formId,
-      editFormId,
-      quickActions: Array.isArray(entry.quickActions)
-        ? entry.quickActions.slice()
-        : [],
-    };
-  });
-  return clone;
 }
 
 function parseQuickActions_(rawValue) {
@@ -1432,17 +1307,6 @@ function buildNavigationConfig_(role, permissions) {
     );
   };
 
-  const FALLBACK_TAB_TARGETS = {
-    Tab_SYS_Management: "system-management-view",
-    Tab_PRJ_Management: "projects-workspace",
-    Tab_FIN_Management: "finance-workspace",
-    Tab_HR_Management: "hr-workspace",
-    TAB_SYS_MANAGEMENT: "system-management-view",
-    TAB_PRJ_MANAGEMENT: "projects-workspace",
-    TAB_FIN_MANAGEMENT: "finance-workspace",
-    TAB_HR_MANAGEMENT: "hr-workspace",
-  };
-
   const tabRegister = getTabRegister();
   const NAV_ITEMS = (Array.isArray(tabRegister) ? tabRegister : [])
     .map((tab) => {
@@ -1462,13 +1326,7 @@ function buildNavigationConfig_(role, permissions) {
       const key = tab?.tabId || tab?.tabID || tab?.key || "";
       const label =
         tab?.tabLabelAr || tab?.tabLabelEn || tab?.tabLabel || key || "";
-      const normalizedKey = String(key || "");
-      const fallbackTarget =
-        FALLBACK_TAB_TARGETS[normalizedKey] ||
-        FALLBACK_TAB_TARGETS[normalizedKey.toUpperCase()] ||
-        FALLBACK_TAB_TARGETS[normalizedKey.toLowerCase()] ||
-        null;
-      const target = tab?.route || tab?.target || fallbackTarget || "";
+      const target = tab?.route || tab?.target || "";
 
       if (!key || !target) {
         return null;
