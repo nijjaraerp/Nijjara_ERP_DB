@@ -60,11 +60,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
-      - name: Write CLASPRC_JSON to file
-        run: |
-          echo "${{ secrets.CLASPRC_JSON }}" > .clasprc.json
-
       - name: Push to Apps Script (clasp)
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: |
           # Use npx/clasp to push the local src/ to Apps Script
           npx @google/clasp push --force
