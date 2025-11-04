@@ -1,6 +1,32 @@
 {
   "git.autofetch": true,
   "git.autofetchPeriod": 180,
+  "git.autorefresh": true,
+  "git.enableSmartCommit": true,
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "files.exclude": {
+    "**/.clasprc.json": true
+  },
+  "extensions.recommendations": [
+    "eamodio.gitlens",
+    "ms-vscode-remote.remote-ssh",
+    "ms-vscode.powershell"
+  ],
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "github.copilot.enable": {
+    "markdown": true,
+    "scminput": true
+  },
+  "github.copilot.chat.editing.confirmation": false,
+  "github.copilot.chat.codeGeneration.withoutWorkspaceEdits": false,
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "github.copilot.chat.terminalIntegration.enabled": true,
+  "workbench.editor.enablePreview": false
+}
+{
+  "git.autofetch": true,
+  "git.autofetchPeriod": 180,
   "files.exclude": {
     "**/.clasprc.json": true
   },
