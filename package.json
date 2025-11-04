@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "scripts": {
     "push": "clasp push",
     "pull": "clasp pull",
@@ -8,5 +9,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server-github": "^2025.4.8"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "htmlhint": "^1.7.1"
   }
 }
