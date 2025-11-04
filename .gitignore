@@ -1,3 +1,6 @@
 # Local test files
 .DS_Store
 node_modules/
+
+# Clasp credentials
+.clasprc.json
