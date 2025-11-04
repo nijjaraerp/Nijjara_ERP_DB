@@ -4,8 +4,12 @@
   "git.autorefresh": true,
   "git.enableSmartCommit": true,
   "git.autoStash": true,
+  "git.confirmSync": false,
+  "git.promptToSaveFilesBeforeStash": "never",
+  "git.postCommitCommand": "sync",
   "files.autoSave": "afterDelay",
   "files.autoSaveDelay": 1000,
+  "files.hotExit": "onExitAndWindowClose",
   "files.exclude": {
     "**/.clasprc.json": true
   },
