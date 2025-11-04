@@ -3,7 +3,8 @@
     "push": "clasp push",
     "pull": "clasp pull",
     "deploy": "clasp deploy",
-    "open": "clasp open"
+    "open": "clasp open",
+    "ci-deploy": "npx @google/clasp push --force"
   },
   "dependencies": {
     "@modelcontextprotocol/server-github": "^2025.4.8"

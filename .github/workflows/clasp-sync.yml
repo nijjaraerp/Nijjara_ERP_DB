@@ -1,0 +1,38 @@
+name: clasp-sync
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          npm ci || true
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Write CLASPRC_JSON to file
+        if: ${{ secrets.CLASPRC_JSON != '' }}
+        run: |
+          mkdir -p $HOME && echo "${{ secrets.CLASPRC_JSON }}" > $HOME/.clasprc.json
+
+      - name: Push to Apps Script (clasp)
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          # Use npx/clasp to push the local src/ to Apps Script
+          npx @google/clasp push --force

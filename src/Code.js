@@ -1587,113 +1587,6 @@ function getSheetData(sourceName) {
   }
 }
 
-const DETAIL_CONFIGS = [
-  {
-    type: "project",
-    match: (paneId, entityKey) => {
-      const id = String(paneId || "").toUpperCase();
-      const key = String(entityKey || "").toUpperCase();
-      return id.includes("PRJ") || key.includes("PROJECT");
-    },
-    primary: {
-      sheet: CONFIG.SHEETS.PRJ_MAIN,
-      keys: ["Project_ID", "ProjectId", "ID"],
-    },
-    titleField: "Project_Name",
-    labels: {
-      general: "البيانات العامة",
-    },
-    sections: [
-      {
-        id: "tasks",
-        label: "المهام",
-        sheet: CONFIG.SHEETS.PRJ_TASKS,
-        keys: ["Project_ID", "ProjectId"],
-      },
-      {
-        id: "costs",
-        label: "التكاليف",
-        sheet: CONFIG.SHEETS.PRJ_COSTS,
-        keys: ["Project_ID"],
-      },
-      {
-        id: "directExpenses",
-        label: "المصروفات المباشرة",
-        sheet: CONFIG.SHEETS.FIN_DIRECT_EXP,
-        keys: ["Project_ID"],
-      },
-      {
-        id: "indirectAllocations",
-        label: "المصروفات غير المباشرة",
-        sheet: CONFIG.SHEETS.PRJ_ALLOCATIONS,
-        keys: ["Project_ID"],
-      },
-      {
-        id: "revenues",
-        label: "الإيرادات",
-        sheet: CONFIG.SHEETS.FIN_PROJECT_REVENUE,
-        keys: ["Project_ID"],
-      },
-      {
-        id: "dashboard",
-        label: "مؤشرات المشروع",
-        sheet: CONFIG.SHEETS.PRJ_DASHBOARD,
-        keys: ["Project_ID"],
-      },
-    ],
-    attachments: { entity: "PRJ" },
-  },
-  {
-    type: "hr",
-    match: (paneId, entityKey) => {
-      const id = String(paneId || "").toUpperCase();
-      const key = String(entityKey || "").toUpperCase();
-      return id.includes("HR") || key.includes("EMP") || key.includes("HR");
-    },
-    primary: {
-      sheet: CONFIG.SHEETS.HR_EMPLOYEES,
-      keys: ["Employee_ID", "EmployeeId", "ID"],
-    },
-    titleField: "Employee_Name",
-    labels: {
-      general: "بيانات الموظف",
-    },
-    sections: [
-      {
-        id: "attendance",
-        label: "الحضور والانصراف",
-        sheet: CONFIG.SHEETS.HR_ATTENDANCE,
-        keys: ["Employee_ID", "EmployeeId"],
-      },
-      {
-        id: "leaveRequests",
-        label: "طلبات الإجازة",
-        sheet: CONFIG.SHEETS.HR_LEAVE_REQUESTS,
-        keys: ["Employee_ID"],
-      },
-      {
-        id: "advances",
-        label: "السلف",
-        sheet: CONFIG.SHEETS.HR_ADVANCES,
-        keys: ["Employee_ID"],
-      },
-      {
-        id: "deductions",
-        label: "الخصومات",
-        sheet: CONFIG.SHEETS.HR_DEDUCTIONS,
-        keys: ["Employee_ID"],
-      },
-      {
-        id: "payroll",
-        label: "الرواتب",
-        sheet: CONFIG.SHEETS.HR_PAYROLL,
-        keys: ["Employee_ID"],
-      },
-    ],
-    attachments: { entity: "HR" },
-  },
-];
-
 function getRecordDetail(paneId, recordId, entityKey, clientRecord) {
   const FNAME = "getRecordDetail";
   debugLog(FNAME, "start", { paneId, recordId, entityKey });
@@ -1803,15 +1696,6 @@ function getRecordDetail(paneId, recordId, entityKey, clientRecord) {
   }
 }
 function resolveDetailConfig_(paneId, entityKey) {
-  for (const config of DETAIL_CONFIGS) {
-    try {
-      if (config.match(paneId, entityKey)) {
-        return config;
-      }
-    } catch (err) {
-      debugError("resolveDetailConfig_", err, { paneId, entityKey });
-    }
-  }
   return null;
 }
 function findRowById_(sheetName, recordId, keyColumns) {
