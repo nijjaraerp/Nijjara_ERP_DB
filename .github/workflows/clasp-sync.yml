@@ -25,6 +25,33 @@ jobs:
       - name: Install clasp
         run: npm install -g @google/clasp
 
+      - name: Check for typos
+        uses: crate-ci/typos@v1.39.0
+
+      - name: Lint code
+        uses: wearerequired/lint-action@v2.3.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          eslint: true
+          eslint_extensions: js,gs,html
+
+      - name: Super-Linter
+        uses: super-linter/super-linter@v8.2.1
+        env:
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_JAVASCRIPT_ES: true
+          VALIDATE_HTML: true
+
+      - name: AI Code Review
+        uses: villesau/ai-codereviewer@v2.7.0
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MODEL: gpt-4
+          PROMPT: "Review this Google Apps Script code for best practices, security issues, and potential improvements."
+
       - name: Write CLASPRC_JSON to file
         if: ${{ secrets.CLASPRC_JSON != '' }}
         run: |
