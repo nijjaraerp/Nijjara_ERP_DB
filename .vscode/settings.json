@@ -1,5 +1,9 @@
 {
   "github.copilot.nextEditSuggestions.enabled": true,
   "chatgpt.runCodexInWindowsSubsystemForLinux": true,
-  "amazonQ.telemetry": false
+  "amazonQ.telemetry": false,
+  "github.copilot.enable": {
+    "markdown": true,
+    "scminput": true
+  }
 }
