@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch: {}
 
 jobs:
@@ -46,12 +49,11 @@ jobs:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_JAVASCRIPT_ES: false
           VALIDATE_HTML: true
-          VALIDATE_JAVASCRIPT_STANDARD: false
           FILTER_REGEX_EXCLUDE: .*\.test\.js
-          ESLINT_CONFIG_FILE: .eslintrc.json
           HTMLHINT_CONFIG_FILE: .htmlhintrc
 
       - name: AI Code Review
+        if: github.event_name == 'pull_request'
         uses: villesau/ai-codereviewer@v2.7.0
         continue-on-error: true
         with:
@@ -60,11 +62,9 @@ jobs:
 
       - name: Write CLASPRC_JSON to file
         run: |
-          mkdir -p $HOME && echo "${{ secrets.CLASPRC_JSON }}" > $HOME/.clasprc.json
+          echo "${{ secrets.CLASPRC_JSON }}" > .clasprc.json
 
       - name: Push to Apps Script (clasp)
-        env:
-          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: |
           # Use npx/clasp to push the local src/ to Apps Script
           npx @google/clasp push --force
