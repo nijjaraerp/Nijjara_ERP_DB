@@ -3,6 +3,7 @@
 This document explains how the repository is configured to auto-sync code to Google Apps Script using `clasp` and GitHub Actions.
 
 Files added:
+
 - `.github/workflows/clasp-sync.yml` — GitHub Actions workflow that runs `npx @google/clasp push --force` on push to `main` (or via manual dispatch).
 - `.vscode/settings.json` — workspace settings to enable `git.autofetch` and hide local `~/.clasprc.json` from the editor.
 

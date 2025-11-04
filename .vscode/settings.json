@@ -3,35 +3,27 @@
   "git.autofetchPeriod": 180,
   "git.autorefresh": true,
   "git.enableSmartCommit": true,
+  "git.autoStash": true,
   "files.autoSave": "afterDelay",
   "files.autoSaveDelay": 1000,
   "files.exclude": {
-    {
-      "git.autofetch": true,
-      "git.autofetchPeriod": 180,
-      "git.autorefresh": true,
-      "git.enableSmartCommit": true,
-      "files.autoSave": "afterDelay",
-      "files.autoSaveDelay": 1000,
-      "files.exclude": {
-        "**/.clasprc.json": true
-      },
-      "extensions.recommendations": [
-        "eamodio.gitlens",
-        "ms-vscode-remote.remote-ssh",
-        "ms-vscode.powershell"
-      ],
-      "github.copilot.nextEditSuggestions.enabled": true,
-      "github.copilot.enable": {
-        "markdown": true,
-        "scminput": true
-      },
-      "github.copilot.chat.editing.confirmation": false,
-      "github.copilot.chat.codeGeneration.withoutWorkspaceEdits": false,
-      "github.copilot.chat.codeGeneration.useInstructionFiles": true,
-      "github.copilot.chat.terminalIntegration.enabled": true,
-      "chatgpt.runCodexInWindowsSubsystemForLinux": true,
-      "amazonQ.telemetry": false,
-      "workbench.editor.enablePreview": false
-    }
-  ]
+    "**/.clasprc.json": true
+  },
+  "extensions.recommendations": [
+    "eamodio.gitlens",
+    "ms-vscode-remote.remote-ssh",
+    "ms-vscode.powershell"
+  ],
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "github.copilot.enable": {
+    "markdown": true,
+    "scminput": true
+  },
+  "github.copilot.chat.editing.confirmation": false,
+  "github.copilot.chat.codeGeneration.withoutWorkspaceEdits": false,
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "github.copilot.chat.terminalIntegration.enabled": true,
+  "chatgpt.runCodexInWindowsSubsystemForLinux": true,
+  "amazonQ.telemetry": false,
+  "workbench.editor.enablePreview": false
+}

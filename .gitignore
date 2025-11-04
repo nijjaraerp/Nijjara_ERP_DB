@@ -1,5 +1,3 @@
 # Local test files
-test_files/
 .DS_Store
-.clasp.json
 node_modules/
