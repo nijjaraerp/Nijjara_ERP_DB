@@ -5,5 +5,12 @@
   "github.copilot.enable": {
     "markdown": true,
     "scminput": true
-  }
+  },
+  "github.copilot.chat.editing.confirmation": false,
+  "github.copilot.chat.codeGeneration.withoutWorkspaceEdits": false,
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "github.copilot.chat.terminalIntegration.enabled": true,
+  "workbench.editor.enablePreview": false,
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000
 }
