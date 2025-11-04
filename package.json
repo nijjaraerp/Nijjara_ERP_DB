@@ -1,4 +1,10 @@
 {
+  "scripts": {
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "deploy": "clasp deploy",
+    "open": "clasp open"
+  },
   "dependencies": {
     "@modelcontextprotocol/server-github": "^2025.4.8"
   }
