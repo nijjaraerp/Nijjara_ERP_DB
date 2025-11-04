@@ -1,4 +1,26 @@
 {
+  "git.autofetch": true,
+  "git.autofetchPeriod": 180,
+  "files.exclude": {
+    "**/.clasprc.json": true
+  },
+  "extensions.recommendations": [
+    "eamodio.gitlens",
+    "ms-vscode-remote.remote-ssh",
+    "ms-vscode.powershell"
+  ]
+}
+{
+  // Auto fetch from remote so VS Code shows incoming changes quickly
+  "git.autofetch": true,
+  "git.autorefresh": true,
+  // Allow quick commit from status bar (doesn't auto-commit by default)
+  "git.enableSmartCommit": true,
+  // Help avoid forgetting to save files before commit
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000
+}
+{
   "github.copilot.nextEditSuggestions.enabled": true,
   "chatgpt.runCodexInWindowsSubsystemForLinux": true,
   "amazonQ.telemetry": false,
