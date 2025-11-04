@@ -3368,26 +3368,33 @@ function seedCoreData(ss) {
   try {
     const targetSS = ss || getTargetSpreadsheet();
 
-    seedSysSettings(targetSS);
-    seedSysRoles(targetSS);
-    seedSysPermissions(targetSS);
-    seedSysRolePermissions(targetSS);
-    seedSysDropdowns(targetSS);
-    seedSysTabRegister(targetSS);
-    seedSysDynamicForms(targetSS);
-    seedAdminUser(targetSS);
+    // DISABLED: These seed functions overwrite the Google Sheets data
+    // The sheets now contain the correct data and should be the source of truth
+    // seedSysSettings(targetSS);
+    // seedSysRoles(targetSS);
+    // seedSysPermissions(targetSS);
+    // seedSysRolePermissions(targetSS);
+    // seedSysDropdowns(targetSS);
+    // seedSysTabRegister(targetSS);
+    // seedSysDynamicForms(targetSS);
+    // seedAdminUser(targetSS);
 
-    seedSysProfileView(targetSS);
-    seedSysUsersView(targetSS);
-    seedSysUserProperties(targetSS);
-    seedSysDocuments(targetSS);
-    seedSysSessions(targetSS);
-    seedSysAuditLog(targetSS);
+    // seedSysProfileView(targetSS);
+    // seedSysUsersView(targetSS);
+    // seedSysUserProperties(targetSS);
+    // seedSysDocuments(targetSS);
+    // seedSysSessions(targetSS);
+    // seedSysAuditLog(targetSS);
 
-    seedAllModules(targetSS);
+    // seedAllModules(targetSS);
 
-    debugLog(FNAME, "✅ Core data seeding process completed.");
-    Logger.log("✅ Core SYS + Modules seeding completed.");
+    debugLog(
+      FNAME,
+      "✅ Core data seeding SKIPPED - using sheet-based configuration."
+    );
+    Logger.log(
+      "✅ Core data seeding SKIPPED - sheets are now the source of truth."
+    );
   } catch (err) {
     debugLog(FNAME, `ERROR during core data seeding: ${err.message || err}`, {
       error: err,

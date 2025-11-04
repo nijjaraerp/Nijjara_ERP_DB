@@ -4587,9 +4587,7 @@
         let roleOptionsCache = null;
         let normalizedUsersCache = [];
         let overviewLoaded = false;
-        let sysTabRegister = DEFAULT_SYS_SUB_TABS.map((entry) => ({
-          ...entry,
-        }));
+        let sysTabRegister = []; // Will be populated from SYS_Tab_Register sheet data
         let sysSubTabLookup = Object.create(null);
         const tableLoadState = {
           roles: false,
