@@ -6267,10 +6267,6 @@ function logAuditEvent(action, details) {
   }
 }
 
-function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
 function getActorEmail_() {
   const current = getCurrentUser();
   if (current && (current.Email || current.email)) {
