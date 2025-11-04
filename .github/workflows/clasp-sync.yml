@@ -35,7 +35,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           eslint: true
-          eslint_extensions: js,gs,html
+          eslint_extensions: js,gs
 
       - name: Super-Linter
         uses: super-linter/super-linter@v8.2.1
@@ -44,10 +44,12 @@ jobs:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: false
-          VALIDATE_JAVASCRIPT_ES: true
+          VALIDATE_JAVASCRIPT_ES: false
           VALIDATE_HTML: true
           VALIDATE_JAVASCRIPT_STANDARD: false
           FILTER_REGEX_EXCLUDE: .*\.test\.js
+          ESLINT_CONFIG_FILE: .eslintrc.json
+          HTMLHINT_CONFIG_FILE: .htmlhintrc
 
       - name: AI Code Review
         uses: villesau/ai-codereviewer@v2.7.0
