@@ -57,6 +57,9 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary cancel-btn" type="button">إلغاء</button>
+                <button class="btn-secondary edit-btn" type="button" style="display: none;">
+                    <i class="fas fa-edit"></i> تعديل
+                </button>
                 <button class="btn-primary submit-btn" type="button">حفظ</button>
             </div>
         </div>
@@ -73,6 +76,9 @@
       modal
         .querySelector(".submit-btn")
         .addEventListener("click", handleModalSubmit);
+      modal
+        .querySelector(".edit-btn")
+        .addEventListener("click", enableEditMode);
 
       return modal;
     }
@@ -264,6 +270,67 @@
       if (!built && tabsContent) {
         tabsContent.innerHTML =
           '<p class="muted">لم يتم العثور على حقول لهذا النموذج.</p>';
+      }
+
+      updateModalButtons();
+    }
+
+    function updateModalButtons() {
+      const modal = getModal();
+      if (!modal) {
+        return;
+      }
+
+      const submitBtn = modal.querySelector(".submit-btn");
+      const editBtn = modal.querySelector(".edit-btn");
+      const hasRecordData = modalState.recordData && extractRecordId(modalState.recordData);
+
+      if (submitBtn) {
+        submitBtn.style.display = modalState.isEditMode ? "" : "none";
+      }
+
+      if (editBtn) {
+        editBtn.style.display = !modalState.isEditMode && hasRecordData ? "" : "none";
+      }
+    }
+
+    function enableEditMode() {
+      if (!modalState.recordData) {
+        return;
+      }
+
+      modalState.isEditMode = true;
+
+      const modal = getModal();
+      if (!modal) {
+        return;
+      }
+
+      const modalTitle = modal.querySelector(".modal-title");
+      if (modalTitle) {
+        modalTitle.textContent = resolveFormTitle(
+          modalState.formStructure,
+          modalState.subTabId,
+          true
+        );
+      }
+
+      const inputs = modal.querySelectorAll("input, select, textarea");
+      inputs.forEach((input) => {
+        const fieldType = input.dataset.fieldType;
+        if (fieldType !== "auto") {
+          input.readOnly = false;
+          input.classList.remove("is-readonly");
+          if (input.tagName === "SELECT") {
+            input.disabled = false;
+          }
+        }
+      });
+
+      updateModalButtons();
+
+      if (typeof window.showToast === "function") {
+        window.showToast("تم تفعيل وضع التعديل", "info");
       }
     }
 

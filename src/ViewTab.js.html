@@ -287,11 +287,37 @@
           !e.target.matches('input[type="checkbox"]') &&
           !e.target.closest(".row-actions")
         ) {
-          openEditFormForRow(row, headers, subTabConfig);
+          openViewFormForRow(row, headers, subTabConfig);
         }
       };
 
       return tr;
+    }
+
+    function openViewFormForRow(
+      rowOrRecord,
+      headersOrSubTabConfig,
+      maybeSubTabConfig
+    ) {
+      const headers = Array.isArray(headersOrSubTabConfig)
+        ? headersOrSubTabConfig
+        : [];
+      const subTabConfig = Array.isArray(headersOrSubTabConfig)
+        ? maybeSubTabConfig
+        : headersOrSubTabConfig;
+
+      const record = coerceRowToRecord(rowOrRecord, headers);
+
+      const formConfig =
+        subTabConfig?.formConfig ||
+        window.bootstrapData?.forms?.[subTabConfig?.subId];
+      const viewFormId = formConfig?.viewFormId || formConfig?.formId;
+
+      if (viewFormId) {
+        openFormModal(viewFormId, record, subTabConfig?.subId, false);
+      } else if (typeof window.showToast === "function") {
+        window.showToast("تعذر فتح نموذج العرض", "error");
+      }
     }
 
     function openEditFormForRow(
