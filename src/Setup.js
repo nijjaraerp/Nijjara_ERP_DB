@@ -7,97 +7,23 @@
  * ============================================================================
  */
 
-const SYSTEM_USER = "SYSTEM";
+const SYSTEM_USER = 'SYSTEM';
 // !!! IMPORTANT: Set this ID to your actual Google Sheet ID before running !!!
-const TARGET_SPREADSHEET_ID = "1Oj7So4c5vBDpvj0pIfDeXz6XxBrY011J4xZwKlSkDzo";
+const TARGET_SPREADSHEET_ID = '1Oj7So4c5vBDpvj0pIfDeXz6XxBrY011J4xZwKlSkDzo';
 const TARGET_SPREADSHEET_URL = `https://docs.google.com/spreadsheets/d/${TARGET_SPREADSHEET_ID}/edit`;
 
-function exportERPSchemaAndDataToMarkdown() {
-  // Get active spreadsheet
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheets = ss.getSheets();
-
-  // Build Markdown content
-  var md = "";
-  md += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-  md += "➊ ERP Schema (Tabs & Headers)\n";
-  md += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
-
-  // Section 1: Schema
-  sheets.forEach(function (sheet, index) {
-    var sheetName = sheet.getName();
-    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-
-    md += "➊." + (index + 1) + " " + sheetName + "\n";
-    headers.forEach(function (header) {
-      md += " • " + header + "\n";
-    });
-    md += "\n";
-  });
-
-  // Divider
-  md += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-  md += "➋ ERP Data (All Sheets)\n";
-  md += "━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n";
-
-  // Section 2: Data
-  sheets.forEach(function (sheet, index) {
-    var sheetName = sheet.getName();
-    var data = sheet.getDataRange().getValues();
-
-    md += "➋." + (index + 1) + " " + sheetName + "\n";
-
-    if (data.length > 1) {
-      // Print headers
-      md += " Headers:\n";
-      data[0].forEach(function (header) {
-        md += "  • " + header + "\n";
-      });
-
-      // Print rows
-      md += " Rows:\n";
-      for (var r = 1; r < data.length; r++) {
-        var rowStr = "  " + r + ") ";
-        rowStr += data[r]
-          .map(function (cell) {
-            return cell !== "" ? cell : "∅"; // ∅ for empty
-          })
-          .join(" | ");
-        md += rowStr + "\n";
-      }
-    } else {
-      md += " (no data rows)\n";
-    }
-
-    md += "\n";
-  });
-
-  // Generate timestamp for unique filename
-  var now = new Date();
-  var timestamp = Utilities.formatDate(
-    now,
-    Session.getScriptTimeZone(),
-    "yyyy-MM-dd_HH-mm-ss"
-  );
-  var fileName = "ERP_Schema_and_Data_" + timestamp + ".md";
-
-  // Create Markdown file in Google Drive
-  var file = DriveApp.createFile(fileName, md, MimeType.PLAIN_TEXT);
-
-  Logger.log("ERP Schema & Data exported to Markdown: " + file.getUrl());
-}
 function getTargetSpreadsheet() {
-  const FNAME = "getTargetSpreadsheet";
+  const FNAME = 'getTargetSpreadsheet';
   try {
     const active = SpreadsheetApp.getActiveSpreadsheet();
     if (active) {
-      const activeId = typeof active.getId === "function" ? active.getId() : "";
-      debugLog(FNAME, "Active spreadsheet found", { activeId });
+      const activeId = typeof active.getId === 'function' ? active.getId() : '';
+      debugLog(FNAME, 'Active spreadsheet found', { activeId });
       if (!TARGET_SPREADSHEET_ID || activeId === TARGET_SPREADSHEET_ID) {
-        debugLog(FNAME, "Using active spreadsheet.");
+        debugLog(FNAME, 'Using active spreadsheet.');
         return active;
       }
-      debugLog(FNAME, "Active spreadsheet ID does not match target ID.", {
+      debugLog(FNAME, 'Active spreadsheet ID does not match target ID.', {
         activeId,
         targetId: TARGET_SPREADSHEET_ID,
       });
@@ -108,16 +34,13 @@ function getTargetSpreadsheet() {
     });
   }
 
-  if (
-    TARGET_SPREADSHEET_ID &&
-    TARGET_SPREADSHEET_ID !== "YOUR_SPREADSHEET_ID_HERE"
-  ) {
+  if (TARGET_SPREADSHEET_ID && TARGET_SPREADSHEET_ID !== 'YOUR_SPREADSHEET_ID_HERE') {
     try {
-      debugLog(FNAME, "Attempting to open spreadsheet by ID.", {
+      debugLog(FNAME, 'Attempting to open spreadsheet by ID.', {
         targetId: TARGET_SPREADSHEET_ID,
       });
       const ssById = SpreadsheetApp.openById(TARGET_SPREADSHEET_ID);
-      debugLog(FNAME, "Successfully opened spreadsheet by ID.");
+      debugLog(FNAME, 'Successfully opened spreadsheet by ID.');
       return ssById;
     } catch (err) {
       debugLog(
@@ -127,28 +50,28 @@ function getTargetSpreadsheet() {
       );
     }
   } else {
-    debugLog(FNAME, "TARGET_SPREADSHEET_ID is not set or is placeholder.", {
+    debugLog(FNAME, 'TARGET_SPREADSHEET_ID is not set or is placeholder.', {
       targetId: TARGET_SPREADSHEET_ID,
     });
   }
 
   throw new Error(
-    "Unable to resolve target spreadsheet. Set TARGET_SPREADSHEET_ID in Setup.js to the deployment workbook ID."
+    'Unable to resolve target spreadsheet. Set TARGET_SPREADSHEET_ID in Setup.js to the deployment workbook ID.'
   );
 }
 
 function ensureISODate(date) {
   if (!(date instanceof Date) || isNaN(date.getTime())) {
-    return new Date().toISOString().split("T")[0];
+    return new Date().toISOString().split('T')[0];
   }
-  return date.toISOString().split("T")[0];
+  return date.toISOString().split('T')[0];
 }
 
 function appendRowsIfEmpty(sheet, rows) {
-  const FNAME = "appendRowsIfEmpty";
+  const FNAME = 'appendRowsIfEmpty';
   if (!sheet || !rows || rows.length === 0) {
-    debugLog(FNAME, "Skipped: Invalid sheet or empty rows.", {
-      sheetName: sheet ? sheet.getName() : "N/A",
+    debugLog(FNAME, 'Skipped: Invalid sheet or empty rows.', {
+      sheetName: sheet ? sheet.getName() : 'N/A',
       rowCount: rows ? rows.length : 0,
     });
     return;
@@ -156,18 +79,20 @@ function appendRowsIfEmpty(sheet, rows) {
 
   try {
     const lastRow = sheet.getLastRow();
-    debugLog(FNAME, "Checking sheet status.", {
+    debugLog(FNAME, 'Checking sheet status.', {
       sheetName: sheet.getName(),
       lastRow,
     });
     if (lastRow <= 1) {
-      sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
-      debugLog(FNAME, "Append successful.", {
+      sheet
+        .getRange(2, 1, rows.length, rows[0].length)
+        .setValues(rows);
+      debugLog(FNAME, 'Append successful.', {
         sheetName: sheet.getName(),
         appended: rows.length,
       });
     } else {
-      debugLog(FNAME, "Skipped: Sheet already has data beyond header.", {
+      debugLog(FNAME, 'Skipped: Sheet already has data beyond header.', {
         sheetName: sheet.getName(),
         lastRow,
       });
@@ -181,25 +106,20 @@ function appendRowsIfEmpty(sheet, rows) {
 }
 
 function appendRowsIfMissing(sheet, rows, keyIndexes) {
-  const FNAME = "appendRowsIfMissing";
+  const FNAME = 'appendRowsIfMissing';
   if (!sheet || !Array.isArray(rows) || !rows.length) {
-    debugLog(FNAME, "Skipped: Invalid sheet or empty rows.", {
-      sheetName: sheet ? sheet.getName() : "N/A",
+    debugLog(FNAME, 'Skipped: Invalid sheet or empty rows.', {
+      sheetName: sheet ? sheet.getName() : 'N/A',
       rowCount: rows ? rows.length : 0,
     });
     return;
   }
 
-  const keys =
-    Array.isArray(keyIndexes) && keyIndexes.length ? keyIndexes : null;
+  const keys = Array.isArray(keyIndexes) && keyIndexes.length ? keyIndexes : null;
   if (!keys) {
-    debugLog(
-      FNAME,
-      "No keyIndexes provided, falling back to appendRowsIfEmpty logic.",
-      {
-        sheetName: sheet.getName(),
-      }
-    );
+    debugLog(FNAME, 'No keyIndexes provided, falling back to appendRowsIfEmpty logic.', {
+      sheetName: sheet.getName(),
+    });
     appendRowsIfEmpty(sheet, rows);
     return;
   }
@@ -207,13 +127,9 @@ function appendRowsIfMissing(sheet, rows, keyIndexes) {
   try {
     const lastRow = sheet.getLastRow();
     if (lastRow <= 1) {
-      debugLog(
-        FNAME,
-        "Sheet empty or only header, appending all rows via appendRowsIfEmpty.",
-        {
-          sheetName: sheet.getName(),
-        }
-      );
+      debugLog(FNAME, 'Sheet empty or only header, appending all rows via appendRowsIfEmpty.', {
+        sheetName: sheet.getName(),
+      });
       appendRowsIfEmpty(sheet, rows);
       return;
     }
@@ -221,44 +137,30 @@ function appendRowsIfMissing(sheet, rows, keyIndexes) {
     const width = Math.max(sheet.getLastColumn(), rows[0].length);
     const existingData = sheet.getRange(2, 1, lastRow - 1, width).getValues();
     const existingKeys = new Set();
-    debugLog(
-      FNAME,
-      `Fetched ${existingData.length} existing rows to build keys.`,
-      {
-        sheetName: sheet.getName(),
-      }
-    );
+    debugLog(FNAME, `Fetched ${existingData.length} existing rows to build keys.`, {
+      sheetName: sheet.getName(),
+    });
 
     existingData.forEach((row, index) => {
       try {
         const signature = keys
-          .map((keyIndex) => String(row[keyIndex] ?? ""))
-          .join("||");
+          .map((keyIndex) => String(row[keyIndex] ?? ''))
+          .join('||');
         if (signature) {
           existingKeys.add(signature);
         } else {
-          debugLog(
-            FNAME,
-            `Warning: Empty signature generated for existing row index ${index}`,
-            {
-              sheetName: sheet.getName(),
-              rowIndex: index + 2,
-            }
-          );
-        }
-      } catch (keyError) {
-        debugLog(
-          FNAME,
-          `Error generating signature for existing row index ${index}: ${
-            keyError.message || keyError
-          }`,
-          {
+          debugLog(FNAME, `Warning: Empty signature generated for existing row index ${index}`, {
             sheetName: sheet.getName(),
             rowIndex: index + 2,
-            rowData: JSON.stringify(row),
-            error: keyError,
-          }
-        );
+          });
+        }
+      } catch (keyError) {
+        debugLog(FNAME, `Error generating signature for existing row index ${index}: ${keyError.message || keyError}`, {
+          sheetName: sheet.getName(),
+          rowIndex: index + 2,
+          rowData: JSON.stringify(row),
+          error: keyError,
+        });
       }
     });
 
@@ -266,17 +168,13 @@ function appendRowsIfMissing(sheet, rows, keyIndexes) {
     rows.forEach((row, index) => {
       try {
         const signature = keys
-          .map((keyIndex) => String(row[keyIndex] ?? ""))
-          .join("||");
+          .map((keyIndex) => String(row[keyIndex] ?? ''))
+          .join('||');
         if (!signature) {
-          debugLog(
-            FNAME,
-            `Warning: Empty signature generated for input row index ${index}. Skipping.`,
-            {
-              sheetName: sheet.getName(),
-              inputIndex: index,
-            }
-          );
+          debugLog(FNAME, `Warning: Empty signature generated for input row index ${index}. Skipping.`, {
+            sheetName: sheet.getName(),
+            inputIndex: index,
+          });
           return;
         }
         if (!existingKeys.has(signature)) {
@@ -284,38 +182,28 @@ function appendRowsIfMissing(sheet, rows, keyIndexes) {
           existingKeys.add(signature);
         }
       } catch (keyError) {
-        debugLog(
-          FNAME,
-          `Error generating signature for input row index ${index}: ${
-            keyError.message || keyError
-          }`,
-          {
-            sheetName: sheet.getName(),
-            inputIndex: index,
-            rowData: JSON.stringify(row),
-            error: keyError,
-          }
-        );
+        debugLog(FNAME, `Error generating signature for input row index ${index}: ${keyError.message || keyError}`, {
+          sheetName: sheet.getName(),
+          inputIndex: index,
+          rowData: JSON.stringify(row),
+          error: keyError,
+        });
       }
     });
 
-    debugLog(
-      FNAME,
-      `Found ${newRows.length} new rows to append out of ${rows.length} input rows.`,
-      {
-        sheetName: sheet.getName(),
-      }
-    );
+    debugLog(FNAME, `Found ${newRows.length} new rows to append out of ${rows.length} input rows.`, {
+      sheetName: sheet.getName(),
+    });
 
     if (!newRows.length) {
-      debugLog(FNAME, "No new rows to append.", { sheetName: sheet.getName() });
+      debugLog(FNAME, 'No new rows to append.', { sheetName: sheet.getName() });
       return;
     }
 
     sheet
       .getRange(lastRow + 1, 1, newRows.length, rows[0].length)
       .setValues(newRows);
-    debugLog(FNAME, "Append successful.", {
+    debugLog(FNAME, 'Append successful.', {
       sheetName: sheet.getName(),
       appended: newRows.length,
       startRow: lastRow + 1,
@@ -329,28 +217,18 @@ function appendRowsIfMissing(sheet, rows, keyIndexes) {
 }
 
 function createOrClearSheet(ss, name, headers) {
-  const FNAME = "createOrClearSheet";
-  debugLog(FNAME, "Processing sheet.", { sheetName: name });
+  const FNAME = 'createOrClearSheet';
+  debugLog(FNAME, 'Processing sheet.', { sheetName: name });
   let sh = ss.getSheetByName(name);
   try {
     if (!sh) {
-      debugLog(FNAME, "Sheet not found, creating.", { sheetName: name });
+      debugLog(FNAME, 'Sheet not found, creating.', { sheetName: name });
       sh = ss.insertSheet(name);
-      logSetupAction(
-        "CREATE_SHEET",
-        name,
-        name,
-        "Created missing sheet during setup."
-      );
+      logSetupAction('CREATE_SHEET', name, name, 'Created missing sheet during setup.');
     } else {
-      debugLog(FNAME, "Sheet found, clearing content.", { sheetName: name });
+      debugLog(FNAME, 'Sheet found, clearing content.', { sheetName: name });
       sh.clearContents();
-      logSetupAction(
-        "CLEAR_SHEET",
-        name,
-        name,
-        "Cleared sheet content during setup."
-      );
+      logSetupAction('CLEAR_SHEET', name, name, 'Cleared sheet content during setup.');
     }
 
     if (headers && headers.length > 0) {
@@ -360,10 +238,10 @@ function createOrClearSheet(ss, name, headers) {
       });
       sh.getRange(1, 1, 1, headers.length)
         .setValues([headers])
-        .setFontWeight("bold")
-        .setBackground("#E0E0E0");
+        .setFontWeight('bold')
+        .setBackground('#E0E0E0');
     } else {
-      debugLog(FNAME, "Warning: No headers provided.", { sheetName: name });
+      debugLog(FNAME, 'Warning: No headers provided.', { sheetName: name });
     }
     return sh;
   } catch (err) {
@@ -376,11 +254,9 @@ function createOrClearSheet(ss, name, headers) {
 }
 
 function ensureSheetsAvailable(ss, sheetNames, contextLabel) {
-  const FNAME = "ensureSheetsAvailable";
+  const FNAME = 'ensureSheetsAvailable';
   if (!ss || !Array.isArray(sheetNames) || !sheetNames.length) {
-    debugLog(FNAME, "Skipped: Invalid spreadsheet or sheetNames array.", {
-      contextLabel,
-    });
+    debugLog(FNAME, 'Skipped: Invalid spreadsheet or sheetNames array.', { contextLabel });
     return false;
   }
 
@@ -388,15 +264,9 @@ function ensureSheetsAvailable(ss, sheetNames, contextLabel) {
   const missing = sheetNames.filter((name) => !allSheetNames.has(name));
 
   if (missing.length) {
-    debugLog(
-      FNAME,
-      `⚠️ ${contextLabel} seeding/operation skipped; missing sheet(s): ${missing.join(
-        ", "
-      )}`,
-      {
-        missingSheets: missing,
-      }
-    );
+    debugLog(FNAME, `⚠️ ${contextLabel} seeding/operation skipped; missing sheet(s): ${missing.join(', ')}`, {
+      missingSheets: missing,
+    });
     return false;
   }
 
@@ -419,24 +289,21 @@ function columnToLetter(columnNumber) {
 }
 
 function applyFormulaToViewSheet(sheet, formula) {
-  const FNAME = "applyFormulaToViewSheet";
+  const FNAME = 'applyFormulaToViewSheet';
   if (!sheet) {
-    debugLog(FNAME, "Skipped: Invalid sheet object.", { formula });
+    debugLog(FNAME, 'Skipped: Invalid sheet object.', { formula });
     return;
   }
   const sheetName = sheet.getName();
-  debugLog(FNAME, "Applying formula.", { sheetName, formula });
+  debugLog(FNAME, 'Applying formula.', { sheetName, formula });
   try {
     const maxRows = sheet.getMaxRows();
     if (maxRows > 1) {
-      debugLog(FNAME, "Clearing content from row 2 down.", {
-        sheetName,
-        maxRows,
-      });
+      debugLog(FNAME, 'Clearing content from row 2 down.', { sheetName, maxRows });
       sheet.getRange(2, 1, maxRows - 1, sheet.getMaxColumns()).clearContent();
     }
-    sheet.getRange("A2").setFormula(formula);
-    debugLog(FNAME, "Formula applied successfully.", { sheetName });
+    sheet.getRange('A2').setFormula(formula);
+    debugLog(FNAME, 'Formula applied successfully.', { sheetName });
   } catch (err) {
     debugLog(FNAME, `Error applying formula: ${err.message || err}`, {
       sheetName,
@@ -467,7 +334,6 @@ function getSheetSchemas() {
       "Updated_By",
       "Updated_At",
       "Created_At",
-      "Filter_Options",
     ],
     SYS_Audit_Report: [
       "Audit_Id",
@@ -521,10 +387,6 @@ function getSheetSchemas() {
       "View_Label",
       "Add_Label",
       "Permissions",
-      "Tab_Color",
-      "Search_Bar",
-      "Filter_Options",
-      "Edit_Form_ID",
     ],
     SYS_Dropdowns: [
       "Key",
@@ -550,8 +412,6 @@ function getSheetSchemas() {
       "Target_Sheet",
       "Target_Column",
       "Role_ID",
-      "Show",
-      "Quick_Actions",
     ],
     SYS_Users: [
       "User_Id",
@@ -1219,58 +1079,50 @@ function getSheetSchemas() {
     FIN_KPIs: ["Metric", "Value", "Notes"],
   };
   const baseToPvMap = {
-    PRJ_Main: "PV_PRJ_Main",
-    PRJ_Tasks: "PV_PRJ_Tasks",
-    PRJ_Costs: "PV_PRJ_Costs",
-    PRJ_Clients: "PV_PRJ_Clients",
-    PRJ_Schedule_Calc: "PV_PRJ_Schedule_Calc",
-    PRJ_Dashboard: "PV_PRJ_Dashboard",
-    PRJ_KPIs: "PV_PRJ_KPIs",
-    PRJ_InDirExp_Allocations: "PV_PRJ_InDirExp_Allocations",
-    PRJ_Materials: "PV_PRJ_Materials",
-    FIN_DirectExpenses: "PV_FIN_DirectExpenses_View",
-    FIN_InDirExpense_Repeated: "PV_FIN_InDirExpense_Repeated_View",
-    FIN_InDirExpense_Once: "PV_FIN_InDirExpense_Once_View",
-    FIN_Project_Revenue: "PV_FIN_Project_Revenue_View",
-    FIN_Revenues: "PV_FIN_Revenues_View",
-    FIN_Journal: "PV_FIN_Journal_View",
-    FIN_Custody: "PV_FIN_Custody_View",
-    FIN_GL_Totals: "PV_FIN_GL_Totals_View",
-    FIN_KPIs: "PV_FIN_KPIs",
-    HR_Employees: "PV_HR_Employees",
-    HR_Departments: "PV_HR_Departments",
-    HR_Attendance: "PV_HR_Attendance",
-    HR_Leave: "PV_HR_Leave",
-    HR_Leave_Requests: "PV_HR_Leave_Requests",
-    HR_Advances: "PV_HR_Advances",
-    HR_Deductions: "PV_HR_Deductions",
-    HR_Payroll: "PV_HR_Payroll",
-    SYS_Users: "PV_SYS_Users_Table",
-    FIN_InDirExpense_Repeated_View: "PV_FIN_InDirExpense_Repeated_View",
-    FIN_InDirExpense_Once_View: "PV_FIN_InDirExpense_Once_View",
-    FIN_Project_Revenue_View: "PV_FIN_Project_Revenue_View",
-    FIN_Revenues_View: "PV_FIN_Revenues_View",
-    FIN_Journal_View: "PV_FIN_Journal_View",
-    FIN_Custody_View: "PV_FIN_Custody_View",
-    FIN_GL_Totals_View: "PV_FIN_GL_Totals_View",
-    FIN_DirectExpenses_View: "PV_FIN_DirectExpenses_View",
+      PRJ_Main: 'PV_PRJ_Main',
+      PRJ_Tasks: 'PV_PRJ_Tasks',
+      PRJ_Costs: 'PV_PRJ_Costs',
+      PRJ_Clients: 'PV_PRJ_Clients',
+      PRJ_Schedule_Calc: 'PV_PRJ_Schedule_Calc',
+      PRJ_Dashboard: 'PV_PRJ_Dashboard',
+      PRJ_KPIs: 'PV_PRJ_KPIs',
+      PRJ_InDirExp_Allocations: 'PV_PRJ_InDirExp_Allocations',
+      PRJ_Materials: 'PV_PRJ_Materials',
+      FIN_DirectExpenses: 'PV_FIN_DirectExpenses_View',
+      FIN_InDirExpense_Repeated: 'PV_FIN_InDirExpense_Repeated_View',
+      FIN_InDirExpense_Once: 'PV_FIN_InDirExpense_Once_View',
+      FIN_Project_Revenue: 'PV_FIN_Project_Revenue_View',
+      FIN_Revenues: 'PV_FIN_Revenues_View',
+      FIN_Journal: 'PV_FIN_Journal_View',
+      FIN_Custody: 'PV_FIN_Custody_View',
+      FIN_GL_Totals: 'PV_FIN_GL_Totals_View',
+      FIN_KPIs: 'PV_FIN_KPIs',
+      HR_Employees: 'PV_HR_Employees',
+      HR_Departments: 'PV_HR_Departments',
+      HR_Attendance: 'PV_HR_Attendance',
+      HR_Leave: 'PV_HR_Leave',
+      HR_Leave_Requests: 'PV_HR_Leave_Requests',
+      HR_Advances: 'PV_HR_Advances',
+      HR_Deductions: 'PV_HR_Deductions',
+      HR_Payroll: 'PV_HR_Payroll',
+      SYS_Users: 'PV_SYS_Users_Table',
+      FIN_InDirExpense_Repeated_View: 'PV_FIN_InDirExpense_Repeated_View',
+      FIN_InDirExpense_Once_View: 'PV_FIN_InDirExpense_Once_View',
+      FIN_Project_Revenue_View: 'PV_FIN_Project_Revenue_View',
+      FIN_Revenues_View: 'PV_FIN_Revenues_View',
+      FIN_Journal_View: 'PV_FIN_Journal_View',
+      FIN_Custody_View: 'PV_FIN_Custody_View',
+      FIN_GL_Totals_View: 'PV_FIN_GL_Totals_View',
+      FIN_DirectExpenses_View: 'PV_FIN_DirectExpenses_View',
   };
 
   for (const baseName in baseToPvMap) {
     const pvName = baseToPvMap[baseName];
     if (!schemas[pvName] && schemas[baseName]) {
-      schemas[pvName] = Array.isArray(schemas[baseName])
-        ? schemas[baseName].slice()
-        : [];
-      debugLog(
-        "getSheetSchemas",
-        `Copied schema from ${baseName} to ${pvName} as it was missing.`
-      );
+      schemas[pvName] = Array.isArray(schemas[baseName]) ? schemas[baseName].slice() : [];
+      debugLog('getSheetSchemas', `Copied schema from ${baseName} to ${pvName} as it was missing.`);
     } else if (!schemas[pvName] && !schemas[baseName]) {
-      debugLog(
-        "getSheetSchemas",
-        `Warning: Both ${baseName} and ${pvName} schemas are missing.`
-      );
+      debugLog('getSheetSchemas', `Warning: Both ${baseName} and ${pvName} schemas are missing.`);
     }
   }
 
@@ -1279,777 +1131,99 @@ function getSheetSchemas() {
 
 /** ---------- SEED DATA ---------- **/
 function seedSysSettings(ss) {
-  const FNAME = "seedSysSettings";
-  const sh = ss.getSheetByName("SYS_Settings");
+  const FNAME = 'seedSysSettings';
+  const sh = ss.getSheetByName('SYS_Settings');
   if (!sh) {
-    debugLog(FNAME, "Skipped: Sheet SYS_Settings not found.");
+    debugLog(FNAME, 'Skipped: Sheet SYS_Settings not found.');
     return;
   }
   const now = new Date();
   const rows = [
-    ["APP_NAME", "Nijjara_ERP", "Application name", SYSTEM_USER, now, now],
-    ["DEFAULT_CURRENCY", "EGP", "Default currency", SYSTEM_USER, now, now],
+    ['APP_NAME', 'Nijjara_ERP', 'Application name', SYSTEM_USER, now, now],
+    ['DEFAULT_CURRENCY', 'EGP', 'Default currency', SYSTEM_USER, now, now],
     [
-      "BOOTSTRAP_TIMESTAMP",
+      'BOOTSTRAP_TIMESTAMP',
       now.toISOString(),
-      "Boot timestamp",
+      'Boot timestamp',
       SYSTEM_USER,
       now,
       now,
     ],
   ];
-  debugLog(FNAME, "Attempting to seed settings.");
+  debugLog(FNAME, 'Attempting to seed settings.');
   appendRowsIfEmpty(sh, rows);
 }
 
 function seedSysTabRegister(ss) {
-  const FNAME = "seedSysTabRegister";
-  const sh = ss.getSheetByName("SYS_Tab_Register");
+  const FNAME = 'seedSysTabRegister';
+  const sh = ss.getSheetByName('SYS_Tab_Register');
   if (!sh) {
-    debugLog(FNAME, "Skipped: Sheet SYS_Tab_Register not found.");
+    debugLog(FNAME, 'Skipped: Sheet SYS_Tab_Register not found.');
     return;
   }
   const rows = [
-    [
-      "TAB",
-      "Tab_SYS_Management",
-      "System Management",
-      "إدارة النظام",
-      "",
-      "",
-      "",
-      "/sys",
-      1,
-      "SYS_Settings",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "",
-      "",
-      "Sub_SYS_Overview",
-      "Overview",
-      "نظرة عامة",
-      "/sys/overview",
-      1,
-      "SYS_Profile_View",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "",
-      "",
-      "Sub_SYS_Users",
-      "Users",
-      "المستخدمون",
-      "/sys/users",
-      2,
-      "PV_SYS_Users_Table",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "",
-      "",
-      "Sub_SYS_Roles",
-      "Roles",
-      "الأدوار",
-      "/sys/roles",
-      3,
-      "SYS_Roles",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "",
-      "",
-      "Sub_SYS_Permissions",
-      "Permissions",
-      "الأذونات",
-      "/sys/permissions",
-      4,
-      "SYS_Permissions",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "",
-      "",
-      "Sub_SYS_RolePerms",
-      "Role Permissions",
-      "تعيين أذونات الأدوار",
-      "/sys/role-perms",
-      5,
-      "SYS_Role_Permissions",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "",
-      "",
-      "Sub_SYS_Properties",
-      "User Properties",
-      "خصائص المستخدم",
-      "/sys/properties",
-      6,
-      "SYS_User_Properties",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "",
-      "",
-      "Sub_SYS_Sessions",
-      "Sessions",
-      "الجلسات",
-      "/sys/sessions",
-      7,
-      "SYS_Sessions",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "",
-      "",
-      "Sub_SYS_Audit",
-      "Audit Logs",
-      "سجل التدقيق",
-      "/sys/audit",
-      8,
-      "SYS_Audit_Log",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
-    [
-      "SUB",
-      "Tab_SYS_Management",
-      "",
-      "",
-      "Sub_SYS_Settings",
-      "Settings",
-      "الإعدادات",
-      "/sys/settings",
-      9,
-      "SYS_Settings",
-      "",
-      "",
-      "",
-      "",
-      "SYS_VIEW_USERS",
-    ],
+    ['TAB', 'Tab_SYS_Management', 'System Management', 'إدارة النظام', '', '', '', '/sys', 1, 'SYS_Settings', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Overview', 'Overview', 'نظرة عامة', '/sys/overview', 1, 'SYS_Profile_View', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Users', 'Users', 'المستخدمون', '/sys/users', 2, 'PV_SYS_Users_Table', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Roles', 'Roles', 'الأدوار', '/sys/roles', 3, 'SYS_Roles', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Permissions', 'Permissions', 'الأذونات', '/sys/permissions', 4, 'SYS_Permissions', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_RolePerms', 'Role Permissions', 'تعيين أذونات الأدوار', '/sys/role-perms', 5, 'SYS_Role_Permissions', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Properties', 'User Properties', 'خصائص المستخدم', '/sys/properties', 6, 'SYS_User_Properties', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Sessions', 'Sessions', 'الجلسات', '/sys/sessions', 7, 'SYS_Sessions', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Audit', 'Audit Logs', 'سجل التدقيق', '/sys/audit', 8, 'SYS_Audit_Log', '', '', '', '', 'SYS_VIEW_USERS'],
+    ['SUB', 'Tab_SYS_Management', '', '', 'Sub_SYS_Settings', 'Settings', 'الإعدادات', '/sys/settings', 9, 'SYS_Settings', '', '', '', '', 'SYS_VIEW_USERS'],
 
-    [
-      "TAB",
-      "Tab_HR_Management",
-      "Human Resources (HR)",
-      "الموارد البشرية",
-      "",
-      "",
-      "",
-      "/hr",
-      20,
-      "HR_Employees",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_KPIs",
-      "KPIs",
-      "مؤشرات الأداء",
-      "/hr/kpis",
-      1,
-      "HR_KPIs",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_Employees",
-      "Employees",
-      "الموظفون",
-      "/hr/employees",
-      2,
-      "PV_HR_Employees",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_Attendance",
-      "Attendance",
-      "الحضور والانصراف",
-      "/hr/attendance",
-      3,
-      "HR_Attendance",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_LeaveReqs",
-      "Leave Requests",
-      "طلبات الإجازة",
-      "/hr/leave-reqs",
-      4,
-      "HR_Leave_Requests",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_Absence",
-      "Absence Deductions",
-      "خصومات الغياب",
-      "/hr/absence",
-      5,
-      "HR_Absence_Deductions",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_Payroll",
-      "Payroll",
-      "الرواتب",
-      "/hr/payroll",
-      6,
-      "HR_Payroll",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_Advances",
-      "Advances",
-      "السلف",
-      "/hr/advances",
-      7,
-      "HR_Advances",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_Overtime",
-      "Overtime",
-      "الوقت الإضافي",
-      "/hr/overtime",
-      8,
-      "HR_OverTime",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_Penalties",
-      "Penalties & Deductions",
-      "الجزاءات والخصومات",
-      "/hr/penalties",
-      9,
-      "HR_Deductions",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_Depts",
-      "Departments",
-      "الأقسام",
-      "/hr/depts",
-      10,
-      "HR_Departments",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_LeaveAnalysis",
-      "Leave Analysis",
-      "تحليل الإجازات",
-      "/hr/leave-analysis",
-      11,
-      "HR_Leave_Analysis",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
-    [
-      "SUB",
-      "Tab_HR_Management",
-      "",
-      "",
-      "Sub_HR_Holidays",
-      "Public Holidays",
-      "العطلات الرسمية",
-      "/hr/holidays",
-      12,
-      "SYS_PubHolidays",
-      "",
-      "",
-      "",
-      "",
-      "HR_VIEW_EMPLOYEES",
-    ],
+    ['TAB', 'Tab_HR_Management', 'Human Resources (HR)', 'الموارد البشرية', '', '', '', '/hr', 20, 'HR_Employees', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_KPIs', 'KPIs', 'مؤشرات الأداء', '/hr/kpis', 1, 'HR_KPIs', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Employees', 'Employees', 'الموظفون', '/hr/employees', 2, 'HR_Employees', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Attendance', 'Attendance', 'الحضور والانصراف', '/hr/attendance', 3, 'HR_Attendance', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_LeaveReqs', 'Leave Requests', 'طلبات الإجازة', '/hr/leave-reqs', 4, 'HR_Leave_Requests', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Absence', 'Absence Deductions', 'خصومات الغياب', '/hr/absence', 5, 'HR_Absence_Deductions', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Payroll', 'Payroll', 'الرواتب', '/hr/payroll', 6, 'HR_Payroll', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Advances', 'Advances', 'السلف', '/hr/advances', 7, 'HR_Advances', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Overtime', 'Overtime', 'الوقت الإضافي', '/hr/overtime', 8, 'HR_OverTime', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Penalties', 'Penalties & Deductions', 'الجزاءات والخصومات', '/hr/penalties', 9, 'HR_Deductions', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Depts', 'Departments', 'الأقسام', '/hr/depts', 10, 'HR_Departments', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_LeaveAnalysis', 'Leave Analysis', 'تحليل الإجازات', '/hr/leave-analysis', 11, 'HR_Leave_Analysis', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
+    ['SUB', 'Tab_HR_Management', '', '', 'Sub_HR_Holidays', 'Public Holidays', 'العطلات الرسمية', '/hr/holidays', 12, 'SYS_PubHolidays', '', '', '', '', 'HR_VIEW_EMPLOYEES'],
 
-    [
-      "TAB",
-      "Tab_PRJ_Management",
-      "Projects",
-      "المشاريع",
-      "",
-      "",
-      "",
-      "/prj",
-      30,
-      "PRJ_Main",
-      "",
-      "",
-      "",
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "",
-      "",
-      "Sub_PRJ_KPIs",
-      "KPIs",
-      "مؤشرات الأداء",
-      "/prj/kpis",
-      1,
-      "PRJ_KPIs",
-      "",
-      "",
-      "",
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "",
-      "",
-      "Sub_PRJ_List",
-      "Project List",
-      "قائمة المشاريع",
-      "/prj/list",
-      2,
-      "PV_PRJ_Main",
-      "",
-      "",
-      "",
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "",
-      "",
-      "Sub_PRJ_Tasks",
-      "Tasks",
-      "المهام",
-      "/prj/tasks",
-      3,
-      "PV_PRJ_Tasks",
-      "",
-      "",
-      "",
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "",
-      "",
-      "Sub_PRJ_Clients",
-      "Clients",
-      "العملاء",
-      "/prj/clients",
-      4,
-      "PV_PRJ_Clients",
-      "",
-      "",
-      "",
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "",
-      "",
-      "Sub_PRJ_Materials",
-      "Materials",
-      "المواد",
-      "/prj/materials",
-      5,
-      "PV_PRJ_Materials",
-      "",
-      "",
-      "",
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "",
-      "",
-      "Sub_PRJ_Schedule",
-      "Schedule Calculation",
-      "حساب الجدول الزمني",
-      "/prj/schedule",
-      6,
-      "PV_PRJ_Schedule_Calc",
-      "",
-      "",
-      "",
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "",
-      "",
-      "Sub_PRJ_Dashboard",
-      "Dashboard",
-      "لوحة المتابعة",
-      "/prj/dashboard",
-      7,
-      "PRJ_Dashboard",
-      "",
-      "",
-      "",
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
-    [
-      "SUB",
-      "Tab_PRJ_Management",
-      "",
-      "",
-      "Sub_PRJ_Allocations",
-      "Indirect Expense Allocations",
-      "توزيع المصروفات غير المباشرة",
-      "/prj/allocations",
-      8,
-      "PV_PRJ_InDirExp_Allocations",
-      "",
-      "",
-      "",
-      "",
-      "PRJ_VIEW_PROJECTS",
-    ],
+    ['TAB', 'Tab_PRJ_Management', 'Projects', 'المشاريع', '', '', '', '/prj', 30, 'PRJ_Main', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_KPIs', 'KPIs', 'مؤشرات الأداء', '/prj/kpis', 1, 'PRJ_KPIs', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_List', 'Project List', 'قائمة المشاريع', '/prj/list', 2, 'PV_PRJ_Main', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Tasks', 'Tasks', 'المهام', '/prj/tasks', 3, 'PV_PRJ_Tasks', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Clients', 'Clients', 'العملاء', '/prj/clients', 4, 'PV_PRJ_Clients', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Materials', 'Materials', 'المواد', '/prj/materials', 5, 'PV_PRJ_Materials', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Schedule', 'Schedule Calculation', 'حساب الجدول الزمني', '/prj/schedule', 6, 'PV_PRJ_Schedule_Calc', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Dashboard', 'Dashboard', 'لوحة المتابعة', '/prj/dashboard', 7, 'PRJ_Dashboard', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
+    ['SUB', 'Tab_PRJ_Management', '', '', 'Sub_PRJ_Allocations', 'Indirect Expense Allocations', 'توزيع المصروفات غير المباشرة', '/prj/allocations', 8, 'PV_PRJ_InDirExp_Allocations', '', '', '', '', 'PRJ_VIEW_PROJECTS'],
 
-    [
-      "TAB",
-      "Tab_FIN_Management",
-      "Finance",
-      "المالية",
-      "",
-      "",
-      "",
-      "/fin",
-      40,
-      "FIN_Journal",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "",
-      "",
-      "Sub_FIN_KPIs",
-      "KPIs",
-      "مؤشرات الأداء",
-      "/fin/kpis",
-      1,
-      "FIN_KPIs",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "",
-      "",
-      "Sub_FIN_Direct",
-      "Direct Expenses",
-      "المصروفات المباشرة",
-      "/fin/direct",
-      2,
-      "PV_FIN_DirectExpenses_View",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "",
-      "",
-      "Sub_FIN_Indirect_Rep",
-      "Indirect Expenses (Repeated)",
-      "مصروفات غير مباشرة (متكررة)",
-      "/fin/indirect-rep",
-      3,
-      "FIN_InDirExpense_Repeated",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "",
-      "",
-      "Sub_FIN_Indirect_Once",
-      "Indirect Expenses (Once)",
-      "مصروفات غير مباشرة (مرة واحدة)",
-      "/fin/indirect-once",
-      4,
-      "FIN_InDirExpense_Once",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "",
-      "",
-      "Sub_FIN_PrjRevenue",
-      "Project Revenue",
-      "إيرادات المشاريع",
-      "/fin/prj-revenue",
-      5,
-      "FIN_Project_Revenue",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "",
-      "",
-      "Sub_FIN_GenRevenue",
-      "General Revenues",
-      "الإيرادات العامة",
-      "/fin/gen-revenue",
-      6,
-      "FIN_Revenues",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "",
-      "",
-      "Sub_FIN_Journal",
-      "Journal",
-      "قيود اليومية",
-      "/fin/journal",
-      7,
-      "FIN_Journal",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "",
-      "",
-      "Sub_FIN_Custody",
-      "Custody",
-      "العهد",
-      "/fin/custody",
-      8,
-      "FIN_Custody",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
-    [
-      "SUB",
-      "Tab_FIN_Management",
-      "",
-      "",
-      "Sub_FIN_GL",
-      "GL Totals",
-      "ملخص الأستاذ العام",
-      "/fin/gl",
-      9,
-      "FIN_GL_Totals",
-      "",
-      "",
-      "",
-      "",
-      "FIN_VIEW_REPORTS",
-    ],
+    ['TAB', 'Tab_FIN_Management', 'Finance', 'المالية', '', '', '', '/fin', 40, 'FIN_Journal', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_KPIs', 'KPIs', 'مؤشرات الأداء', '/fin/kpis', 1, 'FIN_KPIs', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Direct', 'Direct Expenses', 'المصروفات المباشرة', '/fin/direct', 2, 'PV_FIN_DirectExpenses_View', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Indirect_Rep', 'Indirect Expenses (Repeated)', 'مصروفات غير مباشرة (متكررة)', '/fin/indirect-rep', 3, 'FIN_InDirExpense_Repeated', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Indirect_Once', 'Indirect Expenses (Once)', 'مصروفات غير مباشرة (مرة واحدة)', '/fin/indirect-once', 4, 'FIN_InDirExpense_Once', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_PrjRevenue', 'Project Revenue', 'إيرادات المشاريع', '/fin/prj-revenue', 5, 'FIN_Project_Revenue', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_GenRevenue', 'General Revenues', 'الإيرادات العامة', '/fin/gen-revenue', 6, 'FIN_Revenues', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Journal', 'Journal', 'قيود اليومية', '/fin/journal', 7, 'FIN_Journal', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_Custody', 'Custody', 'العهد', '/fin/custody', 8, 'FIN_Custody', '', '', '', '', 'FIN_VIEW_REPORTS'],
+    ['SUB', 'Tab_FIN_Management', '', '', 'Sub_FIN_GL', 'GL Totals', 'ملخص الأستاذ العام', '/fin/gl', 9, 'FIN_GL_Totals', '', '', '', '', 'FIN_VIEW_REPORTS'],
   ];
-  debugLog(FNAME, "Attempting to seed initial tab register data.");
+  debugLog(FNAME, 'Attempting to seed initial tab register data.');
   appendRowsIfMissing(sh, rows, [0, 1, 4]);
 }
 
 function updateTabRegisterRenderLogic(ss) {
-  const FNAME = "updateTabRegisterRenderLogic";
-  debugLog(
-    FNAME,
-    "Starting update process for SYS_Tab_Register render logic columns."
-  );
-  const tabSheet = ss.getSheetByName("SYS_Tab_Register");
-  const formSheet = ss.getSheetByName("SYS_Dynamic_Forms");
+  const FNAME = 'updateTabRegisterRenderLogic';
+  debugLog(FNAME, 'Starting update process for SYS_Tab_Register render logic columns.');
+  const tabSheet = ss.getSheetByName('SYS_Tab_Register');
+  const formSheet = ss.getSheetByName('SYS_Dynamic_Forms');
 
   if (!tabSheet) {
-    debugLog(FNAME, "FAILED: SYS_Tab_Register sheet not found.");
+    debugLog(FNAME, 'FAILED: SYS_Tab_Register sheet not found.');
     return;
   }
   if (!formSheet) {
-    debugLog(
-      FNAME,
-      "FAILED: SYS_Dynamic_Forms sheet not found (needed for Add_Form_ID lookup)."
-    );
+    debugLog(FNAME, 'FAILED: SYS_Dynamic_Forms sheet not found (needed for Add_Form_ID lookup).');
     return;
   }
 
@@ -2059,46 +1233,35 @@ function updateTabRegisterRenderLogic(ss) {
     const updatedData = [headers];
 
     const colIdx = {
-      recordType: headers.indexOf("Record_Type"),
-      subId: headers.indexOf("Sub_ID"),
-      subLabelEn: headers.indexOf("Sub_Label_EN"),
-      renderMode: headers.indexOf("Render_Mode"),
-      addFormId: headers.indexOf("Add_Form_ID"),
-      viewLabel: headers.indexOf("View_Label"),
-      addLabel: headers.indexOf("Add_Label"),
+      recordType: headers.indexOf('Record_Type'),
+      subId: headers.indexOf('Sub_ID'),
+      subLabelEn: headers.indexOf('Sub_Label_EN'),
+      renderMode: headers.indexOf('Render_Mode'),
+      addFormId: headers.indexOf('Add_Form_ID'),
+      viewLabel: headers.indexOf('View_Label'),
+      addLabel: headers.indexOf('Add_Label'),
     };
 
     for (const key in colIdx) {
       if (colIdx[key] === -1) {
-        debugLog(
-          FNAME,
-          `FAILED: Missing required column in SYS_Tab_Register: ${key}`
-        );
+        debugLog(FNAME, `FAILED: Missing required column in SYS_Tab_Register: ${key}`);
         return;
       }
     }
-    debugLog(FNAME, "Found required column indices", colIdx);
+    debugLog(FNAME, 'Found required column indices', colIdx);
 
     const formDefinitions = getDynamicFormDefinitions();
     const formIdLookup = new Map();
     formDefinitions.forEach((formRow) => {
       const formId = formRow[0];
       const associatedSubId = formRow[2];
-      if (
-        formId &&
-        associatedSubId &&
-        formId.startsWith("FORM_") &&
-        formId.includes("_Add")
-      ) {
+      if (formId && associatedSubId && formId.startsWith('FORM_') && formId.includes('_Add')) {
         if (!formIdLookup.has(associatedSubId)) {
           formIdLookup.set(associatedSubId, formId);
         }
       }
     });
-    debugLog(
-      FNAME,
-      `Built Add_Form_ID lookup map with ${formIdLookup.size} entries.`
-    );
+    debugLog(FNAME, `Built Add_Form_ID lookup map with ${formIdLookup.size} entries.`);
 
     for (let i = 1; i < tabData.length; i++) {
       const row = tabData[i].slice();
@@ -2106,37 +1269,27 @@ function updateTabRegisterRenderLogic(ss) {
       const subId = row[colIdx.subId];
       const subLabelEn = row[colIdx.subLabelEn];
 
-      if (recordType === "SUB") {
-        let renderMode = "ViewAdd";
-        let addFormId = "";
-        let viewLabel = `View ${subLabelEn || "Items"}`;
-        let addLabel = `Add ${subLabelEn || "Item"}`;
+      if (recordType === 'SUB') {
+        let renderMode = 'ViewAdd';
+        let addFormId = '';
+        let viewLabel = `View ${subLabelEn || 'Items'}`;
+        let addLabel = `Add ${subLabelEn || 'Item'}`;
 
-        if (
-          subId.includes("_Overview") ||
-          subId.endsWith("_KPIs") ||
-          subId.endsWith("_Dashboard")
-        ) {
-          renderMode = "Dashboard";
-          viewLabel = "";
-          addLabel = "";
+        if (subId.includes('_Overview') || subId.endsWith('_KPIs') || subId.endsWith('_Dashboard')) {
+          renderMode = 'Dashboard';
+          viewLabel = '';
+          addLabel = '';
         } else {
           if (formIdLookup.has(subId)) {
             addFormId = formIdLookup.get(subId);
-            const matchingFormDef = formDefinitions.find(
-              (def) => def[0] === addFormId
-            );
+            const matchingFormDef = formDefinitions.find((def) => def[0] === addFormId);
             if (matchingFormDef && matchingFormDef[1]) {
               addLabel = matchingFormDef[1];
             }
           } else {
-            debugLog(
-              FNAME,
-              `Warning: Could not find matching 'Add' Form_ID for Sub_ID: ${subId}. Add_Form_ID will be empty.`,
-              {
-                rowIndex: i + 1,
-              }
-            );
+            debugLog(FNAME, `Warning: Could not find matching 'Add' Form_ID for Sub_ID: ${subId}. Add_Form_ID will be empty.`, {
+              rowIndex: i + 1,
+            });
           }
         }
 
@@ -2145,56 +1298,41 @@ function updateTabRegisterRenderLogic(ss) {
         row[colIdx.viewLabel] = viewLabel;
         row[colIdx.addLabel] = addLabel;
       } else {
-        row[colIdx.renderMode] = "";
-        row[colIdx.addFormId] = "";
-        row[colIdx.viewLabel] = "";
-        row[colIdx.addLabel] = "";
+        row[colIdx.renderMode] = '';
+        row[colIdx.addFormId] = '';
+        row[colIdx.viewLabel] = '';
+        row[colIdx.addLabel] = '';
       }
 
       updatedData.push(row);
     }
 
-    debugLog(FNAME, "Clearing existing data (keeping header format).");
+    debugLog(FNAME, 'Clearing existing data (keeping header format).');
     if (tabSheet.getLastRow() > 1) {
-      tabSheet
-        .getRange(2, 1, tabSheet.getLastRow() - 1, headers.length)
-        .clearContent();
+      tabSheet.getRange(2, 1, tabSheet.getLastRow() - 1, headers.length).clearContent();
     }
 
     if (updatedData.length > 1) {
       const dataToWrite = updatedData.slice(1);
-      debugLog(
-        FNAME,
-        `Writing ${dataToWrite.length} updated rows back to sheet.`
-      );
-      tabSheet
-        .getRange(2, 1, dataToWrite.length, headers.length)
-        .setValues(dataToWrite);
+      debugLog(FNAME, `Writing ${dataToWrite.length} updated rows back to sheet.`);
+      tabSheet.getRange(2, 1, dataToWrite.length, headers.length).setValues(dataToWrite);
     } else {
-      debugLog(FNAME, "No data rows to write back after update.");
+      debugLog(FNAME, 'No data rows to write back after update.');
     }
 
-    logSetupAction(
-      "UPDATE_RENDER_LOGIC",
-      "SYS_Tab_Register",
-      "SYS_Tab_Register",
-      `Updated ${updatedData.length - 1} rows with render engine columns.`
-    );
-    debugLog(FNAME, "Successfully updated SYS_Tab_Register with render logic.");
+    logSetupAction('UPDATE_RENDER_LOGIC', 'SYS_Tab_Register', 'SYS_Tab_Register', `Updated ${updatedData.length - 1} rows with render engine columns.`);
+    debugLog(FNAME, 'Successfully updated SYS_Tab_Register with render logic.');
   } catch (err) {
-    debugLog(FNAME, `ERROR during update: ${err.message || err}`, {
-      error: err,
-      stack: err.stack,
-    });
+    debugLog(FNAME, `ERROR during update: ${err.message || err}`, { error: err, stack: err.stack });
     Logger.log(`ERROR in updateTabRegisterRenderLogic: ${err}`);
   }
 }
 
 function seedSysProfileView(ss) {
-  const FNAME = "seedSysProfileView";
-  const sh = ss.getSheetByName("SYS_Profile_View");
+  const FNAME = 'seedSysProfileView';
+  const sh = ss.getSheetByName('SYS_Profile_View');
   if (!sh) {
-    debugLog(FNAME, "Skipped: Sheet SYS_Profile_View not found.");
+    debugLog(FNAME, 'Skipped: Sheet SYS_Profile_View not found.');
     return;
   }
   const rows = [
@@ -2269,59 +1407,4853 @@ function seedSysProfileView(ss) {
       "",
     ],
   ];
-  debugLog(
-    FNAME,
-    `Attempting to seed ${rows.length} profile view definitions.`
-  );
+  debugLog(FNAME, `Attempting to seed ${rows.length} profile view definitions.`);
   appendRowsIfMissing(sh, rows, [0]);
 }
 
 let dynamicFormCache = null;
 function getDynamicFormDefinitions() {
-  const FNAME = "getDynamicFormDefinitions";
+  const FNAME = 'getDynamicFormDefinitions';
   if (dynamicFormCache) {
-    debugLog(FNAME, "Returning cached form definitions.");
+    debugLog(FNAME, 'Returning cached form definitions.');
     return dynamicFormCache;
   }
-  debugLog(FNAME, "Reading form definitions from SYS_Dynamic_Forms sheet.");
-
-  try {
-    const ss = getTargetSpreadsheet();
-    const sh = ss.getSheetByName("SYS_Dynamic_Forms");
-    if (!sh) {
-      debugLog(
-        FNAME,
-        "SYS_Dynamic_Forms sheet not found, returning empty array."
-      );
-      return [];
-    }
-
-    const data = sh.getDataRange().getValues();
-    if (data.length <= 1) {
-      debugLog(FNAME, "SYS_Dynamic_Forms sheet has no data rows.");
-      return [];
-    }
-
-    // Convert sheet data to the expected format
-    // Skip header row, return all data rows as arrays
-    dynamicFormCache = data.slice(1);
-    debugLog(
-      FNAME,
-      `Read ${dynamicFormCache.length} form definition rows from sheet.`
-    );
-    return dynamicFormCache;
-  } catch (err) {
-    debugLog(FNAME, "Error reading from SYS_Dynamic_Forms sheet", err);
-    return [];
-  }
+  debugLog(FNAME, 'Building form definitions (first time).');
+  dynamicFormCache = [
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "التعريف",
+      "USR_User_Id",
+      "معرّف المستخدم",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "SYS_Users",
+      "User_Id",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Full_Name",
+      "الاسم الكامل",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Full_Name",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Username",
+      "اسم المستخدم",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Username",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Email",
+      "البريد الإلكتروني",
+      "Email",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Email",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Job_Title",
+      "المسمى الوظيفي",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "SYS_Users",
+      "Job_Title",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Department",
+      "القسم",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Departments",
+      "SYS_Users",
+      "Department",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Role",
+      "الدور",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Roles",
+      "SYS_Users",
+      "Role_Id",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "الإعدادات",
+      "USR_IsActive",
+      "نشط؟",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "TRUE",
+      "DD_YesNo",
+      "SYS_Users",
+      "IsActive",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "الإعدادات",
+      "USR_Password",
+      "كلمة المرور",
+      "Password",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "password",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "الإعدادات",
+      "USR_MFA",
+      "تفعيل MFA",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "Disabled",
+      "DD_MFA_Status",
+      "SYS_Users",
+      "MFA_Enabled",
+      "",
+    ],
+    [
+      "FORM_SYS_AddUser",
+      "إضافة مستخدم جديد",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "الإعدادات",
+      "USR_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "SYS_Users",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_SYS_EditUser",
+      "تعديل مستخدم",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Full_Name",
+      "الاسم الكامل",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Full_Name",
+      "",
+    ],
+    [
+      "FORM_SYS_EditUser",
+      "تعديل مستخدم",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "بيانات المستخدم",
+      "USR_Email",
+      "البريد الإلكتروني",
+      "Email",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "SYS_Users",
+      "Email",
+      "",
+    ],
+    [
+      "FORM_SYS_EditUser",
+      "تعديل مستخدم",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Department",
+      "القسم",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Departments",
+      "SYS_Users",
+      "Department",
+      "",
+    ],
+    [
+      "FORM_SYS_EditUser",
+      "تعديل مستخدم",
+      "Sub_SYS_Users",
+      "المستخدمون",
+      "العمل",
+      "USR_Role",
+      "الدور",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Roles",
+      "SYS_Users",
+      "Role_Id",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "البيانات الأساسية",
+      "MAT_Material_ID",
+      "معرّف المادة",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "PRJ_Materials",
+      "Material_ID",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "البيانات الأساسية",
+      "MAT_Name_AR",
+      "اسم المادة (عربي)",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "PRJ_Materials",
+      "Name_AR",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "البيانات الأساسية",
+      "MAT_Name_EN",
+      "اسم المادة (إنجليزي)",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "PRJ_Materials",
+      "Name_EN",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "التصنيفات",
+      "MAT_Category",
+      "التصنيف الرئيسي",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "PRJ_Materials",
+      "Category",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "التصنيفات",
+      "MAT_Subcategory",
+      "التصنيف الفرعي",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "PRJ_Materials",
+      "Subcategory",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "إعدادات الكمية",
+      "MAT_Default_Unit",
+      "الوحدة الافتراضية",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "PRJ_Materials",
+      "Default_Unit",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "إعدادات الكمية",
+      "MAT_Default_Price",
+      "السعر الافتراضي",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "0",
+      "",
+      "PRJ_Materials",
+      "Default_Price",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "إعدادات الكمية",
+      "MAT_VAT_Rate",
+      "نسبة ضريبة القيمة المضافة",
+      "Number",
+      "",
+      "",
+      "No",
+      "0.14",
+      "",
+      "PRJ_Materials",
+      "VAT_Rate",
+      "",
+    ],
+    [
+      "FORM_PRJ_AddMaterial",
+      "إضافة مادة جديدة",
+      "Sub_PRJ_Materials",
+      "المواد",
+      "إعدادات الحالة",
+      "MAT_IsActive",
+      "نشط؟",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "TRUE",
+      "DD_YesNo",
+      "PRJ_Materials",
+      "Active",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "المعرّف",
+      "FIN_Direct_ID",
+      "معرّف المصروف",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Expense_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل الأساسية",
+      "FIN_Direct_Project",
+      "المشروع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Projects",
+      "FIN_DirectExpenses",
+      "Project_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل الأساسية",
+      "FIN_Direct_Date",
+      "تاريخ المصروف",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل الأساسية",
+      "FIN_Direct_Category",
+      "التصنيف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Expense_Category",
+      "FIN_DirectExpenses",
+      "Category",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل",
+      "FIN_Direct_Level1",
+      "المستوى 1",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Level_1",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل",
+      "FIN_Direct_Level2",
+      "المستوى 2",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Level_2",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الكميات",
+      "FIN_Direct_Unit",
+      "الوحدة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Unit",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الكميات",
+      "FIN_Direct_Qty",
+      "الكمية",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Qty",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الكميات",
+      "FIN_Direct_UnitPrice",
+      "سعر الوحدة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Unit_Price",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "القيم",
+      "FIN_Direct_Amount",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "القيم",
+      "FIN_Direct_VATRate",
+      "نسبة الضريبة",
+      "Number",
+      "",
+      "",
+      "No",
+      "0",
+      "",
+      "FIN_DirectExpenses",
+      "VAT_Rate",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "القيم",
+      "FIN_Direct_VATAmount",
+      "قيمة الضريبة",
+      "Number",
+      "",
+      "",
+      "No",
+      "0",
+      "",
+      "FIN_DirectExpenses",
+      "VAT_Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "القيم",
+      "FIN_Direct_TotalVAT",
+      "الإجمالي مع الضريبة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Total_With_VAT",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "المواد",
+      "FIN_Direct_MaterialID",
+      "معرّف المادة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Material_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "المواد",
+      "FIN_Direct_MaterialName",
+      "اسم المادة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Material_Name",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الدفع",
+      "FIN_Direct_PayStatus",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "Pending",
+      "DD_Payment_Status",
+      "FIN_DirectExpenses",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الدفع",
+      "FIN_Direct_PayMethod",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_DirectExpenses",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_AddDirectExpense",
+      "تسجيل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "ملاحظات",
+      "FIN_Direct_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "المعرّف",
+      "FIN_Direct_ID_View",
+      "معرّف المصروف",
+      "Display",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Expense_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل الأساسية",
+      "FIN_Direct_Project_Edit",
+      "المشروع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Projects",
+      "FIN_DirectExpenses",
+      "Project_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل الأساسية",
+      "FIN_Direct_Date_Edit",
+      "تاريخ المصروف",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل الأساسية",
+      "FIN_Direct_Category_Edit",
+      "التصنيف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Expense_Category",
+      "FIN_DirectExpenses",
+      "Category",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل",
+      "FIN_Direct_Level1_Edit",
+      "المستوى 1",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Level_1",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "التفاصيل",
+      "FIN_Direct_Level2_Edit",
+      "المستوى 2",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Level_2",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الكميات",
+      "FIN_Direct_Unit_Edit",
+      "الوحدة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Unit",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الكميات",
+      "FIN_Direct_Qty_Edit",
+      "الكمية",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Qty",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الكميات",
+      "FIN_Direct_UnitPrice_Edit",
+      "سعر الوحدة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Unit_Price",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "القيم",
+      "FIN_Direct_Amount_Edit",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "القيم",
+      "FIN_Direct_VATRate_Edit",
+      "نسبة الضريبة",
+      "Number",
+      "",
+      "",
+      "No",
+      "0",
+      "",
+      "FIN_DirectExpenses",
+      "VAT_Rate",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "القيم",
+      "FIN_Direct_VATAmount_Edit",
+      "قيمة الضريبة",
+      "Number",
+      "",
+      "",
+      "No",
+      "0",
+      "",
+      "FIN_DirectExpenses",
+      "VAT_Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "القيم",
+      "FIN_Direct_TotalVAT_Edit",
+      "الإجمالي مع الضريبة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Total_With_VAT",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "المواد",
+      "FIN_Direct_MaterialID_Edit",
+      "معرّف المادة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Material_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "المواد",
+      "FIN_Direct_MaterialName_Edit",
+      "اسم المادة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Material_Name",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الدفع",
+      "FIN_Direct_PayStatus_Edit",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Status",
+      "FIN_DirectExpenses",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "الدفع",
+      "FIN_Direct_PayMethod_Edit",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_DirectExpenses",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_EditDirectExpense",
+      "تعديل مصروف مباشر",
+      "Sub_FIN_Direct",
+      "المصاريف المباشرة",
+      "ملاحظات",
+      "FIN_Direct_Notes_Edit",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_DirectExpenses",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "المعرّف",
+      "FIN_Rep_ID",
+      "معرّف المصروف",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "InDirExpense_Repeated_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التفاصيل",
+      "FIN_Rep_Name",
+      "اسم المصروف",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Expense_Name",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التفاصيل",
+      "FIN_Rep_Category",
+      "التصنيف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Expense_Category",
+      "FIN_InDirExpense_Repeated",
+      "Category",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "الدورات",
+      "FIN_Rep_Frequency",
+      "التكرار",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Monthly",
+      "DD_Indirect_Frequency",
+      "FIN_InDirExpense_Repeated",
+      "Frequency",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التواريخ",
+      "FIN_Rep_Start",
+      "تاريخ البدء",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Start_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التواريخ",
+      "FIN_Rep_End",
+      "تاريخ الانتهاء",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "End_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التواريخ",
+      "FIN_Rep_NextPay",
+      "تاريخ السداد",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Next_Pay_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "القيم",
+      "FIN_Rep_Amount",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "القيم",
+      "FIN_Rep_PaidBy",
+      "مدفوع بواسطة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Paid_By",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "الدفع",
+      "FIN_Rep_PayStatus",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "Pending",
+      "DD_Payment_Status",
+      "FIN_InDirExpense_Repeated",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "الدفع",
+      "FIN_Rep_PayMethod",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_InDirExpense_Repeated",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التوزيع",
+      "FIN_Rep_Allocation",
+      "أساس التوزيع",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Allocation_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseRep",
+      "إضافة مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "ملاحظات",
+      "FIN_Rep_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "المعرّف",
+      "FIN_Rep_ID_View",
+      "معرّف المصروف",
+      "Display",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "InDirExpense_Repeated_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التفاصيل",
+      "FIN_Rep_Name_Edit",
+      "اسم المصروف",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Expense_Name",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التفاصيل",
+      "FIN_Rep_Category_Edit",
+      "التصنيف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Expense_Category",
+      "FIN_InDirExpense_Repeated",
+      "Category",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "الدورات",
+      "FIN_Rep_Frequency_Edit",
+      "التكرار",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Indirect_Frequency",
+      "FIN_InDirExpense_Repeated",
+      "Frequency",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التواريخ",
+      "FIN_Rep_Start_Edit",
+      "تاريخ البدء",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Start_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التواريخ",
+      "FIN_Rep_End_Edit",
+      "تاريخ الانتهاء",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "End_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التواريخ",
+      "FIN_Rep_NextPay_Edit",
+      "تاريخ السداد",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Next_Pay_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "القيم",
+      "FIN_Rep_Amount_Edit",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "القيم",
+      "FIN_Rep_PaidBy_Edit",
+      "مدفوع بواسطة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Paid_By",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "الدفع",
+      "FIN_Rep_PayStatus_Edit",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Status",
+      "FIN_InDirExpense_Repeated",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "الدفع",
+      "FIN_Rep_PayMethod_Edit",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_InDirExpense_Repeated",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "التوزيع",
+      "FIN_Rep_Allocation_Edit",
+      "أساس التوزيع",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Allocation_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseRep",
+      "تعديل مصروف غير مباشر (متكرر)",
+      "Sub_FIN_Indirect_Rep",
+      "المصاريف غير المباشرة (متكررة)",
+      "ملاحظات",
+      "FIN_Rep_Notes_Edit",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Repeated",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "المعرّف",
+      "FIN_Once_ID",
+      "معرّف المصروف",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "InDirExpense_Once_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "التفاصيل",
+      "FIN_Once_Name",
+      "اسم المصروف",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Expense_Name",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "التفاصيل",
+      "FIN_Once_Category",
+      "التصنيف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Expense_Category",
+      "FIN_InDirExpense_Once",
+      "Category",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "التواريخ",
+      "FIN_Once_Date",
+      "تاريخ المصروف",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Expense_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "القيم",
+      "FIN_Once_Amount",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "القيم",
+      "FIN_Once_PaidBy",
+      "مدفوع بواسطة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Paid_By",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "الدفع",
+      "FIN_Once_PayStatus",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "Pending",
+      "DD_Payment_Status",
+      "FIN_InDirExpense_Once",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "الدفع",
+      "FIN_Once_PayMethod",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_InDirExpense_Once",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "التوزيع",
+      "FIN_Once_Allocation",
+      "أساس التوزيع",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Allocation_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "الإهلاك",
+      "FIN_Once_UsefulLife",
+      "العمر الإنتاجي (أشهر)",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Useful_Life_Months",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "الإهلاك",
+      "FIN_Once_DepStart",
+      "تاريخ بدء الإهلاك",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Depreciation_Start_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddIndirectExpenseOnce",
+      "إضافة مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "ملاحظات",
+      "FIN_Once_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "المعرّف",
+      "FIN_Once_ID_View",
+      "معرّف المصروف",
+      "Display",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "InDirExpense_Once_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "التفاصيل",
+      "FIN_Once_Name_Edit",
+      "اسم المصروف",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Expense_Name",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "التفاصيل",
+      "FIN_Once_Category_Edit",
+      "التصنيف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Expense_Category",
+      "FIN_InDirExpense_Once",
+      "Category",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "التواريخ",
+      "FIN_Once_Date_Edit",
+      "تاريخ المصروف",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Expense_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "القيم",
+      "FIN_Once_Amount_Edit",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "القيم",
+      "FIN_Once_PaidBy_Edit",
+      "مدفوع بواسطة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Paid_By",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "الدفع",
+      "FIN_Once_PayStatus_Edit",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Status",
+      "FIN_InDirExpense_Once",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "الدفع",
+      "FIN_Once_PayMethod_Edit",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_InDirExpense_Once",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "التوزيع",
+      "FIN_Once_Allocation_Edit",
+      "أساس التوزيع",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Allocation_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "الإهلاك",
+      "FIN_Once_UsefulLife_Edit",
+      "العمر الإنتاجي (أشهر)",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Useful_Life_Months",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "الإهلاك",
+      "FIN_Once_DepStart_Edit",
+      "تاريخ بدء الإهلاك",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Depreciation_Start_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditIndirectExpenseOnce",
+      "تعديل مصروف غير مباشر (مرة واحدة)",
+      "Sub_FIN_Indirect_Once",
+      "المصاريف غير المباشرة (مرة واحدة)",
+      "ملاحظات",
+      "FIN_Once_Notes_Edit",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_InDirExpense_Once",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "المعرّف",
+      "FIN_PrjRev_ID",
+      "معرّف الإيراد",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Revenue_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Project",
+      "المشروع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Projects",
+      "FIN_Project_Revenue",
+      "Project_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التواريخ",
+      "FIN_PrjRev_Date",
+      "تاريخ الإيراد",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Revenue_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "القيم",
+      "FIN_PrjRev_Amount",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Type",
+      "نوع الإيراد",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Project",
+      "DD_Revenue_Type",
+      "FIN_Project_Revenue",
+      "Revenue_Type",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Source",
+      "المصدر",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Source",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Description",
+      "الوصف",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Description",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "الدفع",
+      "FIN_PrjRev_PayMethod",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_Project_Revenue",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "الدفع",
+      "FIN_PrjRev_PayStatus",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "Pending",
+      "DD_Payment_Status",
+      "FIN_Project_Revenue",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_AddProjectRevenue",
+      "تسجيل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Invoice",
+      "رقم الفاتورة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Invoice_Number",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "المعرّف",
+      "FIN_PrjRev_ID_View",
+      "معرّف الإيراد",
+      "Display",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Revenue_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Project_Edit",
+      "المشروع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Projects",
+      "FIN_Project_Revenue",
+      "Project_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التواريخ",
+      "FIN_PrjRev_Date_Edit",
+      "تاريخ الإيراد",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Revenue_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "القيم",
+      "FIN_PrjRev_Amount_Edit",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Type_Edit",
+      "نوع الإيراد",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Revenue_Type",
+      "FIN_Project_Revenue",
+      "Revenue_Type",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Source_Edit",
+      "المصدر",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Source",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Description_Edit",
+      "الوصف",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Description",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "الدفع",
+      "FIN_PrjRev_PayMethod_Edit",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_Project_Revenue",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "الدفع",
+      "FIN_PrjRev_PayStatus_Edit",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Status",
+      "FIN_Project_Revenue",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_EditProjectRevenue",
+      "تعديل إيراد مشروع",
+      "Sub_FIN_PrjRevenue",
+      "إيرادات المشاريع",
+      "التفاصيل",
+      "FIN_PrjRev_Invoice_Edit",
+      "رقم الفاتورة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Project_Revenue",
+      "Invoice_Number",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "المعرّف",
+      "FIN_Rev_ID",
+      "معرّف الإيراد",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Revenue_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Type",
+      "نوع الإيراد",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "General",
+      "DD_Revenue_Type",
+      "FIN_Revenues",
+      "Revenue_Type",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التواريخ",
+      "FIN_Rev_Date",
+      "تاريخ الإيراد",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Revenues",
+      "Revenue_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "القيم",
+      "FIN_Rev_Amount",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Revenues",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Source",
+      "المصدر",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Source",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Description",
+      "الوصف",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Description",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "الدفع",
+      "FIN_Rev_PayMethod",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_Revenues",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "الدفع",
+      "FIN_Rev_PayStatus",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "Pending",
+      "DD_Payment_Status",
+      "FIN_Revenues",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Client",
+      "العميل",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Clients",
+      "FIN_Revenues",
+      "Client_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Project",
+      "المشروع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Projects",
+      "FIN_Revenues",
+      "Project_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Reference",
+      "المرجع",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Reference",
+      "",
+    ],
+    [
+      "FORM_FIN_AddRevenue",
+      "تسجيل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "ملاحظات",
+      "FIN_Rev_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "المعرّف",
+      "FIN_Rev_ID_View",
+      "معرّف الإيراد",
+      "Display",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Revenue_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Type_Edit",
+      "نوع الإيراد",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Revenue_Type",
+      "FIN_Revenues",
+      "Revenue_Type",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التواريخ",
+      "FIN_Rev_Date_Edit",
+      "تاريخ الإيراد",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Revenues",
+      "Revenue_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "القيم",
+      "FIN_Rev_Amount_Edit",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Revenues",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Source_Edit",
+      "المصدر",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Source",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Description_Edit",
+      "الوصف",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Description",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "الدفع",
+      "FIN_Rev_PayMethod_Edit",
+      "طريقة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Method",
+      "FIN_Revenues",
+      "Pay_Method",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "الدفع",
+      "FIN_Rev_PayStatus_Edit",
+      "حالة الدفع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Payment_Status",
+      "FIN_Revenues",
+      "Pay_Status",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Client_Edit",
+      "العميل",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Clients",
+      "FIN_Revenues",
+      "Client_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Project_Edit",
+      "المشروع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Projects",
+      "FIN_Revenues",
+      "Project_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "التفاصيل",
+      "FIN_Rev_Reference_Edit",
+      "المرجع",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Reference",
+      "",
+    ],
+    [
+      "FORM_FIN_EditRevenue",
+      "تعديل إيراد عام",
+      "Sub_FIN_GenRevenue",
+      "الإيرادات العامة",
+      "ملاحظات",
+      "FIN_Rev_Notes_Edit",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Revenues",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_FIN_AddJournalEntry",
+      "تسجيل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "المعرّف",
+      "FIN_Journal_ID",
+      "معرّف القيد",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Journal",
+      "Journal_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddJournalEntry",
+      "تسجيل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "التواريخ",
+      "FIN_Journal_Date",
+      "تاريخ القيد",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Journal",
+      "Journal_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddJournalEntry",
+      "تسجيل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "الحسابات",
+      "FIN_Journal_Account",
+      "الحساب",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Account",
+      "FIN_Journal",
+      "Account",
+      "",
+    ],
+    [
+      "FORM_FIN_AddJournalEntry",
+      "تسجيل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "الحسابات",
+      "FIN_Journal_Counter",
+      "الحساب المقابل",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Account",
+      "FIN_Journal",
+      "Counterparty_Account",
+      "",
+    ],
+    [
+      "FORM_FIN_AddJournalEntry",
+      "تسجيل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "القيم",
+      "FIN_Journal_Debit",
+      "المبلغ مدين",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Journal",
+      "Debit_Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_AddJournalEntry",
+      "تسجيل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "القيم",
+      "FIN_Journal_Credit",
+      "المبلغ دائن",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Journal",
+      "Credit_Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_AddJournalEntry",
+      "تسجيل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "التفاصيل",
+      "FIN_Journal_Project",
+      "المشروع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Projects",
+      "FIN_Journal",
+      "Project_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddJournalEntry",
+      "تسجيل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "التفاصيل",
+      "FIN_Journal_Description",
+      "الوصف",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Journal",
+      "Description",
+      "",
+    ],
+    [
+      "FORM_FIN_AddJournalEntry",
+      "تسجيل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "التفاصيل",
+      "FIN_Journal_Reference",
+      "المرجع",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Journal",
+      "Reference",
+      "",
+    ],
+    [
+      "FORM_FIN_EditJournalEntry",
+      "تعديل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "المعرّف",
+      "FIN_Journal_ID_View",
+      "معرّف القيد",
+      "Display",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Journal",
+      "Journal_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditJournalEntry",
+      "تعديل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "التواريخ",
+      "FIN_Journal_Date_Edit",
+      "تاريخ القيد",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Journal",
+      "Journal_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditJournalEntry",
+      "تعديل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "الحسابات",
+      "FIN_Journal_Account_Edit",
+      "الحساب",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Account",
+      "FIN_Journal",
+      "Account",
+      "",
+    ],
+    [
+      "FORM_FIN_EditJournalEntry",
+      "تعديل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "الحسابات",
+      "FIN_Journal_Counter_Edit",
+      "الحساب المقابل",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Account",
+      "FIN_Journal",
+      "Counterparty_Account",
+      "",
+    ],
+    [
+      "FORM_FIN_EditJournalEntry",
+      "تعديل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "القيم",
+      "FIN_Journal_Debit_Edit",
+      "المبلغ مدين",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Journal",
+      "Debit_Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_EditJournalEntry",
+      "تعديل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "القيم",
+      "FIN_Journal_Credit_Edit",
+      "المبلغ دائن",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Journal",
+      "Credit_Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_EditJournalEntry",
+      "تعديل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "التفاصيل",
+      "FIN_Journal_Project_Edit",
+      "المشروع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Projects",
+      "FIN_Journal",
+      "Project_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditJournalEntry",
+      "تعديل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "التفاصيل",
+      "FIN_Journal_Description_Edit",
+      "الوصف",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Journal",
+      "Description",
+      "",
+    ],
+    [
+      "FORM_FIN_EditJournalEntry",
+      "تعديل قيد يومية",
+      "Sub_FIN_Journal",
+      "دفتر اليومية",
+      "التفاصيل",
+      "FIN_Journal_Reference_Edit",
+      "المرجع",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Journal",
+      "Reference",
+      "",
+    ],
+    [
+      "FORM_FIN_AddCustody",
+      "تسجيل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "المعرّف",
+      "FIN_Custody_ID",
+      "معرّف العهدة",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Custody_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddCustody",
+      "تسجيل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "الموظف",
+      "FIN_Custody_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "FIN_Custody",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_AddCustody",
+      "تسجيل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "الموظف",
+      "FIN_Custody_EmployeeName",
+      "اسم الموظف",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Employee_Name",
+      "",
+    ],
+    [
+      "FORM_FIN_AddCustody",
+      "تسجيل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "التواريخ",
+      "FIN_Custody_IssueDate",
+      "تاريخ التسليم",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Custody",
+      "Issue_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddCustody",
+      "تسجيل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "التواريخ",
+      "FIN_Custody_ReturnDue",
+      "تاريخ الاستحقاق",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Return_Due_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_AddCustody",
+      "تسجيل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "القيم",
+      "FIN_Custody_Amount",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Custody",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_AddCustody",
+      "تسجيل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "التفاصيل",
+      "FIN_Custody_Purpose",
+      "الغرض",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Purpose",
+      "",
+    ],
+    [
+      "FORM_FIN_AddCustody",
+      "تسجيل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "الحالة",
+      "FIN_Custody_Status",
+      "الحالة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Open",
+      "DD_Custody_Status",
+      "FIN_Custody",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_FIN_AddCustody",
+      "تسجيل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "ملاحظات",
+      "FIN_Custody_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_FIN_EditCustody",
+      "تعديل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "المعرّف",
+      "FIN_Custody_ID_View",
+      "معرّف العهدة",
+      "Display",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Custody_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditCustody",
+      "تعديل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "الموظف",
+      "FIN_Custody_Employee_Edit",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "FIN_Custody",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_FIN_EditCustody",
+      "تعديل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "الموظف",
+      "FIN_Custody_EmployeeName_Edit",
+      "اسم الموظف",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Employee_Name",
+      "",
+    ],
+    [
+      "FORM_FIN_EditCustody",
+      "تعديل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "التواريخ",
+      "FIN_Custody_IssueDate_Edit",
+      "تاريخ التسليم",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Custody",
+      "Issue_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditCustody",
+      "تعديل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "التواريخ",
+      "FIN_Custody_ReturnDue_Edit",
+      "تاريخ الاستحقاق",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Return_Due_Date",
+      "",
+    ],
+    [
+      "FORM_FIN_EditCustody",
+      "تعديل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "القيم",
+      "FIN_Custody_Amount_Edit",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "FIN_Custody",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_FIN_EditCustody",
+      "تعديل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "التفاصيل",
+      "FIN_Custody_Purpose_Edit",
+      "الغرض",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Purpose",
+      "",
+    ],
+    [
+      "FORM_FIN_EditCustody",
+      "تعديل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "الحالة",
+      "FIN_Custody_Status_Edit",
+      "الحالة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Custody_Status",
+      "FIN_Custody",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_FIN_EditCustody",
+      "تعديل عهدة",
+      "Sub_FIN_Custody",
+      "العهد",
+      "ملاحظات",
+      "FIN_Custody_Notes_Edit",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "FIN_Custody",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التعريف",
+      "HR_Emp_ID",
+      "معرّف الموظف",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_FullNameEN",
+      "الاسم (إنجليزي)",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Employees",
+      "Full_Name_EN",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_FullNameAR",
+      "الاسم (عربي)",
+      "Text",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Employees",
+      "Full_Name_AR",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_DOB",
+      "تاريخ الميلاد",
+      "Date",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Date_of_Birth",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_Gender",
+      "النوع",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Gender",
+      "HR_Employees",
+      "Gender",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_NationalID",
+      "الرقم القومي",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "National_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_Marital",
+      "الحالة الاجتماعية",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Marital_Status",
+      "HR_Employees",
+      "Marital_Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "البيانات الأساسية",
+      "HR_Emp_Military",
+      "الموقف من الخدمة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Military_Status",
+      "HR_Employees",
+      "Military_Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_MobileMain",
+      "رقم الجوال الرئيسي",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Mobile_Main",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_MobileSub",
+      "رقم جوال بديل",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Mobile_Sub",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_Email",
+      "البريد الإلكتروني",
+      "Email",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Email",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_Address",
+      "العنوان",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Home_Address",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_EmergencyContact",
+      "جهة الاتصال للطوارئ",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Emergency_Contact",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_Relation",
+      "صلة القرابة",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Relation",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "التواصل",
+      "HR_Emp_ECMobile",
+      "رقم الطوارئ",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "EC_Mobile",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "العمل",
+      "HR_Emp_JobTitle",
+      "المسمى الوظيفي",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Job_Titles",
+      "HR_Employees",
+      "Job_Title",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "العمل",
+      "HR_Emp_Department",
+      "القسم",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Departments",
+      "HR_Employees",
+      "Department",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "العمل",
+      "HR_Emp_HireDate",
+      "تاريخ التعيين",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Employees",
+      "Hire_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "العمل",
+      "HR_Emp_ContractType",
+      "نوع التعاقد",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Contract_Types",
+      "HR_Employees",
+      "Contract_Type",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "الحالة والرواتب",
+      "HR_Emp_Status",
+      "حالة الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Active",
+      "DD_Employee_Status",
+      "HR_Employees",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "الحالة والرواتب",
+      "HR_Emp_BasicSalary",
+      "الراتب الأساسي",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Basic_Salary",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "الحالة والرواتب",
+      "HR_Emp_Allowances",
+      "البدلات",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Allowances",
+      "",
+    ],
+    [
+      "FORM_HR_AddEmployee",
+      "إضافة موظف",
+      "Sub_HR_Employees",
+      "الموظفون",
+      "الحالة والرواتب",
+      "HR_Emp_Deductions",
+      "الخصومات",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Employees",
+      "Deductions",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التعريف",
+      "HR_Att_ID",
+      "معرّف الحضور",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Attendance_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التعريف",
+      "HR_Att_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Attendance",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التوقيت",
+      "HR_Att_Date",
+      "التاريخ",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Attendance",
+      "Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التوقيت",
+      "HR_Att_CheckIn",
+      "وقت الحضور",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Check_In",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التوقيت",
+      "HR_Att_CheckOut",
+      "وقت الانصراف",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Check_Out",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Hours",
+      "ساعات العمل",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Hours",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_OTMinutes",
+      "دقائق إضافية",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "OT_Minutes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_OTAmount",
+      "قيمة الإضافي",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "OT_Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Late",
+      "دقائق التأخير",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Late_Minutes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Early",
+      "مغادرة مبكرة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "EarlyLeave_Minutes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Overtime",
+      "إجمالي الإضافي",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Overtime_Minutes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "التقييم",
+      "HR_Att_Status",
+      "الحالة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "Present",
+      "DD_Attendance_Status",
+      "HR_Attendance",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddAttendance",
+      "تسجيل الحضور",
+      "Sub_HR_Attendance",
+      "الحضور",
+      "الملاحظات",
+      "HR_Att_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Attendance",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التعريف",
+      "HR_LR_ID",
+      "معرّف الطلب",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Leave_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التعريف",
+      "HR_LR_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Leave_Requests",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الفترة",
+      "HR_LR_Type",
+      "نوع الإجازة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Leave_Types",
+      "HR_Leave_Requests",
+      "Leave_Type",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الفترة",
+      "HR_LR_Start",
+      "تاريخ البداية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Start_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الفترة",
+      "HR_LR_End",
+      "تاريخ النهاية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "End_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التفاصيل",
+      "HR_LR_DaysCount",
+      "عدد الأيام",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Days_Count",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التفاصيل",
+      "HR_LR_Days",
+      "أيام الإجازة",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Days",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التفاصيل",
+      "HR_LR_Approver",
+      "المعتمد",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Users",
+      "HR_Leave_Requests",
+      "Approver",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "التفاصيل",
+      "HR_LR_Reason",
+      "سبب الإجازة",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Reason",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الحالة",
+      "HR_LR_Status",
+      "حالة الطلب",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Pending",
+      "DD_Leave_Status",
+      "HR_Leave_Requests",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeaveRequest",
+      "تقديم طلب إجازة",
+      "Sub_HR_Leave_Requests",
+      "طلبات الإجازة",
+      "الملاحظات",
+      "HR_LR_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave_Requests",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "التعريف",
+      "HR_Leave_ID",
+      "معرّف الإجازة",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave",
+      "Leave_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "التعريف",
+      "HR_Leave_Emp",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Leave",
+      "Emp_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الفترة",
+      "HR_Leave_Type",
+      "نوع الإجازة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Leave_Types",
+      "HR_Leave",
+      "Leave_Type",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الفترة",
+      "HR_Leave_Start",
+      "تاريخ البداية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Leave",
+      "Start_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الفترة",
+      "HR_Leave_End",
+      "تاريخ النهاية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Leave",
+      "End_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "التفاصيل",
+      "HR_Leave_DaysCount",
+      "عدد الأيام",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave",
+      "Days_Count",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الحالة",
+      "HR_Leave_Status",
+      "الحالة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Approved",
+      "DD_Leave_Status",
+      "HR_Leave",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddLeave",
+      "تسجيل إجازة",
+      "Sub_HR_Leave",
+      "سجلات الإجازة",
+      "الملاحظات",
+      "HR_Leave_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Leave",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التعريف",
+      "HR_Adv_ID",
+      "معرّف السلفة",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Advances",
+      "Advance_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التعريف",
+      "HR_Adv_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Advances",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التفاصيل",
+      "HR_Adv_IssueDate",
+      "تاريخ الإصدار",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Advances",
+      "Issue_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التفاصيل",
+      "HR_Adv_Amount",
+      "المبلغ",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Advances",
+      "Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التفاصيل",
+      "HR_Adv_Settlement",
+      "فترة السداد",
+      "Text",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Advances",
+      "Settlement_Period",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "التفاصيل",
+      "HR_Adv_Installment",
+      "قسط السلفة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Advances",
+      "Advance_Installment",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "الحالة",
+      "HR_Adv_Status",
+      "حالة السلفة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Pending",
+      "DD_Advance_Status",
+      "HR_Advances",
+      "Status",
+      "",
+    ],
+    [
+      "FORM_HR_AddAdvance",
+      "تسجيل سلفة",
+      "Sub_HR_Advances",
+      "السلف",
+      "الملاحظات",
+      "HR_Adv_Notes",
+      "ملاحظات",
+      "Paragraph",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Advances",
+      "Notes",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التعريف",
+      "HR_Ded_ID",
+      "معرّف الخصم",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Deductions",
+      "Deduction_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التفاصيل",
+      "HR_Ded_Penalty",
+      "نوع المخالفة",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "No",
+      "",
+      "DD_Penalties",
+      "HR_Deductions",
+      "Penalty_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التفاصيل",
+      "HR_Ded_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Deductions",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التفاصيل",
+      "HR_Ded_Date",
+      "تاريخ الخصم",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Deductions",
+      "Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddDeduction",
+      "تسجيل خصم",
+      "Sub_HR_Deductions",
+      "الخصومات",
+      "التفاصيل",
+      "HR_Ded_Amount",
+      "قيمة الخصم",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Deductions",
+      "Deduction_Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "التعريف",
+      "HR_Payroll_ID",
+      "معرّف البيان",
+      "Auto",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Payroll",
+      "Payroll_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "التعريف",
+      "HR_Payroll_Employee",
+      "الموظف",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "",
+      "DD_Employees",
+      "HR_Payroll",
+      "Employee_ID",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "الفترة",
+      "HR_Payroll_Start",
+      "تاريخ البداية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Payroll",
+      "Start_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "الفترة",
+      "HR_Payroll_End",
+      "تاريخ النهاية",
+      "Date",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Payroll",
+      "End_Date",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_Basic",
+      "الراتب الأساسي",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Payroll",
+      "Basic_Salary",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_OT",
+      "إجمالي الإضافي",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Payroll",
+      "Total_OT_Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_Advance",
+      "قسط السلفة",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Payroll",
+      "Advance_Installment",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_Deductions",
+      "الخصومات",
+      "Number",
+      "",
+      "",
+      "No",
+      "",
+      "",
+      "HR_Payroll",
+      "Deduction_Amount",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "القيم",
+      "HR_Payroll_Net",
+      "صافي الراتب",
+      "Number",
+      "",
+      "",
+      "Yes",
+      "",
+      "",
+      "HR_Payroll",
+      "Net_Pay",
+      "",
+    ],
+    [
+      "FORM_HR_AddPayroll",
+      "إنشاء بيان راتب",
+      "Sub_HR_Payroll",
+      "الرواتب",
+      "الحالة",
+      "HR_Payroll_Status",
+      "حالة البيان",
+      "Dropdown",
+      "SYS_Dropdowns",
+      "",
+      "Yes",
+      "Draft",
+      "DD_Payroll_Status",
+      "HR_Payroll",
+      "Status",
+      "",
+    ],
+  ];
+  debugLog(FNAME, `Built ${dynamicFormCache.length} form definition rows.`);
   return dynamicFormCache;
 }
 
 function seedSysDynamicForms(ss) {
-  const FNAME = "seedSysDynamicForms";
-  const sh = ss.getSheetByName("SYS_Dynamic_Forms");
+  const FNAME = 'seedSysDynamicForms';
+  const sh = ss.getSheetByName('SYS_Dynamic_Forms');
   if (!sh) {
-    debugLog(FNAME, "Skipped: Sheet SYS_Dynamic_Forms not found.");
+    debugLog(FNAME, 'Skipped: Sheet SYS_Dynamic_Forms not found.');
     return;
   }
   const rows = getDynamicFormDefinitions();
@@ -2350,7 +6282,13 @@ function seedSysDropdowns(ss) {
     ["DD_Attachment_Entities", "Users", "المستخدمون", "TRUE", 1],
     ["DD_Attachment_Entities", "Roles", "الأدوار", "TRUE", 2],
     ["DD_Attachment_Entities", "Permissions", "الأذونات", "TRUE", 3],
-    ["DD_Attachment_Entities", "Role_Permissions", "أذونات_الأدوار", "TRUE", 4],
+    [
+      "DD_Attachment_Entities",
+      "Role_Permissions",
+      "أذونات_الأدوار",
+      "TRUE",
+      4,
+    ],
     ["DD_Export_Formats", "CSV", "CSV", "TRUE", 1],
     ["DD_Export_Formats", "XLSX", "XLSX", "TRUE", 2],
     ["DD_Export_Formats", "JSON", "JSON", "TRUE", 3],
@@ -2475,7 +6413,13 @@ function seedSysDropdowns(ss) {
       const roleId = idIdx >= 0 ? row[idIdx] : "";
       if (!roleId) return;
       const title = titleIdx >= 0 ? row[titleIdx] : roleId;
-      rows.push(["DD_Roles", roleId, title, "TRUE", 20 + index]);
+      rows.push([
+        "DD_Roles",
+        roleId,
+        title,
+        "TRUE",
+        20 + index,
+      ]);
     });
   }
 
@@ -2491,7 +6435,13 @@ function seedSysDropdowns(ss) {
       if (!empId) return;
       const nameEn = nameEnIdx >= 0 ? row[nameEnIdx] : empId;
       const nameAr = nameArIdx >= 0 ? row[nameArIdx] : nameEn;
-      rows.push(["DD_Employees", empId, nameAr || nameEn, "TRUE", 30 + index]);
+      rows.push([
+        "DD_Employees",
+        empId,
+        nameAr || nameEn,
+        "TRUE",
+        30 + index,
+      ]);
     });
   }
 
@@ -2505,7 +6455,13 @@ function seedSysDropdowns(ss) {
       const userId = idIdx >= 0 ? row[idIdx] : "";
       if (!userId) return;
       const label = nameIdx >= 0 ? row[nameIdx] : userId;
-      rows.push(["DD_Users", userId, label || userId, "TRUE", 40 + index]);
+      rows.push([
+        "DD_Users",
+        userId,
+        label || userId,
+        "TRUE",
+        40 + index,
+      ]);
     });
   }
 
@@ -2537,15 +6493,7 @@ function seedHrDepartments(ss) {
   const nowIso = ensureISODate(new Date());
   const rows = [
     ["MGMT", "Management", "الإدارة", "TRUE", 1, nowIso, SYSTEM_USER],
-    [
-      "HR",
-      "Human Resources",
-      "الموارد البشرية",
-      "TRUE",
-      2,
-      nowIso,
-      SYSTEM_USER,
-    ],
+    ["HR", "Human Resources", "الموارد البشرية", "TRUE", 2, nowIso, SYSTEM_USER],
     ["FIN", "Finance", "المالية", "TRUE", 3, nowIso, SYSTEM_USER],
     ["PRJ", "Projects", "المشروعات", "TRUE", 4, nowIso, SYSTEM_USER],
   ];
@@ -2672,8 +6620,8 @@ function seedSysRoles(ss) {
 
 /** ---------- MAIN RUNNER ---------- **/
 function setupERPAllSheets() {
-  const FNAME = "setupERPAllSheets";
-  debugLog(FNAME, "Starting full ERP sheet setup (CREATE/CLEAR).");
+  const FNAME = 'setupERPAllSheets';
+  debugLog(FNAME, 'Starting full ERP sheet setup (CREATE/CLEAR).');
   try {
     const ss = getTargetSpreadsheet();
     const schemas = getSheetSchemas();
@@ -2681,19 +6629,14 @@ function setupERPAllSheets() {
       debugLog(FNAME, `Ensuring sheet: ${name}`);
       createOrClearSheet(ss, name, schemas[name]);
     });
-    debugLog(FNAME, "All sheets created/cleared. Seeding core data...");
+    debugLog(FNAME, 'All sheets created/cleared. Seeding core data...');
     seedCoreData(ss);
-    debugLog(FNAME, "Applying initial render logic to SYS_Tab_Register...");
+    debugLog(FNAME, 'Applying initial render logic to SYS_Tab_Register...');
     updateTabRegisterRenderLogic(ss);
-    Logger.log(
-      "✅ Full ERP Setup Completed (Sheets Created/Cleared & Seeded)."
-    );
-    debugLog(FNAME, "✅ Full ERP Setup Completed.");
+    Logger.log('✅ Full ERP Setup Completed (Sheets Created/Cleared & Seeded).');
+    debugLog(FNAME, '✅ Full ERP Setup Completed.');
   } catch (err) {
-    debugLog(FNAME, `ERROR during full setup: ${err.message || err}`, {
-      error: err,
-      stack: err.stack,
-    });
+    debugLog(FNAME, `ERROR during full setup: ${err.message || err}`, { error: err, stack: err.stack });
     Logger.log(`ERROR during setupERPAllSheets: ${err}`);
   }
 }
@@ -2709,7 +6652,7 @@ function setupERPAllSheets() {
 function logSetupAction(action, entity, targetSheet, details) {
   try {
     const ss = getTargetSpreadsheet();
-    const logSheet = ss.getSheetByName("SYS_Audit_Log");
+    const logSheet = ss.getSheetByName('SYS_Audit_Log');
     const nowIso = new Date().toISOString();
     // [Timestamp, User, Action, Details, Entity, Entity_Id, Scope, Sheet, Target_Id, Actor_Id]
     logSheet.appendRow([
@@ -2718,10 +6661,10 @@ function logSetupAction(action, entity, targetSheet, details) {
       action,
       details,
       entity,
-      "",
-      "SYSTEM",
+      '',
+      'SYSTEM',
       targetSheet,
-      "",
+      '',
       SYSTEM_USER,
     ]);
   } catch (err) {
@@ -2730,8 +6673,8 @@ function logSetupAction(action, entity, targetSheet, details) {
 }
 
 function auditAndSeedERP() {
-  const FNAME = "auditAndSeedERP";
-  debugLog(FNAME, "Starting ERP Audit & Seed process.");
+  const FNAME = 'auditAndSeedERP';
+  debugLog(FNAME, 'Starting ERP Audit & Seed process.');
   try {
     const ss = getTargetSpreadsheet();
     const schemas = getSheetSchemas();
@@ -2742,9 +6685,7 @@ function auditAndSeedERP() {
       let sheet = ss.getSheetByName(name);
       const headers = schemas[name];
       const headerLength = headers ? headers.length : 0;
-      debugLog(FNAME, `Auditing sheet: ${name}`, {
-        expectedHeaders: headerLength,
-      });
+      debugLog(FNAME, `Auditing sheet: ${name}`, { expectedHeaders: headerLength });
 
       if (!sheet) {
         debugLog(FNAME, `Sheet missing, creating: ${name}`);
@@ -2753,28 +6694,16 @@ function auditAndSeedERP() {
           sheet
             .getRange(1, 1, 1, headerLength)
             .setValues([headers])
-            .setFontWeight("bold")
-            .setBackground("#E0E0E0");
+            .setFontWeight('bold')
+            .setBackground('#E0E0E0');
           debugLog(FNAME, `Set headers for new sheet: ${name}`);
         }
         created.push(name);
-        logSetupAction(
-          "CREATE_SHEET",
-          name,
-          name,
-          "Created missing sheet during audit."
-        );
+        logSetupAction('CREATE_SHEET', name, name, 'Created missing sheet during audit.');
       } else {
         if (headerLength > 0) {
-          const currentHeadersRange = sheet.getRange(
-            1,
-            1,
-            1,
-            sheet.getMaxColumns()
-          );
-          const currentHeaders = currentHeadersRange
-            .getValues()[0]
-            .filter(String);
+          const currentHeadersRange = sheet.getRange(1, 1, 1, sheet.getMaxColumns());
+          const currentHeaders = currentHeadersRange.getValues()[0].filter(String);
           let mismatch = currentHeaders.length !== headerLength;
           if (!mismatch) {
             for (let i = 0; i < headerLength; i++) {
@@ -2786,75 +6715,50 @@ function auditAndSeedERP() {
           }
 
           if (mismatch) {
-            debugLog(
-              FNAME,
-              `Header mismatch found for: ${name}. Updating headers.`,
-              { expected: headers, actual: currentHeaders }
-            );
+            debugLog(FNAME, `Header mismatch found for: ${name}. Updating headers.`, { expected: headers, actual: currentHeaders });
             sheet.getRange(1, 1, 1, sheet.getMaxColumns()).clearContent();
             sheet
               .getRange(1, 1, 1, headerLength)
               .setValues([headers])
-              .setFontWeight("bold")
-              .setBackground("#E0E0E0");
+              .setFontWeight('bold')
+              .setBackground('#E0E0E0');
             updatedHeaders.push(name);
-            logSetupAction(
-              "UPDATE_HEADERS",
-              name,
-              name,
-              "Updated header row to match schema during audit."
-            );
+            logSetupAction('UPDATE_HEADERS', name, name, 'Updated header row to match schema during audit.');
           } else {
             debugLog(FNAME, `Headers match for: ${name}.`);
           }
         } else {
-          debugLog(
-            FNAME,
-            `No headers defined in schema for: ${name}, skipping header check.`
-          );
+          debugLog(FNAME, `No headers defined in schema for: ${name}, skipping header check.`);
         }
       }
     });
 
-    debugLog(FNAME, "Auditing complete. Seeding core data if missing...");
+    debugLog(FNAME, 'Auditing complete. Seeding core data if missing...');
     seedCoreData(ss);
-    debugLog(FNAME, "Applying render logic update to SYS_Tab_Register...");
+    debugLog(FNAME, 'Applying render logic update to SYS_Tab_Register...');
     updateTabRegisterRenderLogic(ss);
 
-    Logger.log(
-      `✅ Audit and seeding complete. Created: ${
-        created.join(", ") || "None"
-      }. Updated Headers: ${updatedHeaders.join(", ") || "None"}.`
-    );
-    debugLog(FNAME, "✅ Audit & Seed process finished.", {
-      createdSheets: created,
-      updatedHeaders,
-    });
+    Logger.log(`✅ Audit and seeding complete. Created: ${created.join(', ') || 'None'}. Updated Headers: ${updatedHeaders.join(', ') || 'None'}.`);
+    debugLog(FNAME, '✅ Audit & Seed process finished.', { createdSheets: created, updatedHeaders });
     return { created, updatedHeaders };
   } catch (err) {
-    debugLog(FNAME, `ERROR during audit & seed: ${err.message || err}`, {
-      error: err,
-      stack: err.stack,
-    });
+    debugLog(FNAME, `ERROR during audit & seed: ${err.message || err}`, { error: err, stack: err.stack });
     Logger.log(`ERROR during auditAndSeedERP: ${err}`);
   }
 }
 
 function runFullSystemUpdate() {
-  const FNAME = "runFullSystemUpdate";
+  const FNAME = 'runFullSystemUpdate';
   Logger.log(`Starting Full System Update via ${FNAME}...`);
-  debugLog(FNAME, "Initiating system update sequence.");
+  debugLog(FNAME, 'Initiating system update sequence.');
   try {
     auditAndSeedERP();
-    Logger.log("✅✅✅ Full System Update Completed Successfully! ✅✅✅");
-    debugLog(FNAME, "✅ Full System Update sequence finished successfully.");
+    Logger.log('✅✅✅ Full System Update Completed Successfully! ✅✅✅');
+    debugLog(FNAME, '✅ Full System Update sequence finished successfully.');
     SpreadsheetApp.flush();
   } catch (err) {
     Logger.log(`❌❌❌ ERROR during Full System Update: ${err.message || err}`);
-    debugLog(FNAME, `❌ Update sequence failed: ${err.message || err}`, {
-      error: err,
-      stack: err.stack,
-    });
+    debugLog(FNAME, `❌ Update sequence failed: ${err.message || err}`, { error: err, stack: err.stack });
   }
 }
 
@@ -2915,20 +6819,18 @@ function seedSysUsersView(ss) {
     lastLogin: headers.indexOf("Last_Login"),
     updatedAt: headers.indexOf("Updated_At"),
   };
-  const rows = data
-    .slice(1)
-    .map((row) => [
-      row[idx.id] || "",
-      row[idx.fullName] || "",
-      row[idx.username] || "",
-      row[idx.email] || "",
-      row[idx.dept] || "",
-      row[idx.role] || "",
-      row[idx.active] || "",
-      row[idx.jobTitle] || "",
-      row[idx.lastLogin] || "",
-      row[idx.updatedAt] || "",
-    ]);
+  const rows = data.slice(1).map((row) => [
+    row[idx.id] || "",
+    row[idx.fullName] || "",
+    row[idx.username] || "",
+    row[idx.email] || "",
+    row[idx.dept] || "",
+    row[idx.role] || "",
+    row[idx.active] || "",
+    row[idx.jobTitle] || "",
+    row[idx.lastLogin] || "",
+    row[idx.updatedAt] || "",
+  ]);
   if (!rows.length) return;
   appendRowsIfEmpty(view, rows);
   Logger.log("✅ PV_SYS_Users_Table seeded successfully.");
@@ -2946,7 +6848,9 @@ function seedViewFromSource(ss, sourceName, viewName, fieldOrder) {
   let rows = data.slice(1);
   if (Array.isArray(fieldOrder) && fieldOrder.length) {
     const indexes = fieldOrder.map((field) => headers.indexOf(field));
-    rows = rows.map((row) => indexes.map((idx) => (idx >= 0 ? row[idx] : "")));
+    rows = rows.map((row) =>
+      indexes.map((idx) => (idx >= 0 ? row[idx] : ""))
+    );
   }
   appendRowsIfEmpty(view, rows);
   Logger.log("✅ " + viewName + " view synced from " + sourceName + ".");
@@ -2960,37 +6864,13 @@ function seedProjectViews(ss) {
   seedViewFromSource(ss, "PRJ_Schedule_Calc", "PV_PRJ_Schedule_Calc");
   seedViewFromSource(ss, "PRJ_Dashboard", "PV_PRJ_Dashboard");
   seedViewFromSource(ss, "PRJ_KPIs", "PV_PRJ_KPIs");
-  seedViewFromSource(
-    ss,
-    "PRJ_InDirExp_Allocations",
-    "PV_PRJ_InDirExp_Allocations"
-  );
+  seedViewFromSource(ss, "PRJ_InDirExp_Allocations", "PV_PRJ_InDirExp_Allocations");
   seedViewFromSource(ss, "FIN_Project_Revenue", "PV_FIN_Project_Revenue");
   seedViewFromSource(ss, "PRJ_Materials", "PV_PRJ_Materials");
 }
 
 function seedFinanceViews(ss) {
-  seedViewFromSource(ss, "FIN_DirectExpenses", "PV_FIN_DirectExpenses_View", [
-    "Expense_ID",
-    "Project_ID",
-    "Project_Name",
-    "Date",
-    "Category",
-    "Material_ID",
-    "Material_Name",
-    "Qty",
-    "Unit",
-    "Unit_Price",
-    "Amount",
-    "VAT_Rate",
-    "VAT_Amount",
-    "Total_With_VAT",
-    "Pay_Status",
-    "Pay_Method",
-    "Notes",
-    "Created_By",
-    "Created_At",
-  ]);
+  seedViewFromSource(ss, "FIN_DirectExpenses", "PV_FIN_DirectExpenses_View", ["Expense_ID", "Project_ID", "Project_Name", "Date", "Category", "Material_ID", "Material_Name", "Qty", "Unit", "Unit_Price", "Amount", "VAT_Rate", "VAT_Amount", "Total_With_VAT", "Pay_Status", "Pay_Method", "Notes", "Created_By", "Created_At"]);
   seedViewFromSource(ss, "FIN_Revenues", "PV_FIN_Revenues");
   seedViewFromSource(ss, "FIN_Project_Revenue", "PV_FIN_Project_Revenue");
   seedViewFromSource(ss, "FIN_Journal", "PV_FIN_Journal");
@@ -2998,11 +6878,7 @@ function seedFinanceViews(ss) {
   seedViewFromSource(ss, "FIN_GL_Totals", "PV_FIN_GL_Totals");
   seedViewFromSource(ss, "FIN_KPIs", "PV_FIN_KPIs");
   seedViewFromSource(ss, "FIN_InDirExpense_Once", "PV_FIN_InDirExpense_Once");
-  seedViewFromSource(
-    ss,
-    "FIN_InDirExpense_Repeated",
-    "PV_FIN_InDirExpense_Repeated"
-  );
+  seedViewFromSource(ss, "FIN_InDirExpense_Repeated", "PV_FIN_InDirExpense_Repeated");
 }
 
 // Internal helper invoked by seedAllModules to refresh PV_HR_* sheets.
@@ -3016,6 +6892,7 @@ function seedHrViews(ss) {
   seedViewFromSource(ss, "HR_Deductions", "PV_HR_Deductions");
   seedViewFromSource(ss, "HR_Payroll", "PV_HR_Payroll");
 }
+
 
 function seedSysUserProperties(ss) {
   const sh = ss.getSheetByName("SYS_User_Properties");
@@ -3363,43 +7240,33 @@ function seedSysRolePermissions(ss) {
   Logger.log("✅ SYS_Role_Permissions seeded successfully.");
 }
 function seedCoreData(ss) {
-  const FNAME = "seedCoreData";
-  debugLog(FNAME, "Starting core data seeding.");
+  const FNAME = 'seedCoreData';
+  debugLog(FNAME, 'Starting core data seeding.');
   try {
     const targetSS = ss || getTargetSpreadsheet();
 
-    // DISABLED: These seed functions overwrite the Google Sheets data
-    // The sheets now contain the correct data and should be the source of truth
-    // seedSysSettings(targetSS);
-    // seedSysRoles(targetSS);
-    // seedSysPermissions(targetSS);
-    // seedSysRolePermissions(targetSS);
-    // seedSysDropdowns(targetSS);
-    // seedSysTabRegister(targetSS);
-    // seedSysDynamicForms(targetSS);
-    // seedAdminUser(targetSS);
+    seedSysSettings(targetSS);
+    seedSysRoles(targetSS);
+    seedSysPermissions(targetSS);
+    seedSysRolePermissions(targetSS);
+    seedSysDropdowns(targetSS);
+    seedSysTabRegister(targetSS);
+    seedSysDynamicForms(targetSS);
+    seedAdminUser(targetSS);
 
-    // seedSysProfileView(targetSS);
-    // seedSysUsersView(targetSS);
-    // seedSysUserProperties(targetSS);
-    // seedSysDocuments(targetSS);
-    // seedSysSessions(targetSS);
-    // seedSysAuditLog(targetSS);
+    seedSysProfileView(targetSS);
+    seedSysUsersView(targetSS);
+    seedSysUserProperties(targetSS);
+    seedSysDocuments(targetSS);
+    seedSysSessions(targetSS);
+    seedSysAuditLog(targetSS);
 
-    // seedAllModules(targetSS);
+    seedAllModules(targetSS);
 
-    debugLog(
-      FNAME,
-      "✅ Core data seeding SKIPPED - using sheet-based configuration."
-    );
-    Logger.log(
-      "✅ Core data seeding SKIPPED - sheets are now the source of truth."
-    );
+    debugLog(FNAME, '✅ Core data seeding process completed.');
+    Logger.log('✅ Core SYS + Modules seeding completed.');
   } catch (err) {
-    debugLog(FNAME, `ERROR during core data seeding: ${err.message || err}`, {
-      error: err,
-      stack: err.stack,
-    });
+    debugLog(FNAME, `ERROR during core data seeding: ${err.message || err}`, { error: err, stack: err.stack });
     Logger.log(`ERROR in seedCoreData: ${err}`);
   }
 }
@@ -3413,1510 +7280,180 @@ function seedCoreData(ss) {
  */
 function seedProjectFormAndDropdowns(ss) {
   const workbook = ss || getTargetSpreadsheet();
-
+  
   // Get all required sheets
-  const formsSheet = workbook.getSheetByName("SYS_Dynamic_Forms");
-  const dropsSheet = workbook.getSheetByName("SYS_Dropdowns");
-  const clientsSheet = workbook.getSheetByName("PRJ_Clients");
-  const usersSheet = workbook.getSheetByName("SYS_Users");
-  const projectsSheet = workbook.getSheetByName("PRJ_Main");
+  const formsSheet = workbook.getSheetByName('SYS_Dynamic_Forms');
+  const dropsSheet = workbook.getSheetByName('SYS_Dropdowns');
+  const clientsSheet = workbook.getSheetByName('PRJ_Clients');
+  const usersSheet = workbook.getSheetByName('SYS_Users');
+  const projectsSheet = workbook.getSheetByName('PRJ_Main');
 
   // Safety check to ensure all sheets exist
   if (!formsSheet || !dropsSheet || !clientsSheet || !usersSheet) {
     let missing = [
-      !formsSheet ? "SYS_Dynamic_Forms" : null,
-      !dropsSheet ? "SYS_Dropdowns" : null,
-      !clientsSheet ? "PRJ_Clients" : null,
-      !usersSheet ? "SYS_Users" : null,
-      !projectsSheet ? "PRJ_Main" : null,
-    ]
-      .filter(Boolean)
-      .join(", ");
-
+      !formsSheet ? 'SYS_Dynamic_Forms' : null,
+      !dropsSheet ? 'SYS_Dropdowns' : null,
+      !clientsSheet ? 'PRJ_Clients' : null,
+      !usersSheet ? 'SYS_Users' : null,
+      !projectsSheet ? 'PRJ_Main' : null
+    ].filter(Boolean).join(', ');
+    
     Logger.log(`Error: Missing one or more required sheets: ${missing}.`);
     return;
   }
 
-  Logger.log("All sheets found. Starting seeding process...");
+  Logger.log('All sheets found. Starting seeding process...');
 
   // --- 1. Clear existing data to prevent duplicates ---
-  Logger.log("Clearing old data...");
+  Logger.log('Clearing old data...');
   // Clear old form definition
-  clearOldData(formsSheet, "FORM_PRJ_AddProject", 0); // 0 is the column index for 'Form_ID'
-  clearOldData(formsSheet, "FORM_PRJ_AddTask", 0);
-  clearOldData(formsSheet, "FORM_PRJ_AddCost", 0);
-  clearOldData(formsSheet, "FORM_PRJ_AddRevenue", 0);
-  clearOldData(formsSheet, "FORM_PRJ_EditProject", 0);
-  clearOldData(formsSheet, "FORM_PRJ_ViewProject", 0);
-  clearOldData(formsSheet, "FORM_PRJ_EditTask", 0);
-  clearOldData(formsSheet, "FORM_PRJ_ViewTask", 0);
-
+  clearOldData(formsSheet, 'FORM_PRJ_AddProject', 0); // 0 is the column index for 'Form_ID'
+  clearOldData(formsSheet, 'FORM_PRJ_AddTask', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_AddCost', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_AddRevenue', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_EditProject', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_ViewProject', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_EditTask', 0);
+  clearOldData(formsSheet, 'FORM_PRJ_ViewTask', 0);
+  
   // Clear old dropdowns
-  clearOldData(dropsSheet, "DD_Project_Status", 0); // 0 is the column index for 'Key'
-  clearOldData(dropsSheet, "DD_Clients", 0);
-  clearOldData(dropsSheet, "DD_Managers", 0);
-  clearOldData(dropsSheet, "DD_Projects", 0);
-  clearOldData(dropsSheet, "DD_Project_Assignees", 0);
-  clearOldData(dropsSheet, "DD_Project_Type", 0);
-  clearOldData(dropsSheet, "DD_Project_Priority", 0);
-  clearOldData(dropsSheet, "DD_Task_Priority", 0);
-  clearOldData(dropsSheet, "DD_Task_Status", 0);
-  clearOldData(dropsSheet, "DD_Cost_Categories", 0);
+  clearOldData(dropsSheet, 'DD_Project_Status', 0); // 0 is the column index for 'Key'
+  clearOldData(dropsSheet, 'DD_Clients', 0);
+  clearOldData(dropsSheet, 'DD_Managers', 0);
+  clearOldData(dropsSheet, 'DD_Projects', 0);
+  clearOldData(dropsSheet, 'DD_Project_Assignees', 0);
+  clearOldData(dropsSheet, 'DD_Project_Type', 0);
+  clearOldData(dropsSheet, 'DD_Project_Priority', 0);
+  clearOldData(dropsSheet, 'DD_Task_Priority', 0);
+  clearOldData(dropsSheet, 'DD_Task_Status', 0);
+  clearOldData(dropsSheet, 'DD_Cost_Categories', 0);
 
   // --- 2. Define New Form Data for 'FORM_PRJ_AddProject' ---
   // Based on the schema of 'SYS_Dynamic_Forms'
   const newFormData = [
     // [Form_ID, Form_Title, Tab_ID, Tab_Name, Section_Header, Field_ID, Field_Label, Field_Type, Source_Sheet, Source_Range, Mandatory, Default_Value, Dropdown_Key, Target_Sheet, Target_Column, Role_ID]
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Project_ID",
-      "معرّف المشروع",
-      "Auto",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Project_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Project_Name",
-      "اسم المشروع",
-      "Text",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "PRJ_Main",
-      "Project_Name",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Client_ID",
-      "العميل",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Clients",
-      "PRJ_Main",
-      "Client_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Contract_ID",
-      "معرّف العقد",
-      "Text",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Contract_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Status",
-      "حالة المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "New",
-      "DD_Project_Status",
-      "PRJ_Main",
-      "Status",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "تصنيف المشروع",
-      "PRJ_Project_Type",
-      "نوع المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "",
-      "DD_Project_Type",
-      "PRJ_Main",
-      "Project_Type",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "تصنيف المشروع",
-      "PRJ_Project_Priority",
-      "أولوية المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "Medium",
-      "DD_Project_Priority",
-      "PRJ_Main",
-      "Project_Priority",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "التواريخ",
-      "PRJ_Start_Date",
-      "تاريخ البدء",
-      "Date",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "PRJ_Main",
-      "Start_Date",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "التواريخ",
-      "PRJ_Planned_Days",
-      "الأيام المخططة",
-      "Number",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Planned_Days",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "التواريخ",
-      "PRJ_Planned_End_Date",
-      "تاريخ الانتهاء المخطط",
-      "Date",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Planned_End_Date",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "البيانات المالية",
-      "PRJ_Budget",
-      "الميزانية",
-      "Number",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Budget",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "البيانات المالية",
-      "PRJ_Planned_Material_Expense",
-      "تكلفة المواد المخططة",
-      "Number",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Planned_Material_Expense",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الإدارة والملاحظات",
-      "PRJ_Manager",
-      "مدير المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Managers",
-      "PRJ_Main",
-      "Manager",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddProject",
-      "إضافة مشروع جديد",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الإدارة والملاحظات",
-      "PRJ_Notes",
-      "ملاحظات",
-      "Paragraph",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Notes",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddTask",
-      "إضافة مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "البيانات الأساسية",
-      "PRJ_Task_ID",
-      "معرّف المهمة",
-      "Auto",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Task_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddTask",
-      "إضافة مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "البيانات الأساسية",
-      "PRJ_Task_Project",
-      "المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Projects",
-      "PRJ_Tasks",
-      "Project_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddTask",
-      "إضافة مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "البيانات الأساسية",
-      "PRJ_Task_Name",
-      "اسم المهمة",
-      "Text",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Task_Name",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddTask",
-      "إضافة مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التعيينات",
-      "PRJ_Task_Assignee",
-      "المسؤول",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "",
-      "DD_Project_Assignees",
-      "PRJ_Tasks",
-      "Assignee_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddTask",
-      "إضافة مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "تصنيف المهمة",
-      "PRJ_Task_Priority",
-      "أولوية المهمة",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "Medium",
-      "DD_Task_Priority",
-      "PRJ_Tasks",
-      "Task_Priority",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddTask",
-      "إضافة مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_PStart",
-      "تاريخ البدء المخطط",
-      "Date",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Planned_Start",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddTask",
-      "إضافة مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_PEnd",
-      "تاريخ الانتهاء المخطط",
-      "Date",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Planned_End",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddTask",
-      "إضافة مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "الحالة",
-      "PRJ_Task_Status",
-      "حالة المهمة",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "Not_Started",
-      "DD_Task_Status",
-      "PRJ_Tasks",
-      "Status",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Project_Name",
-      "اسم المشروع",
-      "Text",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "PRJ_Main",
-      "Project_Name",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Client_ID",
-      "العميل",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Clients",
-      "PRJ_Main",
-      "Client_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Contract_ID",
-      "معرّف العقد",
-      "Text",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Contract_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الحالة والتصنيف",
-      "PRJ_Status",
-      "حالة المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Project_Status",
-      "PRJ_Main",
-      "Status",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الحالة والتصنيف",
-      "PRJ_Project_Type",
-      "نوع المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "",
-      "DD_Project_Type",
-      "PRJ_Main",
-      "Project_Type",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الحالة والتصنيف",
-      "PRJ_Project_Priority",
-      "أولوية المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "",
-      "DD_Project_Priority",
-      "PRJ_Main",
-      "Project_Priority",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "التواريخ",
-      "PRJ_Start_Date",
-      "تاريخ البدء",
-      "Date",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "PRJ_Main",
-      "Start_Date",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "التواريخ",
-      "PRJ_Planned_Days",
-      "الأيام المخططة",
-      "Number",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Planned_Days",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "التواريخ",
-      "PRJ_Planned_End_Date",
-      "تاريخ الانتهاء المخطط",
-      "Date",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Planned_End_Date",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "البيانات المالية",
-      "PRJ_Budget",
-      "الميزانية",
-      "Number",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Budget",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "البيانات المالية",
-      "PRJ_Planned_Material_Expense",
-      "تكلفة المواد المخططة",
-      "Number",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Planned_Material_Expense",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الإدارة والملاحظات",
-      "PRJ_Manager",
-      "مدير المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Managers",
-      "PRJ_Main",
-      "Manager",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditProject",
-      "تعديل مشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الإدارة والملاحظات",
-      "PRJ_Notes",
-      "ملاحظات",
-      "Paragraph",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Notes",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Project_Name",
-      "اسم المشروع",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Project_Name",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Client_ID",
-      "العميل",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "DD_Clients",
-      "PRJ_Main",
-      "Client_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "بيانات المشروع الأساسية",
-      "PRJ_Contract_ID",
-      "معرّف العقد",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Contract_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الحالة والتصنيف",
-      "PRJ_Status",
-      "حالة المشروع",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "DD_Project_Status",
-      "PRJ_Main",
-      "Status",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الحالة والتصنيف",
-      "PRJ_Project_Type",
-      "نوع المشروع",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "DD_Project_Type",
-      "PRJ_Main",
-      "Project_Type",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الحالة والتصنيف",
-      "PRJ_Project_Priority",
-      "أولوية المشروع",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "DD_Project_Priority",
-      "PRJ_Main",
-      "Project_Priority",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "التواريخ",
-      "PRJ_Start_Date",
-      "تاريخ البدء",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Start_Date",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "التواريخ",
-      "PRJ_Planned_Days",
-      "الأيام المخططة",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Planned_Days",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "التواريخ",
-      "PRJ_Planned_End_Date",
-      "تاريخ الانتهاء المخطط",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Planned_End_Date",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "البيانات المالية",
-      "PRJ_Budget",
-      "الميزانية",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Budget",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "البيانات المالية",
-      "PRJ_Planned_Material_Expense",
-      "تكلفة المواد المخططة",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Planned_Material_Expense",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الإدارة والملاحظات",
-      "PRJ_Manager",
-      "مدير المشروع",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "DD_Managers",
-      "PRJ_Main",
-      "Manager",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewProject",
-      "عرض تفاصيل المشروع",
-      "Sub_PRJ_Main",
-      "المشاريع",
-      "الإدارة والملاحظات",
-      "PRJ_Notes",
-      "ملاحظات",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Main",
-      "Notes",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditTask",
-      "تعديل مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "البيانات الأساسية",
-      "PRJ_Task_Name",
-      "اسم المهمة",
-      "Text",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Task_Name",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditTask",
-      "تعديل مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "البيانات الأساسية",
-      "PRJ_Task_Project",
-      "المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Projects",
-      "PRJ_Tasks",
-      "Project_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditTask",
-      "تعديل مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "تصنيف المهمة",
-      "PRJ_Task_Priority",
-      "أولوية المهمة",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "",
-      "DD_Task_Priority",
-      "PRJ_Tasks",
-      "Task_Priority",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditTask",
-      "تعديل مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التعيينات",
-      "PRJ_Task_Assignee",
-      "المسؤول",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "",
-      "DD_Project_Assignees",
-      "PRJ_Tasks",
-      "Assignee_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditTask",
-      "تعديل مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_PStart",
-      "تاريخ البدء المخطط",
-      "Date",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Planned_Start",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditTask",
-      "تعديل مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_PEnd",
-      "تاريخ الانتهاء المخطط",
-      "Date",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Planned_End",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditTask",
-      "تعديل مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_AStart",
-      "تاريخ البدء الفعلي",
-      "Date",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Actual_Start",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditTask",
-      "تعديل مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_AEnd",
-      "تاريخ الانتهاء الفعلي",
-      "Date",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Actual_End",
-      "",
-    ],
-    [
-      "FORM_PRJ_EditTask",
-      "تعديل مهمة مشروع",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "الحالة",
-      "PRJ_Task_Status",
-      "حالة المهمة",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Task_Status",
-      "PRJ_Tasks",
-      "Status",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewTask",
-      "عرض تفاصيل المهمة",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "البيانات الأساسية",
-      "PRJ_Task_Name",
-      "اسم المهمة",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Task_Name",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewTask",
-      "عرض تفاصيل المهمة",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "البيانات الأساسية",
-      "PRJ_Task_Project",
-      "المشروع",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "DD_Projects",
-      "PRJ_Tasks",
-      "Project_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewTask",
-      "عرض تفاصيل المهمة",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "تصنيف المهمة",
-      "PRJ_Task_Priority",
-      "أولوية المهمة",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "DD_Task_Priority",
-      "PRJ_Tasks",
-      "Task_Priority",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewTask",
-      "عرض تفاصيل المهمة",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التعيينات",
-      "PRJ_Task_Assignee",
-      "المسؤول",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "DD_Project_Assignees",
-      "PRJ_Tasks",
-      "Assignee_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewTask",
-      "عرض تفاصيل المهمة",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_PStart",
-      "تاريخ البدء المخطط",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Planned_Start",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewTask",
-      "عرض تفاصيل المهمة",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_PEnd",
-      "تاريخ الانتهاء المخطط",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Planned_End",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewTask",
-      "عرض تفاصيل المهمة",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_AStart",
-      "تاريخ البدء الفعلي",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Actual_Start",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewTask",
-      "عرض تفاصيل المهمة",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "التواريخ",
-      "PRJ_Task_AEnd",
-      "تاريخ الانتهاء الفعلي",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Tasks",
-      "Actual_End",
-      "",
-    ],
-    [
-      "FORM_PRJ_ViewTask",
-      "عرض تفاصيل المهمة",
-      "Sub_PRJ_Tasks",
-      "المهام",
-      "الحالة",
-      "PRJ_Task_Status",
-      "حالة المهمة",
-      "Display",
-      "",
-      "",
-      "No",
-      "",
-      "DD_Task_Status",
-      "PRJ_Tasks",
-      "Status",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddCost",
-      "تسجيل تكلفة مشروع",
-      "Sub_PRJ_Costs",
-      "التكاليف",
-      "البيانات الأساسية",
-      "PRJ_Cost_ID",
-      "معرّف التكلفة",
-      "Auto",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Costs",
-      "Cost_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddCost",
-      "تسجيل تكلفة مشروع",
-      "Sub_PRJ_Costs",
-      "التكاليف",
-      "البيانات الأساسية",
-      "PRJ_Cost_Project",
-      "المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Projects",
-      "PRJ_Costs",
-      "Project_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddCost",
-      "تسجيل تكلفة مشروع",
-      "Sub_PRJ_Costs",
-      "التكاليف",
-      "البيانات الأساسية",
-      "PRJ_Cost_Date",
-      "تاريخ التكلفة",
-      "Date",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "PRJ_Costs",
-      "Date",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddCost",
-      "تسجيل تكلفة مشروع",
-      "Sub_PRJ_Costs",
-      "التكاليف",
-      "التصنيف",
-      "PRJ_Cost_Category",
-      "فئة التكلفة",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "",
-      "DD_Cost_Categories",
-      "PRJ_Costs",
-      "Category",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddCost",
-      "تسجيل تكلفة مشروع",
-      "Sub_PRJ_Costs",
-      "التكاليف",
-      "التفاصيل",
-      "PRJ_Cost_Desc",
-      "وصف التكلفة",
-      "Paragraph",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "PRJ_Costs",
-      "Description",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddCost",
-      "تسجيل تكلفة مشروع",
-      "Sub_PRJ_Costs",
-      "التكاليف",
-      "القيم",
-      "PRJ_Cost_Amount",
-      "المبلغ",
-      "Number",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "PRJ_Costs",
-      "Amount",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddRevenue",
-      "تسجيل إيراد مشروع",
-      "Sub_PRJ_Revenue",
-      "الإيرادات",
-      "البيانات الأساسية",
-      "PRJ_Revenue_ID",
-      "معرّف الإيراد",
-      "Auto",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "FIN_Project_Revenue",
-      "Revenue_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddRevenue",
-      "تسجيل إيراد مشروع",
-      "Sub_PRJ_Revenue",
-      "الإيرادات",
-      "البيانات الأساسية",
-      "PRJ_Revenue_Project",
-      "المشروع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "Yes",
-      "",
-      "DD_Projects",
-      "FIN_Project_Revenue",
-      "Project_ID",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddRevenue",
-      "تسجيل إيراد مشروع",
-      "Sub_PRJ_Revenue",
-      "الإيرادات",
-      "البيانات الأساسية",
-      "PRJ_Revenue_Date",
-      "تاريخ الإيراد",
-      "Date",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "FIN_Project_Revenue",
-      "Revenue_Date",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddRevenue",
-      "تسجيل إيراد مشروع",
-      "Sub_PRJ_Revenue",
-      "الإيرادات",
-      "القيم",
-      "PRJ_Revenue_Amount",
-      "المبلغ",
-      "Number",
-      "",
-      "",
-      "Yes",
-      "",
-      "",
-      "FIN_Project_Revenue",
-      "Amount",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddRevenue",
-      "تسجيل إيراد مشروع",
-      "Sub_PRJ_Revenue",
-      "الإيرادات",
-      "المصدر",
-      "PRJ_Revenue_Source",
-      "مصدر الإيراد",
-      "Text",
-      "",
-      "",
-      "No",
-      "",
-      "",
-      "FIN_Project_Revenue",
-      "Source",
-      "",
-    ],
-    [
-      "FORM_PRJ_AddRevenue",
-      "تسجيل إيراد مشروع",
-      "Sub_PRJ_Revenue",
-      "الإيرادات",
-      "الحالة",
-      "PRJ_Revenue_Status",
-      "حالة الدفع",
-      "Dropdown",
-      "SYS_Dropdowns",
-      "",
-      "No",
-      "Pending",
-      "DD_Payment_Status",
-      "FIN_Project_Revenue",
-      "Pay_Status",
-      "",
-    ],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Project_ID', 'معرّف المشروع', 'Auto', '', '', 'No', '', '', 'PRJ_Main', 'Project_ID', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Project_Name', 'اسم المشروع', 'Text', '', '', 'Yes', '', '', 'PRJ_Main', 'Project_Name', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Client_ID', 'العميل', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Clients', 'PRJ_Main', 'Client_ID', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Contract_ID', 'معرّف العقد', 'Text', '', '', 'No', '', '', 'PRJ_Main', 'Contract_ID', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Status', 'حالة المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', 'New', 'DD_Project_Status', 'PRJ_Main', 'Status', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'تصنيف المشروع', 'PRJ_Project_Type', 'نوع المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Type', 'PRJ_Main', 'Project_Type', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'تصنيف المشروع', 'PRJ_Project_Priority', 'أولوية المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'No', 'Medium', 'DD_Project_Priority', 'PRJ_Main', 'Project_Priority', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Start_Date', 'تاريخ البدء', 'Date', '', '', 'Yes', '', '', 'PRJ_Main', 'Start_Date', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_Days', 'الأيام المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Days', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_End_Date', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Main', 'Planned_End_Date', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Budget', 'الميزانية', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Budget', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Planned_Material_Expense', 'تكلفة المواد المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Material_Expense', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Manager', 'مدير المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Managers', 'PRJ_Main', 'Manager', ''],
+    ['FORM_PRJ_AddProject', 'إضافة مشروع جديد', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Notes', 'ملاحظات', 'Paragraph', '', '', 'No', '', '', 'PRJ_Main', 'Notes', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_ID', 'معرّف المهمة', 'Auto', '', '', 'No', '', '', 'PRJ_Tasks', 'Task_ID', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'PRJ_Tasks', 'Project_ID', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Name', 'اسم المهمة', 'Text', '', '', 'Yes', '', '', 'PRJ_Tasks', 'Task_Name', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التعيينات', 'PRJ_Task_Assignee', 'المسؤول', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Assignees', 'PRJ_Tasks', 'Assignee_ID', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'تصنيف المهمة', 'PRJ_Task_Priority', 'أولوية المهمة', 'Dropdown', 'SYS_Dropdowns', '', 'No', 'Medium', 'DD_Task_Priority', 'PRJ_Tasks', 'Task_Priority', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PStart', 'تاريخ البدء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_Start', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PEnd', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_End', ''],
+    ['FORM_PRJ_AddTask', 'إضافة مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'الحالة', 'PRJ_Task_Status', 'حالة المهمة', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', 'Not_Started', 'DD_Task_Status', 'PRJ_Tasks', 'Status', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Project_Name', 'اسم المشروع', 'Text', '', '', 'Yes', '', '', 'PRJ_Main', 'Project_Name', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Client_ID', 'العميل', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Clients', 'PRJ_Main', 'Client_ID', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Contract_ID', 'معرّف العقد', 'Text', '', '', 'No', '', '', 'PRJ_Main', 'Contract_ID', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Status', 'حالة المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Project_Status', 'PRJ_Main', 'Status', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Project_Type', 'نوع المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Type', 'PRJ_Main', 'Project_Type', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Project_Priority', 'أولوية المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Priority', 'PRJ_Main', 'Project_Priority', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Start_Date', 'تاريخ البدء', 'Date', '', '', 'Yes', '', '', 'PRJ_Main', 'Start_Date', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_Days', 'الأيام المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Days', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_End_Date', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Main', 'Planned_End_Date', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Budget', 'الميزانية', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Budget', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Planned_Material_Expense', 'تكلفة المواد المخططة', 'Number', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Material_Expense', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Manager', 'مدير المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Managers', 'PRJ_Main', 'Manager', ''],
+    ['FORM_PRJ_EditProject', 'تعديل مشروع', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Notes', 'ملاحظات', 'Paragraph', '', '', 'No', '', '', 'PRJ_Main', 'Notes', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Project_Name', 'اسم المشروع', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Project_Name', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Client_ID', 'العميل', 'Display', '', '', 'No', '', 'DD_Clients', 'PRJ_Main', 'Client_ID', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'بيانات المشروع الأساسية', 'PRJ_Contract_ID', 'معرّف العقد', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Contract_ID', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Status', 'حالة المشروع', 'Display', '', '', 'No', '', 'DD_Project_Status', 'PRJ_Main', 'Status', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Project_Type', 'نوع المشروع', 'Display', '', '', 'No', '', 'DD_Project_Type', 'PRJ_Main', 'Project_Type', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الحالة والتصنيف', 'PRJ_Project_Priority', 'أولوية المشروع', 'Display', '', '', 'No', '', 'DD_Project_Priority', 'PRJ_Main', 'Project_Priority', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Start_Date', 'تاريخ البدء', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Start_Date', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_Days', 'الأيام المخططة', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Days', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'التواريخ', 'PRJ_Planned_End_Date', 'تاريخ الانتهاء المخطط', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Planned_End_Date', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Budget', 'الميزانية', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Budget', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'البيانات المالية', 'PRJ_Planned_Material_Expense', 'تكلفة المواد المخططة', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Planned_Material_Expense', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Manager', 'مدير المشروع', 'Display', '', '', 'No', '', 'DD_Managers', 'PRJ_Main', 'Manager', ''],
+    ['FORM_PRJ_ViewProject', 'عرض تفاصيل المشروع', 'Sub_PRJ_Main', 'المشاريع', 'الإدارة والملاحظات', 'PRJ_Notes', 'ملاحظات', 'Display', '', '', 'No', '', '', 'PRJ_Main', 'Notes', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Name', 'اسم المهمة', 'Text', '', '', 'Yes', '', '', 'PRJ_Tasks', 'Task_Name', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'PRJ_Tasks', 'Project_ID', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'تصنيف المهمة', 'PRJ_Task_Priority', 'أولوية المهمة', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Task_Priority', 'PRJ_Tasks', 'Task_Priority', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التعيينات', 'PRJ_Task_Assignee', 'المسؤول', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Project_Assignees', 'PRJ_Tasks', 'Assignee_ID', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PStart', 'تاريخ البدء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_Start', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PEnd', 'تاريخ الانتهاء المخطط', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_End', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_AStart', 'تاريخ البدء الفعلي', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Actual_Start', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_AEnd', 'تاريخ الانتهاء الفعلي', 'Date', '', '', 'No', '', '', 'PRJ_Tasks', 'Actual_End', ''],
+    ['FORM_PRJ_EditTask', 'تعديل مهمة مشروع', 'Sub_PRJ_Tasks', 'المهام', 'الحالة', 'PRJ_Task_Status', 'حالة المهمة', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Task_Status', 'PRJ_Tasks', 'Status', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Name', 'اسم المهمة', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Task_Name', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'البيانات الأساسية', 'PRJ_Task_Project', 'المشروع', 'Display', '', '', 'No', '', 'DD_Projects', 'PRJ_Tasks', 'Project_ID', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'تصنيف المهمة', 'PRJ_Task_Priority', 'أولوية المهمة', 'Display', '', '', 'No', '', 'DD_Task_Priority', 'PRJ_Tasks', 'Task_Priority', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التعيينات', 'PRJ_Task_Assignee', 'المسؤول', 'Display', '', '', 'No', '', 'DD_Project_Assignees', 'PRJ_Tasks', 'Assignee_ID', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PStart', 'تاريخ البدء المخطط', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_Start', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_PEnd', 'تاريخ الانتهاء المخطط', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Planned_End', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_AStart', 'تاريخ البدء الفعلي', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Actual_Start', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'التواريخ', 'PRJ_Task_AEnd', 'تاريخ الانتهاء الفعلي', 'Display', '', '', 'No', '', '', 'PRJ_Tasks', 'Actual_End', ''],
+    ['FORM_PRJ_ViewTask', 'عرض تفاصيل المهمة', 'Sub_PRJ_Tasks', 'المهام', 'الحالة', 'PRJ_Task_Status', 'حالة المهمة', 'Display', '', '', 'No', '', 'DD_Task_Status', 'PRJ_Tasks', 'Status', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'البيانات الأساسية', 'PRJ_Cost_ID', 'معرّف التكلفة', 'Auto', '', '', 'No', '', '', 'PRJ_Costs', 'Cost_ID', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'البيانات الأساسية', 'PRJ_Cost_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'PRJ_Costs', 'Project_ID', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'البيانات الأساسية', 'PRJ_Cost_Date', 'تاريخ التكلفة', 'Date', '', '', 'Yes', '', '', 'PRJ_Costs', 'Date', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'التصنيف', 'PRJ_Cost_Category', 'فئة التكلفة', 'Dropdown', 'SYS_Dropdowns', '', 'No', '', 'DD_Cost_Categories', 'PRJ_Costs', 'Category', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'التفاصيل', 'PRJ_Cost_Desc', 'وصف التكلفة', 'Paragraph', '', '', 'No', '', '', 'PRJ_Costs', 'Description', ''],
+    ['FORM_PRJ_AddCost', 'تسجيل تكلفة مشروع', 'Sub_PRJ_Costs', 'التكاليف', 'القيم', 'PRJ_Cost_Amount', 'المبلغ', 'Number', '', '', 'Yes', '', '', 'PRJ_Costs', 'Amount', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'البيانات الأساسية', 'PRJ_Revenue_ID', 'معرّف الإيراد', 'Auto', '', '', 'No', '', '', 'FIN_Project_Revenue', 'Revenue_ID', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'البيانات الأساسية', 'PRJ_Revenue_Project', 'المشروع', 'Dropdown', 'SYS_Dropdowns', '', 'Yes', '', 'DD_Projects', 'FIN_Project_Revenue', 'Project_ID', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'البيانات الأساسية', 'PRJ_Revenue_Date', 'تاريخ الإيراد', 'Date', '', '', 'Yes', '', '', 'FIN_Project_Revenue', 'Revenue_Date', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'القيم', 'PRJ_Revenue_Amount', 'المبلغ', 'Number', '', '', 'Yes', '', '', 'FIN_Project_Revenue', 'Amount', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'المصدر', 'PRJ_Revenue_Source', 'مصدر الإيراد', 'Text', '', '', 'No', '', '', 'FIN_Project_Revenue', 'Source', ''],
+    ['FORM_PRJ_AddRevenue', 'تسجيل إيراد مشروع', 'Sub_PRJ_Revenue', 'الإيرادات', 'الحالة', 'PRJ_Revenue_Status', 'حالة الدفع', 'Dropdown', 'SYS_Dropdowns', '', 'No', 'Pending', 'DD_Payment_Status', 'FIN_Project_Revenue', 'Pay_Status', '']
   ];
 
   // --- 3. Define New Static Dropdown Data ---
   // Based on the schema of 'SYS_Dropdowns'
   const newStaticDropdowns = [
     // [Key, English_Title, Arabic_Title, Is_Active, Sort_Order]
-    ["DD_Project_Status", "New", "جديد", "TRUE", 1],
-    ["DD_Project_Status", "In_Progress", "قيد التنفيذ", "TRUE", 2],
-    ["DD_Project_Status", "Completed", "مكتمل", "TRUE", 3],
-    ["DD_Project_Status", "On_Hold", "معلق", "TRUE", 4],
-    ["DD_Project_Status", "Cancelled", "ملغى", "TRUE", 5],
-    ["DD_Project_Type", "Internal", "مشروع داخلي", "TRUE", 1],
-    ["DD_Project_Type", "Client_Project", "مشروع عميل", "TRUE", 2],
-    ["DD_Project_Type", "Maintenance", "صيانة", "TRUE", 3],
-    ["DD_Project_Priority", "High", "عالية", "TRUE", 1],
-    ["DD_Project_Priority", "Medium", "متوسطة", "TRUE", 2],
-    ["DD_Project_Priority", "Low", "منخفضة", "TRUE", 3],
-    ["DD_Task_Priority", "Critical", "حرجة", "TRUE", 1],
-    ["DD_Task_Priority", "High", "مرتفعة", "TRUE", 2],
-    ["DD_Task_Priority", "Medium", "متوسطة", "TRUE", 3],
-    ["DD_Task_Priority", "Low", "منخفضة", "TRUE", 4],
-    ["DD_Task_Status", "Not_Started", "لم يبدأ", "TRUE", 1],
-    ["DD_Task_Status", "In_Progress", "قيد التنفيذ", "TRUE", 2],
-    ["DD_Task_Status", "Completed", "مكتملة", "TRUE", 3],
-    ["DD_Task_Status", "Blocked", "معلقة", "TRUE", 4],
-    ["DD_Cost_Categories", "Labor", "تكاليف العمالة", "TRUE", 1],
-    ["DD_Cost_Categories", "Materials", "مواد", "TRUE", 2],
-    ["DD_Cost_Categories", "Equipment", "معدات", "TRUE", 3],
-    ["DD_Cost_Categories", "Misc", "أخرى", "TRUE", 4],
+    ['DD_Project_Status', 'New', 'جديد', 'TRUE', 1],
+    ['DD_Project_Status', 'In_Progress', 'قيد التنفيذ', 'TRUE', 2],
+    ['DD_Project_Status', 'Completed', 'مكتمل', 'TRUE', 3],
+    ['DD_Project_Status', 'On_Hold', 'معلق', 'TRUE', 4],
+    ['DD_Project_Status', 'Cancelled', 'ملغى', 'TRUE', 5],
+    ['DD_Project_Type', 'Internal', 'مشروع داخلي', 'TRUE', 1],
+    ['DD_Project_Type', 'Client_Project', 'مشروع عميل', 'TRUE', 2],
+    ['DD_Project_Type', 'Maintenance', 'صيانة', 'TRUE', 3],
+    ['DD_Project_Priority', 'High', 'عالية', 'TRUE', 1],
+    ['DD_Project_Priority', 'Medium', 'متوسطة', 'TRUE', 2],
+    ['DD_Project_Priority', 'Low', 'منخفضة', 'TRUE', 3],
+    ['DD_Task_Priority', 'Critical', 'حرجة', 'TRUE', 1],
+    ['DD_Task_Priority', 'High', 'مرتفعة', 'TRUE', 2],
+    ['DD_Task_Priority', 'Medium', 'متوسطة', 'TRUE', 3],
+    ['DD_Task_Priority', 'Low', 'منخفضة', 'TRUE', 4],
+    ['DD_Task_Status', 'Not_Started', 'لم يبدأ', 'TRUE', 1],
+    ['DD_Task_Status', 'In_Progress', 'قيد التنفيذ', 'TRUE', 2],
+    ['DD_Task_Status', 'Completed', 'مكتملة', 'TRUE', 3],
+    ['DD_Task_Status', 'Blocked', 'معلقة', 'TRUE', 4],
+    ['DD_Cost_Categories', 'Labor', 'تكاليف العمالة', 'TRUE', 1],
+    ['DD_Cost_Categories', 'Materials', 'مواد', 'TRUE', 2],
+    ['DD_Cost_Categories', 'Equipment', 'معدات', 'TRUE', 3],
+    ['DD_Cost_Categories', 'Misc', 'أخرى', 'TRUE', 4]
   ];
 
   // --- 4. Prepare Dynamic Client Dropdowns (from PRJ_Clients) ---
   // Assumes Client_ID is in Col A, Client_Name is in Col B
   let clientDropdowns = []; // Default to empty array
   const clientLastRow = clientsSheet.getLastRow();
-
-  if (clientLastRow > 1) {
-    // ***FIX***: Only run if there is data beyond the header
-    const clientDataValues = clientsSheet
-      .getRange(2, 1, clientLastRow - 1, 2)
-      .getValues();
+  
+  if (clientLastRow > 1) { // ***FIX***: Only run if there is data beyond the header
+    const clientDataValues = clientsSheet.getRange(2, 1, clientLastRow - 1, 2).getValues();
     clientDropdowns = clientDataValues
-      .filter((row) => row[0] && row[1]) // Ensure Client_ID (row[0]) and Client_Name (row[1]) exist
-      .map((row, index) => ["DD_Clients", row[0], row[1], "TRUE", index + 1]); // [Key, English_Title(Value), Arabic_Title(Display), Active, Sort]
+      .filter(row => row[0] && row[1]) // Ensure Client_ID (row[0]) and Client_Name (row[1]) exist
+      .map((row, index) => ['DD_Clients', row[0], row[1], 'TRUE', index + 1]); // [Key, English_Title(Value), Arabic_Title(Display), Active, Sort]
   }
   Logger.log(`Found ${clientDropdowns.length} clients to seed.`);
+
 
   // --- 5. Prepare Dynamic Manager & Assignee Dropdowns (from SYS_Users) ---
   // Assumes User_Id is in Col A, Full_Name is in Col B
@@ -4930,17 +7467,17 @@ function seedProjectFormAndDropdowns(ss) {
       .getValues();
     const filteredUsers = usersDataValues.filter((row) => row[0] && row[1]);
     managerDropdowns = filteredUsers.map((row, index) => [
-      "DD_Managers",
+      'DD_Managers',
       row[0],
       row[1],
-      "TRUE",
+      'TRUE',
       index + 1,
     ]);
     assigneeDropdowns = filteredUsers.map((row, index) => [
-      "DD_Project_Assignees",
+      'DD_Project_Assignees',
       row[0],
       row[1],
-      "TRUE",
+      'TRUE',
       index + 1,
     ]);
   }
@@ -4958,10 +7495,10 @@ function seedProjectFormAndDropdowns(ss) {
       projectDropdowns = projectValues
         .filter((row) => row[0])
         .map((row, index) => [
-          "DD_Projects",
+          'DD_Projects',
           row[0],
           row[1] || row[0],
-          "TRUE",
+          'TRUE',
           index + 1,
         ]);
     }
@@ -4969,18 +7506,11 @@ function seedProjectFormAndDropdowns(ss) {
   Logger.log(`Found ${projectDropdowns.length} projects to seed.`);
 
   // --- 7. Write all new data to the sheets ---
-  Logger.log("Writing new data to sheets...");
+  Logger.log('Writing new data to sheets...');
 
   // Append form data
   if (newFormData.length > 0) {
-    formsSheet
-      .getRange(
-        formsSheet.getLastRow() + 1,
-        1,
-        newFormData.length,
-        newFormData[0].length
-      )
-      .setValues(newFormData);
+    formsSheet.getRange(formsSheet.getLastRow() + 1, 1, newFormData.length, newFormData[0].length).setValues(newFormData);
     Logger.log(`Wrote ${newFormData.length} rows to SYS_Dynamic_Forms.`);
   }
 
@@ -4990,21 +7520,14 @@ function seedProjectFormAndDropdowns(ss) {
     .concat(managerDropdowns)
     .concat(assigneeDropdowns)
     .concat(projectDropdowns);
-
+  
   if (allNewDropdowns.length > 0) {
-    dropsSheet
-      .getRange(
-        dropsSheet.getLastRow() + 1,
-        1,
-        allNewDropdowns.length,
-        allNewDropdowns[0].length
-      )
-      .setValues(allNewDropdowns);
+    dropsSheet.getRange(dropsSheet.getLastRow() + 1, 1, allNewDropdowns.length, allNewDropdowns[0].length).setValues(allNewDropdowns);
     Logger.log(`Wrote ${allNewDropdowns.length} rows to SYS_Dropdowns.`);
   }
 
-  Logger.log("Seeding complete.");
-  Logger.log("✅ Project forms and dropdowns seeded successfully.");
+  Logger.log('Seeding complete.');
+  Logger.log('✅ Project forms and dropdowns seeded successfully.');
 }
 
 // Internal helper invoked by seedAllModules to refresh PV_PRJ_* sheets.
@@ -5012,16 +7535,14 @@ function seedProjectViewSheets(ss) {
   try {
     const workbook = ss || getTargetSpreadsheet();
     if (!workbook) {
-      Logger.log("seedProjectViewSheets skipped: workbook unavailable.");
+      Logger.log('seedProjectViewSheets skipped: workbook unavailable.');
       return;
     }
-    const pvMain = workbook.getSheetByName("PV_PRJ_Main");
+    const pvMain = workbook.getSheetByName('PV_PRJ_Main');
     if (pvMain) {
       const maxRows = pvMain.getMaxRows();
       if (maxRows > 1) {
-        pvMain
-          .getRange(2, 1, maxRows - 1, pvMain.getMaxColumns())
-          .clearContent();
+        pvMain.getRange(2, 1, maxRows - 1, pvMain.getMaxColumns()).clearContent();
       }
       const pvMainFormula = `=ARRAYFORMULA(
   LET(
@@ -5049,16 +7570,14 @@ function seedProjectViewSheets(ss) {
   )
 )`;
       pvMain.getRange(2, 1).setFormula(pvMainFormula);
-      Logger.log("✅ PV_PRJ_Main formulas seeded.");
+      Logger.log('✅ PV_PRJ_Main formulas seeded.');
     }
 
-    const pvCosts = workbook.getSheetByName("PV_PRJ_Costs");
+    const pvCosts = workbook.getSheetByName('PV_PRJ_Costs');
     if (pvCosts) {
       const maxRows = pvCosts.getMaxRows();
       if (maxRows > 1) {
-        pvCosts
-          .getRange(2, 1, maxRows - 1, pvCosts.getMaxColumns())
-          .clearContent();
+        pvCosts.getRange(2, 1, maxRows - 1, pvCosts.getMaxColumns()).clearContent();
       }
       const pvCostsFormula = `=ARRAYFORMULA(
   LET(
@@ -5070,7 +7589,7 @@ function seedProjectViewSheets(ss) {
   )
 )`;
       pvCosts.getRange(2, 1).setFormula(pvCostsFormula);
-      Logger.log("✅ PV_PRJ_Costs query seeded.");
+      Logger.log('✅ PV_PRJ_Costs query seeded.');
     }
   } catch (err) {
     Logger.log(`seedProjectViewSheets error: ${err}`);
@@ -5084,39 +7603,39 @@ function collectDynamicFormRows(formIds) {
 }
 
 const FINANCE_FORM_IDS = [
-  "FORM_FIN_AddDirectExpense",
-  "FORM_FIN_EditDirectExpense",
-  "FORM_FIN_AddIndirectExpenseRep",
-  "FORM_FIN_EditIndirectExpenseRep",
-  "FORM_FIN_AddIndirectExpenseOnce",
-  "FORM_FIN_EditIndirectExpenseOnce",
-  "FORM_FIN_AddProjectRevenue",
-  "FORM_FIN_EditProjectRevenue",
-  "FORM_FIN_AddRevenue",
-  "FORM_FIN_EditRevenue",
-  "FORM_FIN_AddJournalEntry",
-  "FORM_FIN_EditJournalEntry",
-  "FORM_FIN_AddCustody",
-  "FORM_FIN_EditCustody",
+  'FORM_FIN_AddDirectExpense',
+  'FORM_FIN_EditDirectExpense',
+  'FORM_FIN_AddIndirectExpenseRep',
+  'FORM_FIN_EditIndirectExpenseRep',
+  'FORM_FIN_AddIndirectExpenseOnce',
+  'FORM_FIN_EditIndirectExpenseOnce',
+  'FORM_FIN_AddProjectRevenue',
+  'FORM_FIN_EditProjectRevenue',
+  'FORM_FIN_AddRevenue',
+  'FORM_FIN_EditRevenue',
+  'FORM_FIN_AddJournalEntry',
+  'FORM_FIN_EditJournalEntry',
+  'FORM_FIN_AddCustody',
+  'FORM_FIN_EditCustody',
 ];
 
 const FINANCE_DROPDOWN_KEYS = [
-  "DD_Expense_Category",
-  "DD_Payment_Status",
-  "DD_Payment_Method",
-  "DD_Indirect_Frequency",
-  "DD_Revenue_Type",
-  "DD_Account",
-  "DD_Custody_Status",
+  'DD_Expense_Category',
+  'DD_Payment_Status',
+  'DD_Payment_Method',
+  'DD_Indirect_Frequency',
+  'DD_Revenue_Type',
+  'DD_Account',
+  'DD_Custody_Status',
 ];
 
 function seedFinanceFormAndDropdowns(ss) {
   const workbook = ss || getTargetSpreadsheet();
-  const formsSheet = workbook.getSheetByName("SYS_Dynamic_Forms");
-  const dropdownSheet = workbook.getSheetByName("SYS_Dropdowns");
+  const formsSheet = workbook.getSheetByName('SYS_Dynamic_Forms');
+  const dropdownSheet = workbook.getSheetByName('SYS_Dropdowns');
 
   if (!formsSheet || !dropdownSheet) {
-    Logger.log("seedFinanceFormAndDropdowns skipped: required sheets missing.");
+    Logger.log('seedFinanceFormAndDropdowns skipped: required sheets missing.');
     return;
   }
 
@@ -5125,54 +7644,49 @@ function seedFinanceFormAndDropdowns(ss) {
   const financeRows = collectDynamicFormRows(FINANCE_FORM_IDS);
   if (financeRows.length) {
     formsSheet
-      .getRange(
-        formsSheet.getLastRow() + 1,
-        1,
-        financeRows.length,
-        financeRows[0].length
-      )
+      .getRange(formsSheet.getLastRow() + 1, 1, financeRows.length, financeRows[0].length)
       .setValues(financeRows);
   }
 
   FINANCE_DROPDOWN_KEYS.forEach((key) => clearOldData(dropdownSheet, key, 0));
   seedSysDropdowns(workbook);
 
-  Logger.log("✅ Finance forms and dropdowns seeded successfully.");
+  Logger.log('✅ Finance forms and dropdowns seeded successfully.');
 }
 
 const HR_FORM_IDS = [
-  "FORM_HR_AddEmployee",
-  "FORM_HR_AddAttendance",
-  "FORM_HR_AddLeaveRequest",
-  "FORM_HR_AddLeave",
-  "FORM_HR_AddAdvance",
-  "FORM_HR_AddDeduction",
-  "FORM_HR_AddPayroll",
+  'FORM_HR_AddEmployee',
+  'FORM_HR_AddAttendance',
+  'FORM_HR_AddLeaveRequest',
+  'FORM_HR_AddLeave',
+  'FORM_HR_AddAdvance',
+  'FORM_HR_AddDeduction',
+  'FORM_HR_AddPayroll',
 ];
 
 const HR_DROPDOWN_KEYS = [
-  "DD_Departments",
-  "DD_Job_Titles",
-  "DD_Gender",
-  "DD_Marital_Status",
-  "DD_Military_Status",
-  "DD_Employee_Status",
-  "DD_Attendance_Status",
-  "DD_Leave_Types",
-  "DD_Leave_Status",
-  "DD_Advance_Status",
-  "DD_Payroll_Status",
-  "DD_Penalties",
-  "DD_Employees",
+  'DD_Departments',
+  'DD_Job_Titles',
+  'DD_Gender',
+  'DD_Marital_Status',
+  'DD_Military_Status',
+  'DD_Employee_Status',
+  'DD_Attendance_Status',
+  'DD_Leave_Types',
+  'DD_Leave_Status',
+  'DD_Advance_Status',
+  'DD_Payroll_Status',
+  'DD_Penalties',
+  'DD_Employees',
 ];
 
 function seedHrFormAndDropdowns(ss) {
   const workbook = ss || getTargetSpreadsheet();
-  const formsSheet = workbook.getSheetByName("SYS_Dynamic_Forms");
-  const dropdownSheet = workbook.getSheetByName("SYS_Dropdowns");
+  const formsSheet = workbook.getSheetByName('SYS_Dynamic_Forms');
+  const dropdownSheet = workbook.getSheetByName('SYS_Dropdowns');
 
   if (!formsSheet || !dropdownSheet) {
-    Logger.log("seedHrFormAndDropdowns skipped: required sheets missing.");
+    Logger.log('seedHrFormAndDropdowns skipped: required sheets missing.');
     return;
   }
 
@@ -5188,7 +7702,7 @@ function seedHrFormAndDropdowns(ss) {
   HR_DROPDOWN_KEYS.forEach((key) => clearOldData(dropdownSheet, key, 0));
   seedSysDropdowns(workbook);
 
-  Logger.log("✅ HR forms and dropdowns seeded successfully.");
+  Logger.log('✅ HR forms and dropdowns seeded successfully.');
 }
 
 /**
@@ -5211,7 +7725,7 @@ function seedAllModules(ss) {
   seedHrViewSheets(workbook);
   seedHrViews(workbook);
 
-  Logger.log("✅ All modules seeded successfully.");
+  Logger.log('✅ All modules seeded successfully.');
 }
 
 // Internal helper invoked by seedAllModules to refresh PV_FIN_* sheets.
@@ -5219,14 +7733,14 @@ function seedFinanceViewSheets(ss) {
   try {
     const workbook = ss || getTargetSpreadsheet();
     if (!workbook) {
-      Logger.log("seedFinanceViewSheets skipped: workbook unavailable.");
+      Logger.log('seedFinanceViewSheets skipped: workbook unavailable.');
       return;
     }
 
     const financeViewConfigs = [
       {
-        sheetName: "PV_FIN_DirectExpenses_View",
-        dependencies: ["FIN_DirectExpenses", "PRJ_Main"],
+        sheetName: 'PV_FIN_DirectExpenses_View',
+        dependencies: ['FIN_DirectExpenses', 'PRJ_Main'],
         formula: `=QUERY({
   FIN_DirectExpenses!A2:A,
   FIN_DirectExpenses!C2:C,
@@ -5253,11 +7767,11 @@ function seedFinanceViewSheets(ss) {
   FIN_DirectExpenses!U2:U
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14,Col15,Col16,Col17,Col18,Col19,Col20,Col21,Col22,Col23 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 '', Col15 '', Col16 '', Col17 '', Col18 '', Col19 '', Col20 '', Col21 '', Col22 '', Col23 ''",
-0)`,
+0)`
       },
       {
-        sheetName: "PV_FIN_InDirExpense_Repeated_View",
-        dependencies: ["FIN_InDirExpense_Repeated"],
+        sheetName: 'PV_FIN_InDirExpense_Repeated_View',
+        dependencies: ['FIN_InDirExpense_Repeated'],
         formula: `=QUERY({
   FIN_InDirExpense_Repeated!A2:A,
   FIN_InDirExpense_Repeated!B2:B,
@@ -5276,11 +7790,11 @@ function seedFinanceViewSheets(ss) {
   FIN_InDirExpense_Repeated!P2:P
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14,Col15 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 '', Col15 ''",
-0)`,
+0)`
       },
       {
-        sheetName: "PV_FIN_InDirExpense_Once_View",
-        dependencies: ["FIN_InDirExpense_Once"],
+        sheetName: 'PV_FIN_InDirExpense_Once_View',
+        dependencies: ['FIN_InDirExpense_Once'],
         formula: `=QUERY({
   FIN_InDirExpense_Once!A2:A,
   FIN_InDirExpense_Once!B2:B,
@@ -5298,11 +7812,11 @@ function seedFinanceViewSheets(ss) {
   FIN_InDirExpense_Once!O2:O
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 ''",
-0)`,
+0)`
       },
       {
-        sheetName: "PV_FIN_Project_Revenue_View",
-        dependencies: ["FIN_Project_Revenue", "PRJ_Main"],
+        sheetName: 'PV_FIN_Project_Revenue_View',
+        dependencies: ['FIN_Project_Revenue', 'PRJ_Main'],
         formula: `=QUERY({
   FIN_Project_Revenue!A2:A,
   FIN_Project_Revenue!B2:B,
@@ -5319,11 +7833,11 @@ function seedFinanceViewSheets(ss) {
   FIN_Project_Revenue!M2:M
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 ''",
-0)`,
+0)`
       },
       {
-        sheetName: "PV_FIN_Revenues_View",
-        dependencies: ["FIN_Revenues", "PRJ_Clients", "PRJ_Main"],
+        sheetName: 'PV_FIN_Revenues_View',
+        dependencies: ['FIN_Revenues', 'PRJ_Clients', 'PRJ_Main'],
         formula: `=QUERY({
   FIN_Revenues!A2:A,
   FIN_Revenues!C2:C,
@@ -5344,11 +7858,11 @@ function seedFinanceViewSheets(ss) {
   FIN_Revenues!O2:O
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12,Col13,Col14,Col15,Col16,Col17 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 '', Col13 '', Col14 '', Col15 '', Col16 '', Col17 ''",
-0)`,
+0)`
       },
       {
-        sheetName: "PV_FIN_Journal_View",
-        dependencies: ["FIN_Journal"],
+        sheetName: 'PV_FIN_Journal_View',
+        dependencies: ['FIN_Journal'],
         formula: `=QUERY({
   FIN_Journal!A2:A,
   FIN_Journal!B2:B,
@@ -5364,11 +7878,11 @@ function seedFinanceViewSheets(ss) {
   FIN_Journal!L2:L
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 ''",
-0)`,
+0)`
       },
       {
-        sheetName: "PV_FIN_Custody_View",
-        dependencies: ["FIN_Custody"],
+        sheetName: 'PV_FIN_Custody_View',
+        dependencies: ['FIN_Custody'],
         formula: `=QUERY({
   FIN_Custody!A2:A,
   FIN_Custody!B2:B,
@@ -5384,14 +7898,14 @@ function seedFinanceViewSheets(ss) {
   FIN_Custody!L2:L
 },
 "select Col1,Col2,Col3,Col4,Col5,Col6,Col7,Col8,Col9,Col10,Col11,Col12 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 '', Col6 '', Col7 '', Col8 '', Col9 '', Col10 '', Col11 '', Col12 ''",
-0)`,
+0)`
       },
       {
-        sheetName: "PV_FIN_GL_Totals_View",
-        dependencies: ["FIN_GL_Totals"],
+        sheetName: 'PV_FIN_GL_Totals_View',
+        dependencies: ['FIN_GL_Totals'],
         formula: `=QUERY(FIN_GL_Totals!A2:E,
 "select Col1,Col2,Col3,Col4,Col5 where Col1 is not null label Col1 '', Col2 '', Col3 '', Col4 '', Col5 ''",
-0)`,
+0)`
       },
     ];
 
@@ -5407,23 +7921,24 @@ function seedFinanceViewSheets(ss) {
   }
 }
 
+
 function seedHrViewSheets(ss) {
   try {
     const workbook = ss || getTargetSpreadsheet();
     if (!workbook) {
-      Logger.log("seedHrViewSheets skipped: workbook unavailable.");
+      Logger.log('seedHrViewSheets skipped: workbook unavailable.');
       return;
     }
 
     const hrViewConfigs = [
-      { sheetName: "PV_HR_Employees", source: "HR_Employees" },
-      { sheetName: "PV_HR_Departments", source: "HR_Departments" },
-      { sheetName: "PV_HR_Attendance", source: "HR_Attendance" },
-      { sheetName: "PV_HR_Leave", source: "HR_Leave" },
-      { sheetName: "PV_HR_Leave_Requests", source: "HR_Leave_Requests" },
-      { sheetName: "PV_HR_Advances", source: "HR_Advances" },
-      { sheetName: "PV_HR_Deductions", source: "HR_Deductions" },
-      { sheetName: "PV_HR_Payroll", source: "HR_Payroll" },
+      { sheetName: 'PV_HR_Employees', source: 'HR_Employees' },
+      { sheetName: 'PV_HR_Departments', source: 'HR_Departments' },
+      { sheetName: 'PV_HR_Attendance', source: 'HR_Attendance' },
+      { sheetName: 'PV_HR_Leave', source: 'HR_Leave' },
+      { sheetName: 'PV_HR_Leave_Requests', source: 'HR_Leave_Requests' },
+      { sheetName: 'PV_HR_Advances', source: 'HR_Advances' },
+      { sheetName: 'PV_HR_Deductions', source: 'HR_Deductions' },
+      { sheetName: 'PV_HR_Payroll', source: 'HR_Payroll' },
     ];
 
     hrViewConfigs.forEach(({ sheetName, source }) => {
@@ -5443,8 +7958,12 @@ function seedHrViewSheets(ss) {
   }
 }
 
+
+
+
+
 /**
- * Helper function to clear existing data from a sheet based on a key
+ * Helper function to clear existing data from a sheet based on a key 
  * in a specific column, preserving the header row.
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The sheet to clear data from.
  * @param {string} key The key to look for (e.g., 'FORM_PRJ_AddProject').
@@ -5453,7 +7972,7 @@ function seedHrViewSheets(ss) {
 function clearOldData(sheet, key, colIndex) {
   // Get all data, including headers
   const data = sheet.getDataRange().getValues();
-
+  
   // If sheet is empty or only has a header, do nothing
   if (data.length <= 1) {
     // Handle edge case where sheet has 1 empty row [[""]]
@@ -5467,19 +7986,19 @@ function clearOldData(sheet, key, colIndex) {
 
   // Keep the header row
   const header = data.shift();
-
+  
   // Filter the data, keeping only rows that DO NOT match the key
-  const newData = data.filter((row) => row[colIndex] !== key);
+  const newData = data.filter(row => row[colIndex] !== key);
 
   // Add the header back to the top
   newData.unshift(header);
 
   // Clear the entire sheet's content
   sheet.clearContents(); // Preserves formatting
-
+  
   // Write the filtered data (header + non-matching rows) back to the sheet
   // ***FIX***: Added check for newData[0] to prevent error on empty header
   if (newData.length > 0 && newData[0] && newData[0].length > 0) {
-    sheet.getRange(1, 1, newData.length, newData[0].length).setValues(newData);
+     sheet.getRange(1, 1, newData.length, newData[0].length).setValues(newData);
   }
 }

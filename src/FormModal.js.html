@@ -283,14 +283,16 @@
 
       const submitBtn = modal.querySelector(".submit-btn");
       const editBtn = modal.querySelector(".edit-btn");
-      const hasRecordData = modalState.recordData && extractRecordId(modalState.recordData);
+      const hasRecordData =
+        modalState.recordData && extractRecordId(modalState.recordData);
 
       if (submitBtn) {
         submitBtn.style.display = modalState.isEditMode ? "" : "none";
       }
 
       if (editBtn) {
-        editBtn.style.display = !modalState.isEditMode && hasRecordData ? "" : "none";
+        editBtn.style.display =
+          !modalState.isEditMode && hasRecordData ? "" : "none";
       }
     }
 
